@@ -1,0 +1,65 @@
+*** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
+
+--- No hierarchicval models
+--- No physical time, like LF-verif paper
+
+
+
+
+
+omod LF-REPR is
+  protecting NAT .
+
+  class Port | value : Value .
+
+  class Reactor | inports : Configuration,
+                  outports : Configuration,
+		  state : ReactorState,
+                  reactions : ReactionList,
+		  timers : Configuration,
+		  actions : Configuration .
+
+  class Action | minDelay : Time, minSpacing : Time, policy : ActionPolicy, payload : Value .
+  --- unclear whether payload needed for all.  Subclass instead?
+
+  sort ActionPolicy .
+  ops defer drop replace : -> ActionPolicy .
+
+  sort Connection .
+  subsort Connection < Configuration .
+
+  op _._-->_._ : ReactorId PortId ReactorId PortId -> Connection [ctor] .
+  op _._--_-->_._ : ReactorId PortId Time ReactorId PortId -> Connection [ctor] .
+
+  op [_] : Int -> Value [ctor] .
+  op [_] : Time -> Value [ctor] .
+
+  sort ReactorState .
+  op empty : -> ReactorState [ctor] .
+  op _->_ : VarId Value -> ReactorState [ctor] .
+  op _;_ : ReactorState ReactorState -> ReactorState [ctor assoc comm id: empty] .
+
+  sorts PortId VarId ReactorId TimerId ActionId .
+  subsort PortId ReactorId TimerId ActionId < Oid .
+
+ class Timer | offset : Time .
+ class PeriodicTimer | period : TimeInf .
+ subclass PeriodicTimer < Timer .
+
+  sort ActionTrigger .
+  subsort TimerId PortId ActionId < ActionTrigger .
+
+  sort ReactionBody .
+
+  op skip : -> ReactionBody [ctor] .
+  op _;_ : ReactionBody ReactionBody -> ReactionBody [ctor assoc id: skip] .
+  op _:=_ : VarId Expr -> ReactionBody [ctor] .
+  op if_then_fi : BoolExpr ReactionBody -> ReactionBody [ctor] .
+  op while_do_done : BoolExpr ReactionBody -> ReactionBody [ctor] .
+  op _<-_ : ActionTrigger Expr ->  :  ReactionBody [ctor] .   --- ???????
+
+  sorts ReactionList Reaction .
+  subsort Reaction < ReactionList .
+  op empty : -> ReactionList [ctor] .
+  op _::_ : ReactionList ReactionList -> ReactionList [ctor assoc id: empty] .
+  op when_do`{_`} : OidSet ReactionBody -> Reaction [ctor] .
