@@ -1,0 +1,38 @@
+*** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
+
+in lf-representation .
+in rtm-prelude.
+
+omod ADAS is 
+ including LF-REPR .
+ including NAT-TIME-DOMAIN-WITH-INF . 
+ op frame : -> VarId . 
+ op init : -> Configuration .
+ eq init = 
+    < lidar : Reactor | 
+      inports : none,
+      outports : < out : Port | value : [0] >, 
+      state : frame |-> [0],
+      timers : < t : PeriodicTimer | offset : 0, period : 34 >,
+      actions : none,
+      reactions : 
+         when t --> out do { frame := frame + [1]; out <- frame } >
+    < camera : Reactor | 
+      inports : none,
+      outports : < out : Port | value : [0] >, 
+      state : frame |-> [0],
+      timers : < t : PeriodicTimer | offset : 0, period : 17 >,
+      actions : none,
+      reactions : 
+         when t --> out do { frame := frame + [1]; out <- frame } >
+    < adasProcessor : Reactor | 
+      inports : < in1 : Port | > 
+                < in2 : Port | >,
+      outports : < out : Port | value : [0] >, 
+      state : frame |-> [0],
+      timers : < t : PeriodicTimer | offset : 0, period : 17 >,
+      actions : none,
+      reactions : 
+         when t --> out do { frame := frame + [1]; out <- frame } >
+  
+endom.
