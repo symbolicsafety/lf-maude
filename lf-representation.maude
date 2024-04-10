@@ -3,37 +3,40 @@
 --- No hierarchical models
 --- No physical time, like LF-verif paper
 
-
-
-
+in rtm-prelude
 
 omod LF-REPR is
   protecting NAT .
-
+  including NAT-TIME-DOMAIN-WITH-INF . 
   class Port | value : Value .
 
   class Reactor | inports : Configuration,
                   outports : Configuration,
-		  state : ReactorState,
+		        state : ReactorState,
                   reactions : ReactionList,
-		  timers : Configuration,
-		  actions : Configuration .
+		        timers : Configuration,
+		        actions : Configuration .
 
   class Action | minDelay : Time, minSpacing : Time, policy : ActionPolicy, payload : Value .
+
+   class PhysicalAction .
+   class LogicalAction .
+
+   subclasses PhysicalAction LogicalAction < Action .
   --- unclear whether payload needed for all.  Subclass instead?
 
   sort ActionPolicy .
-  ops defer drop replace : -> ActionPolicy .
+  ops defer drop replace : -> ActionPolicy [ctor] .
 
   sort Connection .
   subsort Connection < Configuration .
 
-  op _._-->_._ : ReactorId PortId ReactorId PortId -> Connection [ctor] .
-  op _._--_-->_._ : ReactorId PortId Time ReactorId PortId -> Connection [ctor] .
+  op _:_-->_:_ : ReactorId PortId ReactorId PortId -> Connection [ctor] .
+  op _:_--_-->_:_ : ReactorId PortId Time ReactorId PortId -> Connection [ctor] .
 
   sorts IntValue TimeValue BoolValue Value .
 
-  op [_] : Int -> IntValue [ctor] .
+  op [_] : Nat -> IntValue [ctor] .
   op [_] : Time -> TimeValue [ctor] .
   op [_] : Bool -> BoolValue [ctor] .
   
@@ -52,7 +55,8 @@ omod LF-REPR is
  subclass PeriodicTimer < Timer .
 
 ---- Here we don't know what we are doing ...
-  sort IntExp BoolExpr Expr.
+  sort IntExpr BoolExpr Expr .
+
   op [_] : PortId -> IntExpr [ctor] .
   subsort VarId < IntExpr .
   op _+_ : IntExpr IntExpr -> IntExpr .
@@ -65,33 +69,34 @@ omod LF-REPR is
 
   sort ReactionBody .
 
+  ops _===_ _<_ _>_ _<=_ _>=_ : IntExpr IntExpr ->   BoolExpr [ctor] .
+
+
   op skip : -> ReactionBody [ctor] .
   op _;_ : ReactionBody ReactionBody -> ReactionBody [ctor assoc id: skip] .
   op _:=_ : VarId Expr -> ReactionBody [ctor] .
   op if_then_fi : BoolExpr ReactionBody -> ReactionBody [ctor] .
   op while_do_done : BoolExpr ReactionBody -> ReactionBody [ctor] .
-  op _<-_ : ActionTrigger Expr ->  :  ReactionBody [ctor] .   --- ???????
+  op _<-_ : ActionTrigger Expr ->  ReactionBody [ctor] .   --- ???????
 
   sorts ReactionList Reaction .
   subsort Reaction < ReactionList .
   
   op nil : -> ReactionList . 
-  op __ : ReactionList ReactionList -> ReactionList [ctor assoc id : nil] .  
+  op __ : ReactionList ReactionList -> ReactionList [ctor assoc id: nil] .  
   
-  sort OIdSet . 
+  sort OidSet . 
   subsort Oid < OidSet .
     
   op none : -> OidSet .
-  op _;_ : OidSet OidSet -> OidSet [ctor assoc com id : none] .
+  op _;_ : OidSet OidSet -> OidSet [ctor assoc comm id: none] .
  
-  
-  
-  op empty : -> ReactionList [ctor] .
-  op _::_ : ReactionList ReactionList -> ReactionList [ctor assoc id: empty] .
   op reaction when_-->_do`{_`} : OidSet OidSet ReactionBody -> Reaction [ctor] .
   op reaction when_do`{_`} : OidSet ReactionBody -> Reaction .
-  eq reaction when OS do { RB } = reaction when OS --> none { RB } .
+  eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
   
+  var OS : OidSet .
+  var RB : ReactionBody .
   
 endom
   
