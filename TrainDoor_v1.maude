@@ -1,0 +1,56 @@
+*** This is a model of the simple train door given on Figure 2 in Verification of Cyberphysical Systems paper.
+
+in lf-representation
+
+omod TRAINDOOR is 
+ including LF-REPR .
+ including NAT-TIME-DOMAIN-WITH-INF . 
+ 
+ ops moving locked : -> VarId [ctor] .
+ ops controller train door : -> ReactorId [ctor] .
+ ops inMove inLock outMove outLock : -> PortId [ctor] .
+ op startup external : -> ActionId .
+ op init : -> Configuration .
+ 
+ eq init = 
+    < controller : Reactor | 
+      inports : none,
+      outports : < outLock : Port | value : [false] > 
+                 < outMove : Port | value : [false] >, 
+      state : empty,
+      timers : none,
+      actions : < startup : LogicalAction | minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [0] >
+                < external : PhysicalAction | 
+                               minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [0] >,
+      reactions : 
+        (reaction when startup do { })
+        reaction when external --> outLock ; outMove do { (outLock <- (external : value)) ; (outMove <- (external : value)) } 
+    >
+    
+    < train : Reactor | 
+        inports : < inMove : Port | value : [false] >,
+        outports : none,
+        state : moving |-> [false],
+        timers : none,
+        actions : none,
+        reactions : reaction when inMove do { moving := (inMove : value) }       
+    >
+    
+    < door : Reactor | 
+        inports : < inLock : Port | value : [false] >,
+        outports : none,
+        state : locked |-> [false],
+        timers : none,
+        actions : none,
+        reactions : reaction when inLock do { locked := (inLock : value) }       
+    >
+
+    (controller : outLock --> door : inLock)
+    controller : outMove --> train : inMove .
+endom
