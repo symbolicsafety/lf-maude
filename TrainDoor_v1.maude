@@ -39,7 +39,7 @@ omod TRAINDOOR is
         state : moving |-> [false],
         timers : none,
         actions : none,
-        reactions : reaction when inMove do { moving := (inMove : value) }       
+        reactions : reaction when inMove do { moving := [inMove] }       
     >
     
     < door : Reactor | 
@@ -48,7 +48,7 @@ omod TRAINDOOR is
         state : locked |-> [false],
         timers : none,
         actions : none,
-        reactions : reaction when inLock do { locked := (inLock : value) }       
+        reactions : reaction when inLock do { locked := [inLock] }       
     >
 
     (controller : outLock --> door : inLock)

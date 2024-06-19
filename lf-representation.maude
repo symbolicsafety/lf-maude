@@ -43,6 +43,7 @@ omod LF-REPR is
   
   subsort IntValue TimeValue BoolValue < Value .
   subsort IntValue < IntExpr .
+  subsort BoolValue < BoolExpr .
   
   sort ReactorState .
   op empty : -> ReactorState [ctor] .
@@ -60,12 +61,13 @@ omod LF-REPR is
   sort IntExpr BoolExpr Expr .
   subsort IntExpr BoolExpr < Expr .
 
-  op [_] : PortId -> IntExpr [ctor] .
+  op [_] : PortId -> Expr [ctor] .
   subsort VarId < IntExpr .
   op _+_ : IntExpr IntExpr -> IntExpr .
   op _*_ : IntExpr IntExpr -> IntExpr .
   
   
+  ---- op value : PortId -> Value [ctor] .
 
   sort ActionTrigger .
   subsort TimerId PortId ActionId < ActionTrigger .
