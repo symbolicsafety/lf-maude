@@ -1,4 +1,4 @@
-*** This is a model of the simple train door given on Figure 2 in Verification of Cyberphysical Systems paper.
+*** This is a model of the simple train door given on Figure 2 in the Verification of Cyberphysical Systems paper.
 
 in lf-representation
 
@@ -6,10 +6,10 @@ omod TRAINDOOR is
  including LF-REPR .
  including NAT-TIME-DOMAIN-WITH-INF . 
  
- ops moving locked : -> VarId [ctor] .
+ ops moving locked paexternal : -> VarId [ctor] .
  ops controller train door : -> ReactorId [ctor] .
  ops inMove inLock outMove outLock : -> PortId [ctor] .
- op startup external : -> ActionId .
+ ops startup external : -> ActionId .
  op init : -> Configuration .
  
  eq init = 
@@ -29,8 +29,8 @@ omod TRAINDOOR is
                                policy : defer, 
                                payload : [0] >,
       reactions : 
-        (reaction when startup do { })
-        reaction when external --> outLock ; outMove do { (outLock <- (external : value)) ; (outMove <- (external : value)) } 
+        (reaction when startup do { paexternal := [false] })
+        reaction when external --> outLock ; outMove do { (outLock <- paexternal ) ; (outMove <- paexternal) } 
     >
     
     < train : Reactor | 
