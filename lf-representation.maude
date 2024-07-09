@@ -18,7 +18,8 @@ omod LF-REPR is
 		        timers : Configuration,
 		        actions : Configuration .
 
-  class Action | minDelay : Time, minSpacing : Time, policy : ActionPolicy, payload : Value .
+  class Action | minDelay : Time, minSpacing : Time, policy : ActionPolicy,
+                 payload : Value .
 
    class PhysicalAction .
    class LogicalAction .

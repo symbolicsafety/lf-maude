@@ -1,0 +1,62 @@
+--- First attempt at the overall dynamics of our interpreter.
+
+in physicalActions.maude
+
+omod DYNAMICS is
+  including PHYSICAL-ACTIONS .
+
+  --- At the moment, the global state is
+  --- < env : Environment | physicalActions : ... >
+  --- REACTORS and CONNECTIONS in some state
+  --- < q : EventQueue | queue : ... >
+
+  *** We need some initialization, obviously.  TODO
+
+
+  *** We have some freedom here; IF an event can happen
+  *** at the same time when a physical action could happen, we always
+  *** make the physical action happen first.
+  ---  In reality physical actions and events probably
+  ---  will never happen at the same time.
+  
+
+ crl [tick] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS
+      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >}
+     =>
+     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
+      timeEffect(REACTORS, T)
+      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
+                                 :: decreaseTimers(QUEUE, T) >}
+     in time T
+     if T := min(T1, smallestTimer(CONF1))
+        /\ T > 0 .
+
+
+ crl [tickMicro] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS
+      < Q : EventQueue | queue : (EVENTS at tag(0, NZN)) :: QUEUE >}
+     =>
+     {< E : Environment | >
+      REACTORS
+      < Q : EventQueue | queue : (EVENTS at tag(0, 0)) :: QUEUE >} .
+     if smallestTimer(CONF1) > 0 .
+   --- condition ensures no mess/nondet between generating
+   --- physical actions and reducing????
+   --- CORRECT????
+
+  crl [step] :
+      {< E : Environment | physicalActions : CONF1 >
+       REACTORS
+       < Q : EventQueue | queue : (EVENTS at tag(0, 0)) :: QUEUE >} 
+    =>
+      {< E : Environment | physicalActions : CONF1 >
+       executeEvents(EVENTS, REACTORS)
+       < Q : EventQueue | queue : QUEUE >} 
+     --- NOTE: this could also generate future events that need to be inserted
+     --        into the event queue
+   if   smallestTimer(CONF1) > 0 .
+   *** Note: condition ensures that physical actions are generated
+   ***       before events are processed.
