@@ -1,0 +1,47 @@
+target Python
+
+reactor X {
+    input dbl
+    input inc
+    state s = 1
+
+    reaction (dbl) {=
+        self.s *= 2
+        print(self.s)
+    =}
+
+    reaction (inc) {=
+        self.s += inc.value
+        print(self.s)
+    =}
+}
+
+reactor Relay {
+    input r
+    output out
+
+    reaction (r) -> out {=
+        out.set(r.value)
+    =}
+}
+
+reactor Y {
+    output dbl
+    output inc
+
+    reaction (startup) -> dbl, inc {=
+        dbl.set(1)
+        inc.set(1)
+    =}
+}
+
+main reactor fig8 {
+    x = new X()
+    r = new Relay()
+    y = new Y()
+
+    y.dbl -> r.r
+    r.out -> x.dbl
+    y.inc -> x.inc
+}
+

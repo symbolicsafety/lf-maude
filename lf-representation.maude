@@ -96,12 +96,16 @@ omod LF-REPR is
     
   op none : -> OidSet .
   op _;_ : OidSet OidSet -> OidSet [ctor assoc comm id: none] .
- 
+
+  op _in_ : Oid OidSet -> Bool .
+  var O : Oid .   var OS : OidSet .
+  eq O in O ; OS = true .
+  eq O in OS = false [owise] .
+
   op reaction when_-->_do`{_`} : OidSet OidSet ReactionBody -> Reaction [ctor] .
   op reaction when_do`{_`} : OidSet ReactionBody -> Reaction .
   eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
   
-  var OS : OidSet .
   var RB : ReactionBody .
   
 endom
