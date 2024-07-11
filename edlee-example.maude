@@ -1,0 +1,68 @@
+--- Figure 7 in "Toward a Lingua Franca ..."
+
+in runtime-apg.maude
+
+
+omod EDWARD-LEE-EXAMPLE-PETER is
+
+ including LF-REPR .
+
+
+ op x : -> VarId [ctor] .
+ ops reactor1 reactor2 reactor3 : -> ReactorId [ctor] .
+ ops in in1 in2  out : -> PortId [ctor] .
+ --- op startup : -> ActionId .
+ op init : -> Configuration .
+
+ eq init = 
+
+    < reactor1 : Reactor | 
+      inports : < in1 : Port | value : [0] > 
+                 < in2 : Port | value : [0] >,
+      outports : < out : Port | value : [0] >, 
+      state : x |-> [0],
+      timers : none,
+      actions : none,
+      reactions : 
+        (reaction when in2 --> out do { x := x * x })
+        reaction when in1  do { x := x + [8] }
+    > 
+
+
+    < reactor2 : Reactor | 
+      inports : < in : Port | value : [0] >,
+      outports : < out : Port | value : [0] >, 
+      state : empty,
+      timers : none,
+      actions : none,
+      reactions : 
+        reaction when in --> out do { out <- [in] }
+    > 
+
+  < reactor3 : Reactor | 
+      inports : < in : Port | value : [0] >,
+      outports : none, 
+      state : empty,
+      timers : none,
+      actions : none,
+      reactions : 
+        reaction when in do { skip }
+    >
+
+   (reactor1 : out --> reactor2 : in)
+   (reactor2 : out --> reactor1 : in1)
+   (reactor1 : out --> reactor3 : in) .
+
+endom
+
+
+omod TEST-APG is
+  including EDWARD-LEE-EXAMPLE-PETER .
+  including RUNTIME-APG .
+endom
+
+
+
+red generateAPG(event(reactor1, in2, [2]), init) .
+
+--- red initializeAPG(event(y, startup, [0]), init) .
