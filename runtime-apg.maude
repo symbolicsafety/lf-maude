@@ -35,21 +35,7 @@ omod RUNTIME-APG is
                    
 
 
-  sort ReactionId .    subsort ReactionId < Oid .
-  op _._ : ReactorId ActionTrigger -> ReactionId [ctor] .
-  *** Important: under the current assumption that each
-  ***   reaction is triggered by exactly ONE trigger, we can
-  ***   identify a reaction by its reactor and its trigger.
-  ---  Of course, in a future more general setting, we can use
-  ---    reactor.n   as the reaction id.
-
   
-
-  sort ReactionIdSet .
-  subsorts ReactionId < ReactionIdSet < OidSet .
-  op none : -> ReactionIdSet [ctor] .
-  op _;_ : ReactionIdSet ReactionIdSet -> ReactionIdSet
-                                          [ctor assoc comm id: none] .
 
   op initializeAPG : Events Configuration -> Configuration .
   --- initializeAPG(setOfEvents, main-LF-network) -> Graph
