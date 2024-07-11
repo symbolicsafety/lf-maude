@@ -36,14 +36,15 @@ omod LF-REPR is
   op _:_-->_:_ : ReactorId PortId ReactorId PortId -> Connection [ctor] .
   op _:_--_-->_:_ : ReactorId PortId Time ReactorId PortId -> Connection [ctor] .
 
-  sorts IntValue TimeValue BoolValue Value .
+  sorts NatValue TimeValue BoolValue Value .
+  subsort NatValue < TimeValue .
 
-  op [_] : Nat -> IntValue [ctor] .
+  op [_] : Nat -> NatValue [ctor] .
   op [_] : Time -> TimeValue [ctor] .
   op [_] : Bool -> BoolValue [ctor] .
   
-  subsort IntValue TimeValue BoolValue < Value .
-  subsort IntValue < IntExpr .
+  subsort TimeValue BoolValue < Value .
+  subsort NatValue < IntExpr .
   subsort BoolValue < BoolExpr .
   
   sort ReactorState .
@@ -51,8 +52,41 @@ omod LF-REPR is
   op _|->_ : VarId Value -> ReactorState [ctor] .
   op _;_ : ReactorState ReactorState -> ReactorState [ctor assoc comm id: empty] .
 
-  sorts PortId VarId ReactorId TimerId ActionId .
-  subsort PortId ReactorId TimerId ActionId < Oid .
+--- All kinds of Oids:
+
+  sorts PortId VarId ReactorId TimerId ActionId ReactionId .
+  subsorts  ReactorId ReactionId < Oid .
+
+
+  sort ActionTrigger .
+  subsorts TimerId PortId ActionId < ActionTrigger < Oid .
+
+  op _._ : ReactorId ActionTrigger -> ReactionId [ctor] .
+  *** Important: under the current assumption that each
+  ***   reaction is triggered by exactly ONE trigger, we can
+  ***   identify a reaction by its reactor and its trigger.
+  ---  Of course, in a future more general setting, we can use
+  ---    reactor.n   as the reaction id.
+
+
+  sort OidSet . 
+  subsort Oid < OidSet .
+    
+  op none : -> OidSet [ctor] .
+  op _;_ : OidSet OidSet -> OidSet [ctor assoc comm id: none] .
+
+  op _in_ : Oid OidSet -> Bool .
+  var O : Oid .   var OS : OidSet .
+  eq O in O ; OS = true .
+  eq O in OS = false [owise] .
+
+  sort ReactionIdSet .
+  subsorts ReactionId < ReactionIdSet < OidSet .
+  op none : -> ReactionIdSet [ctor] .
+  op _;_ : ReactionIdSet ReactionIdSet -> ReactionIdSet
+                                          [ctor assoc comm id: none] .
+
+
 
  class Timer | offset : Time .
  class PeriodicTimer | period : TimeInf .
@@ -70,8 +104,6 @@ omod LF-REPR is
   
   ---- op value : PortId -> Value [ctor] .
 
-  sort ActionTrigger .
-  subsort TimerId PortId ActionId < ActionTrigger .
 
   sort ReactionBody .
 
@@ -91,17 +123,7 @@ omod LF-REPR is
   op nil : -> ReactionList . 
   op __ : ReactionList ReactionList -> ReactionList [ctor assoc id: nil] .
   
-  sort OidSet . 
-  subsort Oid < OidSet .
-    
-  op none : -> OidSet .
-  op _;_ : OidSet OidSet -> OidSet [ctor assoc comm id: none] .
-
-  op _in_ : Oid OidSet -> Bool .
-  var O : Oid .   var OS : OidSet .
-  eq O in O ; OS = true .
-  eq O in OS = false [owise] .
-
+ 
   op reaction when_-->_do`{_`} : OidSet OidSet ReactionBody -> Reaction [ctor] .
   op reaction when_do`{_`} : OidSet ReactionBody -> Reaction .
   eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
