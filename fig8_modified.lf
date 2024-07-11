@@ -1,42 +1,56 @@
 target Python
 
 reactor X {
-    input dbl
+  input dbl
     input inc
     state s = 1
 
     reaction (dbl) {=
+      print("state: "+str(self.s), end="")
         self.s *= 2
-        print(self.s)
-    =}
+        print(" dbl: "+str(self.s))
+        =}
 
-    reaction (inc) {=
-        self.s += inc.value
-        print(self.s)
-    =}
+  reaction (inc) {=
+    print("state: "+str(self.s), end="")
+      self.s += inc.value
+      print(" inc: "+str(self.s))
+      =}
 }
 
 reactor Relay {
-    input r
+  preamble {=
+    import random
+      =}
+  input r
     output out
 
     reaction (r) -> out {=
-        out.set(r.value)
-    =}
+
+      elapsed_logical_time = lf.time.logical_elapsed()
+        print("---------------------------------\nRELAY: "+str(elapsed_logical_time))
+        if self.random.randint(0,5) % 2 == 0:
+          out.set(r.value)
+            =}
 }
 
 reactor Y {
-    output dbl
+  output dbl
     output inc
+    timer t(0, 1 s)
 
-    reaction (startup) -> dbl, inc {=
-        dbl.set(1)
-        inc.set(1)
-    =}
+
+    reaction (t) -> dbl, inc {=
+      elapsed_logical_time = lf.time.logical_elapsed()
+        dbl.set(elapsed_logical_time)
+        inc.set(elapsed_logical_time)
+
+        =}
+
 }
 
 main reactor fig8 {
-    x = new X()
+  x = new X()
     r = new Relay()
     y = new Y()
 
@@ -44,4 +58,3 @@ main reactor fig8 {
     r.out -> x.dbl
     y.inc -> x.inc
 }
-
