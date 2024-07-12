@@ -41,7 +41,7 @@ omod EVENTS is
   sort TimedEvent .   --- ???
   op _inTime_ : Event Time -> TimedEvent [ctor] .   ---  needed?
 
-  sort Events .
+  sort Events . 
   subsort Event < Events .
   op noEvent : -> Events [ctor] .
   op __ : Events Events -> Events [assoc comm id: noEvent ctor] .

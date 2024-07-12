@@ -1,0 +1,320 @@
+--- Execute the next set of events from the eventqueue
+
+in runtime-apg.maude
+
+omod EXECUTE-STEP is
+  including RUNTIME-APG .
+
+  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF : Configuration .
+
+  vars PORT PORTID PORTID1 PORTID2 PORTID3 OUTPORTID : PortId .
+
+  vars REACTOR REACTOR1 REACTOR2 REACTOR3 REACTORID REACTORID1
+       REACTORID2 REACTORID3 : ReactorId .
+
+  vars TRIGGER : ActionTrigger .
+
+  vars PRE SUCC : ReactionIdSet .
+
+  vars REACTIONS1 REACTIONS2 : ReactionList .
+
+  vars ACTIONID : ActionId .
+
+  vars EVENTS OUTPUTS : Events .
+
+  vars QUEUE RESULT-QUEUE : EQueue .
+
+  vars VAL VALUE : Value .
+
+  var OS : OidSet .
+
+  var OBJECT : Object .
+
+  vars BODY BODY1 BODY2 BODY3 : ReactionBody .
+  var REACTIONID : ReactionId .
+  var REACTIONIDSET : ReactionIdSet .
+
+  var STATUS : ExecutionStatus .
+
+  var T : Time .
+
+  var VAR : VarId .
+
+  var VALUATION : ReactorState .
+
+  var EXPR : Expr .
+  var BEXP : BoolExpr .
+
+  vars IEXP IEXP1 IEXP2 IEXPR : IntExpr .
+  var N : Nat .
+
+
+  op executeStep : Events Configuration EQueue -> Network+Queue .
+
+  op executeStep : Configuration Configuration EQueue -> Network+Queue .
+  --- executeStep(APGgraph, network, event queue)
+
+
+  sort Network+Queue .    --- return new state of system plus updated event queue
+  op networkQueue : Configuration EQueue -> Network+Queue [ctor] .
+
+
+  eq executeStep(EVENTS, NETWORK, QUEUE)
+  =  executeStep(generateAPG(EVENTS, NETWORK), addEventsToPorts(EVENTS, NETWORK), QUEUE) .
+
+
+
+
+  --- quick auxiliary function
+  op addEventsToPorts : Events Configuration -> Configuration .
+
+  eq addEventsToPorts(noEvent, NETWORK) = NETWORK .
+  eq addEventsToPorts(event(REACTOR, PORT, VAL) EVENTS,
+                      NETWORK < REACTOR : Reactor |
+		                 inports : PORTS < PORT : Port | > >)
+   =
+     addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
+		                 inports : PORTS < PORT : Port | value : VAL > >) .
+
+
+
+  eq addEventsToPorts(event(REACTOR, ACTIONID, VAL) EVENTS,
+                      NETWORK < REACTOR : Reactor |
+		                 actions : ACTIONS < ACTIONID : Action | > >)
+   =
+     addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
+		                 actions : ACTIONS < ACTIONID : Action | payload : VAL > >) .
+
+
+
+
+
+  ceq executeStep(< (REACTOR . TRIGGER) : APGNode | status : present, pre : PRE >   GRAPH,
+                  NETWORK
+		  < REACTOR : Reactor | reactions : REACTIONS1
+		                                    reaction when TRIGGER --> OS do {BODY}
+						    REACTIONS2 >,
+		  QUEUE)
+   =
+      executeStep(< (REACTOR . TRIGGER) : APGNode | status : executed >
+                  updateGraph(GRAPH, REACTOR, NETWORK < REACTOR : Reactor | >, OUTPUTS),
+                  NETWORK
+		  OBJECT,    --- updated reactor
+                  scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE))
+   if presetOK(PRE, GRAPH)   /\
+        result(OBJECT, OUTPUTS, RESULT-QUEUE) :=
+	  executeReaction(< REACTOR : Reactor | reactions : REACTIONS1
+		                                    reaction when TRIGGER --> OS do {BODY}
+						    REACTIONS2 >,
+			  TRIGGER, QUEUE) .			    
+
+
+  eq executeStep(GRAPH, NETWORK, QUEUE) = networkQueue(NETWORK, QUEUE) [owise] .
+
+
+op presetOK : ReactionIdSet Configuration -> Bool .
+
+eq presetOK(none, GRAPH) = true .
+eq presetOK(REACTIONID ; REACTIONIDSET,
+            GRAPH < REACTIONID : APGNode | status : STATUS >)
+  =  if STATUS == executed or STATUS == absent then
+          presetOK(REACTIONIDSET, GRAPH)  else false fi .
+
+
+op scheduleDelayedInputs : Events Configuration EQueue -> EQueue .
+
+eq scheduleDelayedInputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK
+       (REACTORID : PORTID -- T --> REACTORID2 : PORTID2),
+       QUEUE)
+ =
+   scheduleDelayedInputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK,
+       schedule(event(REACTORID2, PORTID2, VALUE), T, QUEUE)) .
+
+eq scheduleDelayedInputs(EVENTS, NETWORK, QUEUE) = QUEUE [owise] .
+
+
+
+op updateGraph : Configuration ReactorId  Configuration Events -> Configuration .
+--- updateGraph(graph, executed reactor, network, actual outputs)
+
+--- positive case
+eq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
+               REACTOR1, NETWORK
+	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
+	       event(REACTOR1, PORTID1, VALUE) EVENTS)
+ =
+ updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : present > GRAPH,
+               REACTOR1,
+	       NETWORK,
+	       event(REACTOR1, PORTID1, VALUE) EVENTS) .
+
+--- negative case 1:
+ceq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
+               REACTOR1,
+	       NETWORK
+	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
+	       EVENTS)
+ =
+ updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : absent > GRAPH,
+               REACTOR1,
+	       NETWORK,
+	       EVENTS)
+   if not (REACTOR1 . PORTID1)	presentIn EVENTS .
+
+--- negative case 2: recursively propagate absent:
+eq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH
+                < (REACTOR3 . PORTID3) : APGNode | status : absent >,
+               REACTOR1,
+	       NETWORK
+	       (REACTOR3 : PORTID3 --> REACTOR2 : PORTID2),
+	       EVENTS)
+ =
+ updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : absent >
+             < (REACTOR3 . PORTID3) : APGNode | > GRAPH,
+               REACTOR1,
+	       NETWORK,
+	       EVENTS) .
+
+eq updateGraph(GRAPH, REACTOR1, NETWORK, EVENTS) = GRAPH  [owise] .
+
+
+op _presentIn_ : ReactionId Events -> Bool .
+
+eq (REACTOR . OUTPORTID) presentIn event(REACTOR, OUTPORTID, VALUE) EVENTS = true .
+eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
+
+
+  *** Execute a single reaction.
+  *** Effects: change the state of the reactor;
+  ***          generate some outputs;
+  ***          schedule actions [future]
+
+  op executeReaction : Object ActionTrigger EQueue -> ReactorOutputsFutureevents .
+
+  sort ReactorOutputsFutureevents .
+  op result : Object Events EQueue -> ReactorOutputsFutureevents [ctor] .
+
+
+  eq executeReaction(< REACTOR : Reactor | 
+                                    reactions : REACTIONS1
+	                                        (reaction when TRIGGER --> OS do {BODY})
+		                                REACTIONS2 >,
+		     TRIGGER,
+		     QUEUE)
+    =
+      executeReactionBody(< REACTOR : Reactor | >, BODY, noEvent, QUEUE) .
+
+  op executeReactionBody : Object ReactionBody Events EQueue -> ReactorOutputsFutureevents .
+
+
+  eq  executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE) =
+        result(< REACTOR : Reactor | >, OUTPUTS, QUEUE) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : ((VAR |-> VAL) ; VALUATION),
+				       inports : INPORTS >,
+				       (VAR := EXPR) ; BODY, OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor |
+                                       state : ((VAR |->
+				   eval(EXPR, ((VAR |-> VAL) ; VALUATION), INPORTS))
+				        ; VALUATION) >,
+				       BODY, OUTPUTS, QUEUE) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state :  VALUATION,
+				       inports : INPORTS >,
+				       (if BEXP then BODY1 fi) ; BODY, OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | >,
+                         if eval(BEXP, VALUATION, INPORTS) == [true] then (BODY1 ; BODY) else
+			 BODY fi,  OUTPUTS, QUEUE) .
+                                      
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state :  VALUATION,
+				       inports : INPORTS >,
+				       (while BEXP do BODY1 done) ; BODY, OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | >,
+                         if eval(BEXP, VALUATION, INPORTS) == [true] then
+			 (BODY1 ; (while BEXP do BODY1 done) ; BODY) else
+			 BODY fi,  OUTPUTS, QUEUE) .
+
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       outports : CONF < PORT : Port | >,
+				       inports : INPORTS >,
+				       (PORT <- EXPR) ; BODY, OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | outports : CONF
+                                < PORT : Port | value : eval(EXPR, VALUATION, INPORTS) > >,
+				       BODY, event(REACTOR, PORT,
+				                   eval(EXPR, VALUATION, INPORTS)) OUTPUTS,
+						   QUEUE) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       inports : INPORTS,
+				       actions : CONF
+				                 < ACTIONID : Action | minDelay : T > >,
+				       schedule(ACTIONID, IEXPR, EXPR) ; BODY,
+				       OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | actions : CONF
+                                                < ACTIONID : Action |
+					     payload : eval(EXPR, VALUATION, INPORTS) > >,
+				       BODY,
+				       OUTPUTS,
+				       schedule(event(REACTOR,  ACTIONID,
+				                      eval(EXPR, VALUATION, INPORTS)),
+						T + time(eval(IEXPR, VALUATION, INPORTS)),
+						QUEUE)) .
+
+
+op time : TimeValue -> Time .
+eq time([T]) = T .
+
+op eval : Expr ReactorState Configuration -> Value .
+--- eval(expr, valuation, input ports)
+
+eq eval(VALUE, VALUATION, INPORTS) = VALUE .
+
+eq eval([PORTID], VALUATION, CONF < PORTID : Port | value : VAL >) = VAL .
+
+eq eval(VAR, VALUATION ; (VAR |-> VAL), INPORTS) = VAL .
+
+eq eval(IEXP1 + IEXP2, VALUATION, INPORTS) =
+     [ toNat(eval(IEXP1, VALUATION, INPORTS)) + toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+op toNat : Expr -> Nat .
+eq toNat([N]) = N .
+
+eq eval(IEXP1 * IEXP2, VALUATION, INPORTS) =
+     [ toNat(eval(IEXP1, VALUATION, INPORTS)) * toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+
+eq eval(IEXP1 === IEXP2, VALUATION, INPORTS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTS)) ==  toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+eq eval(IEXP1 < IEXP2, VALUATION, INPORTS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTS)) < toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+eq eval(IEXP1 <= IEXP2, VALUATION, INPORTS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTS)) <=  toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+eq eval(IEXP1 > IEXP2, VALUATION, INPORTS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTS)) >  toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+eq eval(IEXP1 >= IEXP2, VALUATION, INPORTS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTS)) >= toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+
+endom
+
+
+
+
+

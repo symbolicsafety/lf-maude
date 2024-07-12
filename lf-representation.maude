@@ -96,7 +96,7 @@ omod LF-REPR is
   sort IntExpr BoolExpr Expr .
   subsort IntExpr BoolExpr < Expr .
 
-  op [_] : PortId -> Expr [ctor] .
+  op [_] : PortId -> Expr [ctor] .   --- only input ports can be called for value
   subsort VarId < IntExpr .
   op _+_ : IntExpr IntExpr -> IntExpr .
   op _*_ : IntExpr IntExpr -> IntExpr .
@@ -115,7 +115,9 @@ omod LF-REPR is
   op _:=_ : VarId Expr -> ReactionBody [ctor] .
   op if_then_fi : BoolExpr ReactionBody -> ReactionBody [ctor] .
   op while_do_done : BoolExpr ReactionBody -> ReactionBody [ctor] .
-  op _<-_ : ActionTrigger Expr ->  ReactionBody [ctor] .   --- ???????
+  op _<-_ : PortId Expr ->  ReactionBody [ctor] .   
+  op schedule : ActionId IntExpr Expr -> ReactionBody [ctor] .  --- ???????
+  --- schedule(action, extra time, value)
 
   sorts ReactionList Reaction .
   subsort Reaction < ReactionList .

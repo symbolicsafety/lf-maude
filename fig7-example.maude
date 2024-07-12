@@ -64,6 +64,6 @@ endom
 
 
 
-red generateAPG(event(y, startup, [0]), init) .
+red generateAPG(event(y, startup, [0]) event(x, inc, [77]),  init) .
 
 --- red initializeAPG(event(y, startup, [0]), init) .

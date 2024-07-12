@@ -50,11 +50,12 @@ omod RUNTIME-APG is
        initializeAPG(EVENTS, NETWORK,
                      GRAPH
 		     < (REACTOR . TRIGGER) : APGNode |
-                              pre : none, succ : none, status : unknown >) .
+                              pre : none, succ : none, status : present >) .
 
 
   op addDeps : Configuration Configuration -> Configuration .
-  --- addDeps(graph, network) *** adds the links/dependencies to the empty nodes
+  --- addDeps(graph, network)
+  *** adds the links/dependencies to the empty nodes
   
 
   eq addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC >
