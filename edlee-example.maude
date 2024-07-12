@@ -1,7 +1,8 @@
---- Figure 7 in "Toward a Lingua Franca ..."
+--- "Peter" example 
 
-in runtime-apg.maude
+--- in runtime-apg.maude
 
+in executeStep.maude
 
 omod EDWARD-LEE-EXAMPLE-PETER is
 
@@ -20,11 +21,11 @@ omod EDWARD-LEE-EXAMPLE-PETER is
       inports : < in1 : Port | value : [0] > 
                  < in2 : Port | value : [0] >,
       outports : < out : Port | value : [0] >, 
-      state : x |-> [0],
+      state : x |-> [3],
       timers : none,
       actions : none,
       reactions : 
-        (reaction when in2 --> out do { x := x * x })
+        (reaction when in2 --> out do { (x := x * x) ; (out <- x) })
         reaction when in1  do { x := x + [8] }
     > 
 
@@ -58,11 +59,13 @@ endom
 
 omod TEST-APG is
   including EDWARD-LEE-EXAMPLE-PETER .
-  including RUNTIME-APG .
+  including EXECUTE-STEP .
 endom
 
 
 
-red generateAPG(event(reactor1, in2, [2]), init) .
+--- red generateAPG(event(reactor1, in2, [2]), init) .
 
 --- red initializeAPG(event(y, startup, [0]), init) .
+
+red executeStep(event(reactor1, in2, [2]), init, empty) .

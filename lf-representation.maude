@@ -97,6 +97,7 @@ omod LF-REPR is
   subsort IntExpr BoolExpr < Expr .
 
   op [_] : PortId -> Expr [ctor] .   --- only input ports can be called for value
+  op [_] : ActionId -> Expr [ctor] .
   subsort VarId < IntExpr .
   op _+_ : IntExpr IntExpr -> IntExpr .
   op _*_ : IntExpr IntExpr -> IntExpr .

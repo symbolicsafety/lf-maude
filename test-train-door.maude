@@ -1,0 +1,14 @@
+in executeStep.maude
+
+in TrainDoor_v1.maude
+
+omod TEST-TRAIN is
+  including TRAINDOOR .
+  including EXECUTE-STEP .
+endom
+
+red executeStep(event(controller, startup, [0]) event(controller, external, [false]),
+                init, empty) .
+
+red generateAPG(event(controller, startup, [0])  event(controller, external, [false]),
+                init) .

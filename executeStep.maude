@@ -5,7 +5,7 @@ in runtime-apg.maude
 omod EXECUTE-STEP is
   including RUNTIME-APG .
 
-  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF : Configuration .
+  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF INPORTSANDACTIONS : Configuration .
 
   vars PORT PORTID PORTID1 PORTID2 PORTID3 OUTPORTID : PortId .
 
@@ -97,9 +97,10 @@ omod EXECUTE-STEP is
 		  QUEUE)
    =
       executeStep(< (REACTOR . TRIGGER) : APGNode | status : executed >
-                  updateGraph(GRAPH, REACTOR, NETWORK < REACTOR : Reactor | >, OUTPUTS),
-                  NETWORK
-		  OBJECT,    --- updated reactor
+                  updateGraph(GRAPH, REACTOR, OS, NETWORK < REACTOR : Reactor | >, OUTPUTS),
+                  propagateImmediateOutputs(OUTPUTS,
+		                            NETWORK
+		                            OBJECT),    --- updated reactor
                   scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE))
    if presetOK(PRE, GRAPH)   /\
         result(OBJECT, OUTPUTS, RESULT-QUEUE) :=
@@ -109,7 +110,8 @@ omod EXECUTE-STEP is
 			  TRIGGER, QUEUE) .			    
 
 
-  eq executeStep(GRAPH, NETWORK, QUEUE) = networkQueue(NETWORK, QUEUE) [owise] .
+ *** Comment out for debugging with APG graph:
+ eq executeStep(GRAPH, NETWORK, QUEUE) = networkQueue(NETWORK, QUEUE) [owise] .
 
 
 op presetOK : ReactionIdSet Configuration -> Bool .
@@ -135,30 +137,45 @@ eq scheduleDelayedInputs(event(REACTORID, PORTID, VALUE) EVENTS,
 eq scheduleDelayedInputs(EVENTS, NETWORK, QUEUE) = QUEUE [owise] .
 
 
+op propagateImmediateOutputs : Events Configuration -> Configuration .
 
-op updateGraph : Configuration ReactorId  Configuration Events -> Configuration .
---- updateGraph(graph, executed reactor, network, actual outputs)
+eq propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK
+       < REACTORID2 : Reactor | inports : INPORTS
+                                          < PORTID2 : Port | > >
+       (REACTORID : PORTID --> REACTORID2 : PORTID2))
+ =
+   propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK        < REACTORID2 : Reactor | inports : INPORTS
+                                          < PORTID2 : Port | value : VALUE > >) .
+
+eq propagateImmediateOutputs(EVENTS, NETWORK) = NETWORK [owise] .
+
+
+
+op updateGraph : Configuration ReactorId OidSet Configuration Events -> Configuration .
+--- updateGraph(graph, executed reactor, output ports of reaction, network, actual outputs)
 
 --- positive case
 eq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
-               REACTOR1, NETWORK
+               REACTOR1, OS, NETWORK
 	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
 	       event(REACTOR1, PORTID1, VALUE) EVENTS)
  =
  updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : present > GRAPH,
-               REACTOR1,
+               REACTOR1, OS, 
 	       NETWORK,
 	       event(REACTOR1, PORTID1, VALUE) EVENTS) .
 
 --- negative case 1:
 ceq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
-               REACTOR1,
+               REACTOR1, (PORTID1 ; OS), 
 	       NETWORK
 	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
 	       EVENTS)
  =
  updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : absent > GRAPH,
-               REACTOR1,
+               REACTOR1, (PORTID1 ; OS),
 	       NETWORK,
 	       EVENTS)
    if not (REACTOR1 . PORTID1)	presentIn EVENTS .
@@ -166,18 +183,18 @@ ceq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
 --- negative case 2: recursively propagate absent:
 eq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH
                 < (REACTOR3 . PORTID3) : APGNode | status : absent >,
-               REACTOR1,
+               REACTOR1, OS, 
 	       NETWORK
 	       (REACTOR3 : PORTID3 --> REACTOR2 : PORTID2),
 	       EVENTS)
  =
  updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : absent >
              < (REACTOR3 . PORTID3) : APGNode | > GRAPH,
-               REACTOR1,
+               REACTOR1, OS, 
 	       NETWORK,
 	       EVENTS) .
 
-eq updateGraph(GRAPH, REACTOR1, NETWORK, EVENTS) = GRAPH  [owise] .
+eq updateGraph(GRAPH, REACTOR1, OS, NETWORK, EVENTS) = GRAPH  [owise] .
 
 
 op _presentIn_ : ReactionId Events -> Bool .
@@ -214,32 +231,33 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state : ((VAR |-> VAL) ; VALUATION),
-				       inports : INPORTS >,
+				       inports : INPORTS, actions : ACTIONS >,
 				       (VAR := EXPR) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor |
                                        state : ((VAR |->
-				   eval(EXPR, ((VAR |-> VAL) ; VALUATION), INPORTS))
+				   eval(EXPR, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS))
 				        ; VALUATION) >,
 				       BODY, OUTPUTS, QUEUE) .
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state :  VALUATION,
-				       inports : INPORTS >,
+				       inports : INPORTS, actions : ACTIONS >,
 				       (if BEXP then BODY1 fi) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if eval(BEXP, VALUATION, INPORTS) == [true] then (BODY1 ; BODY) else
+                         if eval(BEXP, VALUATION, INPORTS ACTIONS) == [true]
+			 then (BODY1 ; BODY) else
 			 BODY fi,  OUTPUTS, QUEUE) .
                                       
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state :  VALUATION,
-				       inports : INPORTS >,
+				       inports : INPORTS, actions : ACTIONS >,
 				       (while BEXP do BODY1 done) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if eval(BEXP, VALUATION, INPORTS) == [true] then
+                         if eval(BEXP, VALUATION, INPORTS ACTIONS) == [true] then
 			 (BODY1 ; (while BEXP do BODY1 done) ; BODY) else
 			 BODY fi,  OUTPUTS, QUEUE) .
 
@@ -247,13 +265,15 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
   eq executeReactionBody(< REACTOR : Reactor |
                                        state : VALUATION,
 				       outports : CONF < PORT : Port | >,
-				       inports : INPORTS >,
+				       inports : INPORTS, actions : ACTIONS >,
 				       (PORT <- EXPR) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | outports : CONF
-                                < PORT : Port | value : eval(EXPR, VALUATION, INPORTS) > >,
+                                < PORT : Port | value : eval(EXPR, VALUATION,
+				                             INPORTS ACTIONS) > >,
 				       BODY, event(REACTOR, PORT,
-				                   eval(EXPR, VALUATION, INPORTS)) OUTPUTS,
+				                   eval(EXPR, VALUATION, INPORTS ACTIONS))
+						   OUTPUTS,
 						   QUEUE) .
 
   eq executeReactionBody(< REACTOR : Reactor |
@@ -265,13 +285,14 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
 				       OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | actions : CONF
-                                                < ACTIONID : Action |
-					     payload : eval(EXPR, VALUATION, INPORTS) > >,
+                                                < ACTIONID : Action | > >,
 				       BODY,
 				       OUTPUTS,
 				       schedule(event(REACTOR,  ACTIONID,
-				                      eval(EXPR, VALUATION, INPORTS)),
-						T + time(eval(IEXPR, VALUATION, INPORTS)),
+				                      eval(EXPR, VALUATION, INPORTS CONF
+				                 < ACTIONID : Action | minDelay : T >)),
+						T + time(eval(IEXPR, VALUATION, INPORTS CONF
+				                 < ACTIONID : Action | minDelay : T >)),
 						QUEUE)) .
 
 
@@ -279,38 +300,46 @@ op time : TimeValue -> Time .
 eq time([T]) = T .
 
 op eval : Expr ReactorState Configuration -> Value .
---- eval(expr, valuation, input ports)
+--- eval(expr, valuation, input ports AND actions)
 
-eq eval(VALUE, VALUATION, INPORTS) = VALUE .
+eq eval(VALUE, VALUATION, INPORTSANDACTIONS) = VALUE .
 
 eq eval([PORTID], VALUATION, CONF < PORTID : Port | value : VAL >) = VAL .
 
-eq eval(VAR, VALUATION ; (VAR |-> VAL), INPORTS) = VAL .
+eq eval([ACTIONID], VALUATION, CONF < ACTIONID : Action | payload : VAL >) = VAL .
 
-eq eval(IEXP1 + IEXP2, VALUATION, INPORTS) =
-     [ toNat(eval(IEXP1, VALUATION, INPORTS)) + toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(VAR, VALUATION ; (VAR |-> VAL), INPORTSANDACTIONS) = VAL .
+
+eq eval(IEXP1 + IEXP2, VALUATION, INPORTSANDACTIONS) =
+     [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) + toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
 op toNat : Expr -> Nat .
 eq toNat([N]) = N .
 
-eq eval(IEXP1 * IEXP2, VALUATION, INPORTS) =
-     [ toNat(eval(IEXP1, VALUATION, INPORTS)) * toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(IEXP1 * IEXP2, VALUATION, INPORTSANDACTIONS) =
+     [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) *
+       toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
 
-eq eval(IEXP1 === IEXP2, VALUATION, INPORTS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTS)) ==  toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(IEXP1 === IEXP2, VALUATION, INPORTSANDACTIONS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) ==
+      toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
-eq eval(IEXP1 < IEXP2, VALUATION, INPORTS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTS)) < toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(IEXP1 < IEXP2, VALUATION, INPORTSANDACTIONS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) <
+      toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
-eq eval(IEXP1 <= IEXP2, VALUATION, INPORTS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTS)) <=  toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(IEXP1 <= IEXP2, VALUATION, INPORTSANDACTIONS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) <=
+       toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
-eq eval(IEXP1 > IEXP2, VALUATION, INPORTS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTS)) >  toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(IEXP1 > IEXP2, VALUATION, INPORTSANDACTIONS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) >
+       toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
-eq eval(IEXP1 >= IEXP2, VALUATION, INPORTS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTS)) >= toNat(eval(IEXP2, VALUATION, INPORTS)) ] .
+eq eval(IEXP1 >= IEXP2, VALUATION, INPORTSANDACTIONS) =
+    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) >=
+      toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
 
 endom
 

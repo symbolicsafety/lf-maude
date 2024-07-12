@@ -4,12 +4,12 @@ in lf-representation
 
 omod TRAINDOOR is 
  including LF-REPR .
- including NAT-TIME-DOMAIN-WITH-INF . 
  
  ops moving locked paexternal : -> VarId [ctor] .
  ops controller train door : -> ReactorId [ctor] .
  ops inMove inLock outMove outLock : -> PortId [ctor] .
  ops startup external : -> ActionId .
+ ops counter1 counter2 : -> VarId [ctor] .
  op init : -> Configuration .
  
  eq init = 
@@ -27,28 +27,31 @@ omod TRAINDOOR is
                                minDelay : 0, 
                                minSpacing : 0, 
                                policy : defer, 
-                               payload : [0] >,
+                               payload : [false] >,
       reactions : 
-        (reaction when startup do { paexternal := [false] })
-        reaction when external --> outLock ; outMove do { (outLock <- paexternal ) ; (outMove <- paexternal) } 
+        (reaction when startup do { schedule(external, [3], [false]) })
+        reaction when external --> outLock ; outMove do
+	{ (outLock <- [external] ) ; (outMove <- [external]) } 
     >
     
     < train : Reactor | 
         inports : < inMove : Port | value : [false] >,
         outports : none,
-        state : moving |-> [false],
+        state : (moving |-> [false]) ; (counter1 |-> [0]), 
         timers : none,
         actions : none,
-        reactions : reaction when inMove do { moving := [inMove] }       
+        reactions : reaction when inMove do {(counter1 := counter1 + [1]) ;
+	                                     moving := [inMove] }       
     >
     
     < door : Reactor | 
         inports : < inLock : Port | value : [false] >,
         outports : none,
-        state : locked |-> [false],
+        state : (locked |-> [false])  ; (counter2 |-> [0]),
         timers : none,
         actions : none,
-        reactions : reaction when inLock do { locked := [inLock] }       
+        reactions : reaction when inLock do { (counter2 := counter2 + [1]) ;
+	                                      locked := [inLock] }       
     >
 
     (controller : outLock --> door : inLock)
