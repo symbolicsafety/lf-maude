@@ -1,11 +1,7 @@
-*** Our model of physical actions using logical time:
----    Which seems quite general:
----    Each physical action has a period and a finite set of values
----      to choose from.
----    * At the end of each period, we choose nondeterministically
----      whether the action happens or not
----    * If the action happens, then we choose a value nondet
----      from the set of possible values.
+*** Infrastruture
+
+
+
 
 in eventQueue.maude
 

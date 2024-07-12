@@ -139,15 +139,17 @@ eq scheduleDelayedInputs(EVENTS, NETWORK, QUEUE) = QUEUE [owise] .
 
 op propagateImmediateOutputs : Events Configuration -> Configuration .
 
-eq propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
+ceq propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
        NETWORK
        < REACTORID2 : Reactor | inports : INPORTS
-                                          < PORTID2 : Port | > >
+                                          < PORTID2 : Port | value : OLD-VALUE > >
        (REACTORID : PORTID --> REACTORID2 : PORTID2))
  =
    propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
        NETWORK        < REACTORID2 : Reactor | inports : INPORTS
-                                          < PORTID2 : Port | value : VALUE > >) .
+                                          < PORTID2 : Port | value : VALUE > >
+       (REACTORID : PORTID --> REACTORID2 : PORTID2))
+   if OLD-VALUE =/= VALUE .    
 
 eq propagateImmediateOutputs(EVENTS, NETWORK) = NETWORK [owise] .
 

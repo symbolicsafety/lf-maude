@@ -9,7 +9,7 @@ omod TRAINDOOR is
  ops controller train door : -> ReactorId [ctor] .
  ops inMove inLock outMove outLock : -> PortId [ctor] .
  ops startup external : -> ActionId .
- ops counter1 counter2 : -> VarId [ctor] .
+ ops counter1 counter2 counter3 : -> VarId [ctor] .
  op init : -> Configuration .
  
  eq init = 
@@ -17,7 +17,7 @@ omod TRAINDOOR is
       inports : none,
       outports : < outLock : Port | value : [false] > 
                  < outMove : Port | value : [false] >, 
-      state : empty,
+      state : counter3 |-> [0],
       timers : none,
       actions : < startup : LogicalAction | minDelay : 0, 
                                minSpacing : 0, 
@@ -29,11 +29,14 @@ omod TRAINDOOR is
                                policy : defer, 
                                payload : [false] >,
       reactions : 
-        (reaction when startup do { schedule(external, [3], [false]) })
+        (reaction when startup do { skip })
         reaction when external --> outLock ; outMove do
-	{ (outLock <- [external] ) ; (outMove <- [external]) } 
+	{ (outLock <- [external] ) ; (outMove <- [external])
+	   ;  (counter3 := counter3 + [1])}    --- for testing
     >
-    
+--- the startup stuff does not really do anything ...
+
+
     < train : Reactor | 
         inports : < inMove : Port | value : [false] >,
         outports : none,

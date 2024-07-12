@@ -1,14 +1,28 @@
 --- First attempt at the overall dynamics of our interpreter.
 
-in physicalActions.maude
+in executeStep.maude
 
 omod DYNAMICS is
-  including PHYSICAL-ACTIONS .
+  including EXECUTE-STEP .
+  including TIMED-PRELUDE .
+
+  subsort Configuration < System .
 
   --- At the moment, the global state is
   --- < env : Environment | physicalActions : ... >
   --- REACTORS and CONNECTIONS in some state
   --- < q : EventQueue | queue : ... >
+
+
+  vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS NEW-NETWORK : Configuration .
+  var TI : TimeInf .
+  vars T1 T T2 : Time .
+  vars E Q PA : Oid .
+  var N : Nat .
+  var EVENTS : Events .
+  vars QUEUE NEW-QUEUE : EQueue .
+  var NZN : NzNat .
+ 
 
   *** We need some initialization, obviously.  TODO
 
@@ -22,41 +36,93 @@ omod DYNAMICS is
 
  crl [tick] :
      {< E : Environment | physicalActions : CONF1 >
-      REACTORS
+      REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >}
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
-      timeEffect(REACTORS, T)
+      REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTimers(QUEUE, T) >}
+                                 :: decreaseTags(QUEUE, T) >}
      in time T
      if T := min(T1, smallestTimer(CONF1))
         /\ T > 0 .
 
 
+  op decreaseTimers : Configuration Time -> Configuration .
+  *** decrease timers in out physical action objects:
+
+  eq decreaseTimers(none, T) = none .
+  eq decreaseTimers(< PA : PhysAct | leftOfPeriod : TI >   PHYSICAL-ACTIONS, T)
+  = < PA : PhysAct | leftOfPeriod : TI monus T >   decreaseTimers(PHYSICAL-ACTIONS, T) .
+
+
+  op decreaseTags : EQueue Time -> EQueue .
+  eq decreaseTags(empty, T) = empty .
+  eq decreaseTags((EVENTS at tag(T2, N)) :: QUEUE, T) =
+     (EVENTS at tag(T2 monus T, N)) :: decreaseTags(QUEUE, T) .
+
+  op smallestTimer : Configuration -> TimeInf .
+  eq smallestTimer(none) = INF .
+  eq smallestTimer(< PA : PhysAct | leftOfPeriod : TI >   PHYSICAL-ACTIONS)
+   = min(TI, smallestTimer(PHYSICAL-ACTIONS)) .
+
+
+
  crl [tickMicro] :
      {< E : Environment | physicalActions : CONF1 >
-      REACTORS
+      REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(0, NZN)) :: QUEUE >}
      =>
      {< E : Environment | >
-      REACTORS
-      < Q : EventQueue | queue : (EVENTS at tag(0, 0)) :: QUEUE >} .
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : (EVENTS at tag(0, 0)) :: QUEUE >} 
      if smallestTimer(CONF1) > 0 .
    --- condition ensures no mess/nondet between generating
    --- physical actions and reducing????
    --- CORRECT????
 
+
+
+
   crl [step] :
       {< E : Environment | physicalActions : CONF1 >
-       REACTORS
+       REACTORS-AND-CONNECTIONS
        < Q : EventQueue | queue : (EVENTS at tag(0, 0)) :: QUEUE >} 
     =>
       {< E : Environment | physicalActions : CONF1 >
-       executeEvents(EVENTS, REACTORS)
-       < Q : EventQueue | queue : QUEUE >} 
+       NEW-NETWORK
+       < Q : EventQueue | queue : NEW-QUEUE >} 
      --- NOTE: this could also generate future events that need to be inserted
-     --        into the event queue
-   if   smallestTimer(CONF1) > 0 .
+     ---        into the event queue
+   if   smallestTimer(CONF1) > 0
+      /\ networkQueue(NEW-NETWORK, NEW-QUEUE) :=
+            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE) .
+
    *** Note: condition ensures that physical actions are generated
    ***       before events are processed.
+
+
+   *** This ends "standard" Lingua Franca interpreter.
+   ***    However, we also add the new infrastructure/way of
+   ***    treating physical actions.  The "environment" could generate
+   ***    new events in the future even when the event queue is empty.
+   ***  Therefore, we need an additional tick rule for this case:
+
+    crl [extraTickRuleForPhysActs] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : empty >}
+     =>
+     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : empty >}
+     in time T
+     if T := smallestTimer(CONF1)
+        /\ T > 0
+	/\ CONF1 =/= none .      --- implied by typing of T
+*** Note: this rule should not apply when we do not have
+***    physical actions, since T cannot have the value INF.
+***    So the last conjunct in condition not really needed.
+
+endom
+

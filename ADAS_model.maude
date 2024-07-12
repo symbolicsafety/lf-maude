@@ -4,7 +4,7 @@ in lf-representation
 
 omod ADAS is 
  including LF-REPR .
- including NAT-TIME-DOMAIN-WITH-INF . 
+
  ops frame received brakesApplied requestStop : -> VarId [ctor] .
  ops lidar camera adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .
  op t : -> TimerId [ctor] .

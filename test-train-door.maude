@@ -1,14 +1,84 @@
-in executeStep.maude
+in dynamics.maude
 
 in TrainDoor_v1.maude
 
 omod TEST-TRAIN is
   including TRAINDOOR .
-  including EXECUTE-STEP .
+  including DYNAMICS .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (controller . external) : PhysAct |
+	                           leftOfPeriod : 0,
+				   period : 5,
+				   possibleValues : ([true] ; [false]) > >
+       init
+       < queue : EventQueue | queue : empty >} .
+                              
+     
 endom
+
+---(
 
 red executeStep(event(controller, startup, [0]) event(controller, external, [false]),
                 init, empty) .
 
 red generateAPG(event(controller, startup, [0])  event(controller, external, [false]),
                 init) .
+)---
+
+rew [30] initSystem .
+
+
+---(
+red generateAPG(event(controller, external, [false]),
+                < controller : Reactor |
+       inports : none,
+       outports : (< outMove : Port |
+       value : [false] >
+< outLock : Port |
+       value : [false] >),
+       state : counter3 |-> [0],
+       reactions : (reaction when startup --> none do{skip} reaction
+                    when external --> outMove ;
+    outLock do { (outLock <- [external]) ; (outMove <- [external]) ;
+    counter3 := (counter3 + [1] )}),
+       timers : none,
+       actions : (< startup : LogicalAction |
+       minDelay : 0,
+       minSpacing : 0,
+       policy : defer,
+       payload : [0] >
+< external : PhysicalAction |
+       minDelay : 0,
+       minSpacing : 0,
+       policy : defer,
+       payload : [false] >) >
+< train : Reactor |
+       inports : < inMove : Port |
+       value : [false] >,
+       outports : none,
+       state : ((moving |-> [false]) ; counter1 |-> [0]),
+       reactions : reaction when inMove --> none
+       do{(counter1 := (counter1 + [1])) ; moving := [inMove]},
+       timers : none,
+       actions : none >
+< door : Reactor |
+       inports : < inLock : Port |
+       value : [false] >,
+       outports : none,
+       state : ((locked |-> [true]) ; counter2 |-> [0]),
+       reactions : reaction when inLock --> none
+       do{(counter2 := (counter2 + [1])) ; locked := [inLock]},
+       timers : none,
+       actions : none >) .
+)---
+
+--- red generateAPG(event(controller, external, [false]), init) .
+
+--- red executeStep(event(controller, external, [false]), init, empty) .
+
+
