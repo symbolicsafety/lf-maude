@@ -1,0 +1,23 @@
+in ADAS-without-camera.maude
+
+in dynamics.maude
+
+
+omod TEST-ADAS is
+  including ADAS-WITHOUT-CAMERA .
+  including DYNAMICS .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (pedal . a) : PhysAct |
+                                   leftOfPeriod : 5,
+                                   period : 5,
+                                   possibleValues : [69] ; [71] > >
+       init
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+endom
+
+rew [50] initSystem .

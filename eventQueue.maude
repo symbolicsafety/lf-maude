@@ -29,9 +29,8 @@ omod EVENTS is
   --- Single events:
   sort Event .
 
-  op event : ReactorId PortId Value -> Event [ctor] .
-  op event : ReactorId ActionId Value -> Event [ctor] .
-
+  op event : ReactorId ActionTrigger Value -> Event [ctor] .
+ 
   sort Tag .    --- Superdense time
   op tag : Time Nat -> Tag [ctor] .
 

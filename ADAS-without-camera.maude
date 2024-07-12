@@ -1,12 +1,19 @@
+*** Second attempt: to avoid too much mess in the first step,
+***   we only assume that each reaction is triggered by one port/action/timer
+
+***  It is conceptually trivial to consider the case with
+***    multiple input ports, but adds lots of cases, and will
+***    treated in the near future.
+
 *** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
 
 in lf-representation
 
-omod ADAS is 
+omod ADAS-WITHOUT-CAMERA is 
  including LF-REPR .
 
  ops frame received brakesApplied requestStop : -> VarId [ctor] .
- ops lidar camera adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .
+ ops lidar adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .
  op t : -> TimerId [ctor] .
  ops in in1 in2 out out1 out2 inAdas inPedal : -> PortId [ctor] .
  op a : -> ActionId .
@@ -22,18 +29,8 @@ omod ADAS is
       reactions : 
       reaction when t --> out do { (frame := frame + [1]) ; (out <- frame) } >
 
-    < camera : Reactor | 
-      inports : none,
-      outports : < out : Port | value : [0] >, 
-      state : frame |-> [0],
-      timers : < t : Timer | offset : 0, period : 17 >,
-      actions : none,
-      reactions : 
-      reaction when t --> out do { (frame := frame + [1]) ; (out <- frame) } >
-
     < adasProcessor : Reactor | 
-      inports : < in1 : Port | value : [0] > 
-                < in2 : Port | value : [0] >,
+      inports : < in1 : Port | value : [0] >,
       outports : < out1 : Port | value : [0] >
                  < out2 : Port | value : [0] >, 
       state : requestStop |-> [0],
@@ -43,10 +40,10 @@ omod ADAS is
                                policy : defer, 
                                payload : [0] >,
       reactions : 
-         (reaction when in1 ; in2 --> a do
+         (reaction when in1 --> a do
 	    { (requestStop := [1]) ;  schedule(a, [0], [0]) } )
          reaction when a --> out1 ; out2 do { 
-            if requestStop === [1] then out1 <- [1] fi
+            if requestStop === [1] then (out1 <- [1]) ; (out2 <- [4]) fi
          }
     >
 
@@ -56,7 +53,7 @@ omod ADAS is
         state : received |-> [0],
         timers : none,
         actions : none,
-        reactions : reaction when in do { received := [1] }       
+        reactions : reaction when in do { received := [in] }       
     >
     
     < pedal : Reactor |
@@ -69,7 +66,7 @@ omod ADAS is
                                minSpacing : 0, 
                                policy : defer, 
                                payload : [0] >,
-      reactions : reaction when a --> out do { out <- [1] }
+      reactions : reaction when a --> out do { out <- [77] }
     >
 
     < brakes : Reactor |
@@ -79,11 +76,12 @@ omod ADAS is
       timers : none,
       actions : none,
       state : brakesApplied |-> [0],
-      reactions : reaction when inAdas ; inPedal do { brakesApplied := [1] }
+      reactions : (reaction when inAdas do { brakesApplied := [inAdas] })
+                  (reaction when inPedal do { brakesApplied := [inPedal] })
+
     >
 
     (lidar : out --> adasProcessor : in1)
-    (camera : out --> adasProcessor : in2)
     (adasProcessor : out1 -- 5 --> brakes : inAdas)
     (adasProcessor : out2 --> dashboard : in)
     pedal : out --> brakes : inPedal .

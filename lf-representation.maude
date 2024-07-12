@@ -88,9 +88,7 @@ omod LF-REPR is
 
 
 
- class Timer | offset : Time .
- class PeriodicTimer | period : TimeInf .
- subclass PeriodicTimer < Timer .
+ class Timer | offset : Time, period : TimeInf .
 
 ---- Here we don't know what we are doing ...
   sort IntExpr BoolExpr Expr .

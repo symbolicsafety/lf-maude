@@ -5,7 +5,8 @@ in runtime-apg.maude
 omod EXECUTE-STEP is
   including RUNTIME-APG .
 
-  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF INPORTSANDACTIONS : Configuration .
+  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF INPORTSANDACTIONS
+       TIMERS : Configuration .
 
   vars PORT PORTID PORTID1 PORTID2 PORTID3 OUTPORTID : PortId .
 
@@ -24,7 +25,7 @@ omod EXECUTE-STEP is
 
   vars QUEUE RESULT-QUEUE : EQueue .
 
-  vars VAL VALUE : Value .
+  vars VAL VALUE OLD-VALUE : Value .
 
   var OS : OidSet .
 
@@ -37,6 +38,9 @@ omod EXECUTE-STEP is
   var STATUS : ExecutionStatus .
 
   var T : Time .
+  var TI : TimeInf .
+
+  var TIMERID : TimerId .
 
   var VAR : VarId .
 
@@ -85,6 +89,14 @@ omod EXECUTE-STEP is
      addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
 		                 actions : ACTIONS < ACTIONID : Action | payload : VAL > >) .
 
+
+  eq addEventsToPorts(event(REACTOR, TIMERID, VAL) EVENTS,
+                      NETWORK < REACTOR : Reactor |
+		                 timers : TIMERS < TIMERID : Timer | > >)
+   =
+     addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
+                                          timers : TIMERS < TIMERID : Timer | > >) .
+		               
 
 
 
@@ -216,14 +228,36 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
   op result : Object Events EQueue -> ReactorOutputsFutureevents [ctor] .
 
 
-  eq executeReaction(< REACTOR : Reactor | 
+  ceq executeReaction(< REACTOR : Reactor | 
                                     reactions : REACTIONS1
 	                                        (reaction when TRIGGER --> OS do {BODY})
 		                                REACTIONS2 >,
 		     TRIGGER,
 		     QUEUE)
     =
-      executeReactionBody(< REACTOR : Reactor | >, BODY, noEvent, QUEUE) .
+      executeReactionBody(< REACTOR : Reactor | >, BODY, noEvent, QUEUE)
+    if not (TRIGGER :: TimerId) .
+
+
+  *** Special treatment for timers!  Schedule next expiration of timer:
+
+  eq executeReaction(< REACTOR : Reactor |
+                                    timers : TIMERS < TIMERID : Timer | period : TI >,
+                                    reactions : REACTIONS1
+	                                        (reaction when TIMERID --> OS do {BODY})
+		                                REACTIONS2 >,
+		     TIMERID,
+		     QUEUE)	
+    =
+      executeReactionBody(< REACTOR : Reactor |
+                        timers : TIMERS < TIMERID : Timer | period : TI > >, BODY, noEvent,
+                          if TI > 0 and TI < INF then
+		          schedule(event(REACTOR, TIMERID, [0]), TI, QUEUE)
+		          else QUEUE fi) .
+    
+
+
+
 
   op executeReactionBody : Object ReactionBody Events EQueue -> ReactorOutputsFutureevents .
 

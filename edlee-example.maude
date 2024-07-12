@@ -2,7 +2,7 @@
 
 --- in runtime-apg.maude
 
-in executeStep.maude
+in dynamics.maude
 
 omod EDWARD-LEE-EXAMPLE-PETER is
 
@@ -59,7 +59,15 @@ endom
 
 omod TEST-APG is
   including EDWARD-LEE-EXAMPLE-PETER .
-  including EXECUTE-STEP .
+  including DYNAMICS .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      { < env : Environment | physicalActions : none >
+        init
+	< queue : EventQueue | queue : event(reactor1, in2, [2]) at tag(0,0) >} .
 endom
 
 
@@ -68,4 +76,8 @@ endom
 
 --- red initializeAPG(event(y, startup, [0]), init) .
 
-red executeStep(event(reactor1, in2, [2]), init, empty) .
+--- red executeStep(event(reactor1, in2, [2]), init, empty) .
+
+rew initSystem .
+
+search initSystem =>! CS:ClockedSystem .
