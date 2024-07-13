@@ -1,14 +1,14 @@
-*** This is a model of the simple train door given on Figure 2 in
+*** This is a model of the second train door example given on Figure 5 in
 *** the Verification of Cyberphysical Systems paper.
 
 in lf-representation
 
-omod TRAINDOOR is 
+omod TRAINDOOR-V2 is 
  including LF-REPR .
  
  ops moving locked : -> BVarId [ctor] .
  ops controller train door : -> ReactorId [ctor] .
- ops move lock : -> BPortId [ctor] .
+ ops move lock unlock stop : -> BPortId [ctor] .
  ops startup external : -> BActionId .
  ops counter1 counter2 counter3 : -> IVarId [ctor] .
  op init : -> Configuration .
@@ -17,7 +17,9 @@ omod TRAINDOOR is
     < controller : Reactor | 
       inports : none,
       outports : < lock : Port | value : [false] > 
-                 < move : Port | value : [false] >, 
+                 < move : Port | value : [false] >
+		 < unlock : Port | value : [false] > 
+                 < stop : Port | value : [false] >, 
       state : counter3 |-> [0],
       timers : none,
       actions : < startup : LogicalAction | minDelay : 0, 
@@ -31,33 +33,43 @@ omod TRAINDOOR is
                                payload : [false] >,
       reactions : 
         (reaction when startup do { skip })
-        reaction when external --> lock ; move do
-	{ (lock <- external ) ; (move <- external)
+        reaction when external --> lock ; unlock ; move ; stop do
+	{ if external then (lock <- [true] ) ; (move <- [true])
+	  else (unlock <- [true]) ; (stop <- [true]) fi
 	   ;  (counter3 := counter3 + [1])}    --- for testing
     >
 --- the startup stuff does not really do anything ...
 
 
     < train : Reactor | 
-        inports : < move : Port | value : [false] >,
+        inports : < move : Port | value : [false] >
+	          < stop : Port | value : [false] >,
         outports : none,
         state : (moving |-> [false]) ; (counter1 |-> [0]), 
         timers : none,
         actions : none,
-        reactions : reaction when move do {(counter1 := counter1 + [1]) ;
-	                                     moving := move }       
+        reactions : (reaction when move do {(counter1 := counter1 + [1]) ;
+	                                     moving := [true] })
+		    reaction when stop do {(counter1 := counter1 + [1]) ;
+	                                     moving := [false] } 
     >
     
     < door : Reactor | 
-        inports : < lock : Port | value : [false] >,
+        inports : < lock : Port | value : [false] >
+	          < unlock : Port | value : [false] >,
         outports : none,
         state : (locked |-> [false])  ; (counter2 |-> [0]),
         timers : none,
         actions : none,
-        reactions : reaction when lock do { (counter2 := counter2 + [1]) ;
-	                                      locked := lock }       
+        reactions : (reaction when lock do { (counter2 := counter2 + [1]) ;
+	                                      locked := [true] })
+		    reaction when unlock do { (counter2 := counter2 + [1]) ;
+	                                      locked := [false] } 
     >
 
     (controller : lock --> door : lock)
-    controller : move --> train : move .
+    (controller : unlock -- 100 --> door : unlock)
+    (controller : move -- 100 --> train : move)
+    (controller : stop --> train : stop) .
+   
 endom

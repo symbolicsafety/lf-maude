@@ -1,17 +1,18 @@
 --- Figure 7 in "Toward a Lingua Franca ..."
 
-in runtime-apg.maude
+--- in runtime-apg.maude
 
+in executeStep.maude
 
 omod FIG7 is
 
  including LF-REPR .
 
 
- op s : -> VarId [ctor] .
+ op s : -> IVarId [ctor] .
  ops relay x y : -> ReactorId [ctor] .
- ops inc dbl r out : -> PortId [ctor] .
- op startup : -> ActionId .
+ ops inc dbl r out : -> IPortId [ctor] .
+ op startup : -> IActionId .
  op init : -> Configuration .
 
  eq init = 
@@ -35,7 +36,7 @@ omod FIG7 is
       timers : none,
       actions : none,
       reactions : 
-        reaction when r --> out do { out <- [r] }
+        reaction when r --> out do { out <- r }
     >
     < y : Reactor | 
       inports : none,
@@ -59,11 +60,13 @@ endom
 
 omod TEST-APG is
   including FIG7 .
-  including RUNTIME-APG .
+  including EXECUTE-STEP .
 endom
 
 
 
-red generateAPG(event(y, startup, [0]) event(x, inc, [77]),  init) .
+--- red generateAPG(event(y, startup, [0]) event(x, inc, [77]),  init) .
 
 --- red initializeAPG(event(y, startup, [0]), init) .
+
+red executeStep(event(y, startup, [7]),  init, empty) .

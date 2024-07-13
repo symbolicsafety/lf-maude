@@ -9,6 +9,9 @@ omod EXECUTE-STEP is
        TIMERS : Configuration .
 
   vars PORT PORTID PORTID1 PORTID2 PORTID3 OUTPORTID : PortId .
+  vars BPORT BPORTID : BPortId .
+  vars IPORT IPORTID : IPortId .
+  
 
   vars REACTOR REACTOR1 REACTOR2 REACTOR3 REACTORID REACTORID1
        REACTORID2 REACTORID3 : ReactorId .
@@ -20,6 +23,7 @@ omod EXECUTE-STEP is
   vars REACTIONS1 REACTIONS2 : ReactionList .
 
   vars ACTIONID : ActionId .
+    vars IACTIONID : IActionId .   vars BACTIONID : BActionId .
 
   vars EVENTS OUTPUTS : Events .
 
@@ -42,15 +46,16 @@ omod EXECUTE-STEP is
 
   var TIMERID : TimerId .
 
-  var VAR : VarId .
+    var VAR : VarId .    var IVAR : IVarId .    var BVAR : BVarId . 
 
   var VALUATION : ReactorState .
 
   var EXPR : Expr .
-  var BEXP : BoolExpr .
+  vars BEXP BEXP1 BEXP2 BEXPR BEXPR2 BEXPR1 : BoolExpr .
 
-  vars IEXP IEXP1 IEXP2 IEXPR : IntExpr .
+  vars IEXP IEXP1 IEXP2 IEXPR IEXPR2 : IntExpr .
   var N : Nat .
+  var B : Bool .
 
 
   op executeStep : Events Configuration EQueue -> Network+Queue .
@@ -266,15 +271,27 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
         result(< REACTOR : Reactor | >, OUTPUTS, QUEUE) .
 
   eq executeReactionBody(< REACTOR : Reactor |
-                                       state : ((VAR |-> VAL) ; VALUATION),
+                                       state : ((IVAR |-> VAL) ; VALUATION),
 				       inports : INPORTS, actions : ACTIONS >,
-				       (VAR := EXPR) ; BODY, OUTPUTS, QUEUE)
+				       (IVAR := IEXPR) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor |
-                                       state : ((VAR |->
-				   eval(EXPR, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS))
+                                       state : ((IVAR |->
+			 [eval(IEXPR, ((IVAR |-> VAL) ; VALUATION), INPORTS ACTIONS)])
 				        ; VALUATION) >,
 				       BODY, OUTPUTS, QUEUE) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : ((BVAR |-> VAL) ; VALUATION),
+				       inports : INPORTS, actions : ACTIONS >,
+				       (BVAR := BEXPR) ; BODY, OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor |
+                                       state : ((BVAR |->
+		      [evalB(BEXPR, ((BVAR |-> VAL) ; VALUATION), INPORTS ACTIONS)])
+				        ; VALUATION) >,
+				       BODY, OUTPUTS, QUEUE) .
+
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state :  VALUATION,
@@ -282,10 +299,22 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
 				       (if BEXP then BODY1 fi) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if eval(BEXP, VALUATION, INPORTS ACTIONS) == [true]
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS) 
 			 then (BODY1 ; BODY) else
 			 BODY fi,  OUTPUTS, QUEUE) .
                                       
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state :  VALUATION,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (if BEXP then BODY1 else BODY2 fi) ; BODY,
+				       OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | >,
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS)
+			 then (BODY1 ; BODY) else
+			 (BODY2 ; BODY) fi,  OUTPUTS, QUEUE) .
+
+
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state :  VALUATION,
@@ -293,89 +322,132 @@ eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
 				       (while BEXP do BODY1 done) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if eval(BEXP, VALUATION, INPORTS ACTIONS) == [true] then
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS) then
 			 (BODY1 ; (while BEXP do BODY1 done) ; BODY) else
 			 BODY fi,  OUTPUTS, QUEUE) .
 
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state : VALUATION,
-				       outports : CONF < PORT : Port | >,
+				       outports : CONF < BPORT : Port | >,
 				       inports : INPORTS, actions : ACTIONS >,
-				       (PORT <- EXPR) ; BODY, OUTPUTS, QUEUE)
+				       (BPORT <- BEXPR) ; BODY, OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | outports : CONF
-                                < PORT : Port | value : eval(EXPR, VALUATION,
-				                             INPORTS ACTIONS) > >,
-				       BODY, event(REACTOR, PORT,
-				                   eval(EXPR, VALUATION, INPORTS ACTIONS))
+                                < BPORT : Port | value : [evalB(BEXPR, VALUATION,
+				                             INPORTS ACTIONS)] > >,
+				       BODY, event(REACTOR, BPORT,
+				                 [evalB(BEXPR, VALUATION, INPORTS ACTIONS)])
 						   OUTPUTS,
 						   QUEUE) .
 
   eq executeReactionBody(< REACTOR : Reactor |
                                        state : VALUATION,
+				       outports : CONF < IPORT : Port | >,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (IPORT <- IEXPR) ; BODY, OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | outports : CONF
+                                < IPORT : Port | value : [eval(IEXPR, VALUATION,
+				                             INPORTS ACTIONS)] > >,
+				       BODY, event(REACTOR, IPORT,
+				                   [eval(IEXPR, VALUATION, INPORTS ACTIONS)])
+						   OUTPUTS,
+						   QUEUE) .
+
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
 				       inports : INPORTS,
 				       actions : CONF
-				                 < ACTIONID : Action | minDelay : T > >,
-				       schedule(ACTIONID, IEXPR, EXPR) ; BODY,
+				                 < IACTIONID : Action | minDelay : T > >,
+				       schedule(IACTIONID, IEXPR, IEXPR2) ; BODY,
 				       OUTPUTS, QUEUE)
   =  				       
      executeReactionBody(< REACTOR : Reactor | actions : CONF
-                                                < ACTIONID : Action | > >,
+                                                < IACTIONID : Action | > >,
 				       BODY,
 				       OUTPUTS,
-				       schedule(event(REACTOR,  ACTIONID,
-				                      eval(EXPR, VALUATION, INPORTS CONF
-				                 < ACTIONID : Action | minDelay : T >)),
-						T + time(eval(IEXPR, VALUATION, INPORTS CONF
-				                 < ACTIONID : Action | minDelay : T >)),
+				       schedule(event(REACTOR,  IACTIONID,
+				                      [eval(IEXPR2, VALUATION, INPORTS CONF
+				                 < IACTIONID : Action | minDelay : T >)]),
+						T + eval(IEXPR, VALUATION, INPORTS CONF
+				                 < IACTIONID : Action | minDelay : T >),
+						QUEUE)) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       inports : INPORTS,
+				       actions : CONF
+				                 < BACTIONID : Action | minDelay : T > >,
+				       schedule(BACTIONID, IEXPR, BEXPR) ; BODY,
+				       OUTPUTS, QUEUE)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | actions : CONF
+                                                < BACTIONID : Action | > >,
+				       BODY,
+				       OUTPUTS,
+				       schedule(event(REACTOR,  BACTIONID,
+				                      [evalB(BEXPR, VALUATION, INPORTS CONF
+				                 < BACTIONID : Action | minDelay : T >)]),
+						T + eval(IEXPR, VALUATION, INPORTS CONF
+				                 < BACTIONID : Action | minDelay : T >),
 						QUEUE)) .
 
 
-op time : TimeValue -> Time .
-eq time([T]) = T .
 
-op eval : Expr ReactorState Configuration -> Value .
+
+op evalB : BoolExpr ReactorState Configuration -> Bool .
+op eval : IntExpr ReactorState Configuration -> Nat .
 --- eval(expr, valuation, input ports AND actions)
 
-eq eval(VALUE, VALUATION, INPORTSANDACTIONS) = VALUE .
+eq evalB([B], VALUATION, INPORTSANDACTIONS) = B .
+eq eval([N], VALUATION, INPORTSANDACTIONS) = N .
 
-eq eval([PORTID], VALUATION, CONF < PORTID : Port | value : VAL >) = VAL .
 
-eq eval([ACTIONID], VALUATION, CONF < ACTIONID : Action | payload : VAL >) = VAL .
+eq eval(IPORTID, VALUATION, CONF < IPORTID : Port | value : [N] >) = N .
+eq evalB(BPORTID, VALUATION, CONF < BPORTID : Port | value : [B] >) = B .
 
-eq eval(VAR, VALUATION ; (VAR |-> VAL), INPORTSANDACTIONS) = VAL .
+
+eq eval(IACTIONID, VALUATION, CONF < IACTIONID : Action | payload : [N] >) = N .
+eq evalB(BACTIONID, VALUATION, CONF < BACTIONID : Action | payload : [B] >) = B .
+
+eq eval(IVAR, VALUATION ; (IVAR |-> [N]), INPORTSANDACTIONS) = N .
+eq evalB(BVAR, VALUATION ; (BVAR |-> [B]), INPORTSANDACTIONS) = B .
 
 eq eval(IEXP1 + IEXP2, VALUATION, INPORTSANDACTIONS) =
-     [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) + toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+     eval(IEXP1, VALUATION, INPORTSANDACTIONS) + eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-op toNat : Expr -> Nat .
-eq toNat([N]) = N .
+
 
 eq eval(IEXP1 * IEXP2, VALUATION, INPORTSANDACTIONS) =
-     [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) *
-       toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+     eval(IEXP1, VALUATION, INPORTSANDACTIONS) *
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
 
-eq eval(IEXP1 === IEXP2, VALUATION, INPORTSANDACTIONS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) ==
-      toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+eq evalB(IEXP1 === IEXP2, VALUATION, INPORTSANDACTIONS) =
+    eval(IEXP1, VALUATION, INPORTSANDACTIONS) ==
+      eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq eval(IEXP1 < IEXP2, VALUATION, INPORTSANDACTIONS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) <
-      toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+eq evalB(BEXP1 === BEXP2, VALUATION, INPORTSANDACTIONS) =
+    evalB(BEXP1, VALUATION, INPORTSANDACTIONS) ==
+      evalB(BEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq eval(IEXP1 <= IEXP2, VALUATION, INPORTSANDACTIONS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) <=
-       toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+eq evalB(IEXP1 < IEXP2, VALUATION, INPORTSANDACTIONS) =
+       eval(IEXP1, VALUATION, INPORTSANDACTIONS) <
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq eval(IEXP1 > IEXP2, VALUATION, INPORTSANDACTIONS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) >
-       toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+eq evalB(IEXP1 <= IEXP2, VALUATION, INPORTSANDACTIONS) =
+       eval(IEXP1, VALUATION, INPORTSANDACTIONS) <=
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq eval(IEXP1 >= IEXP2, VALUATION, INPORTSANDACTIONS) =
-    [ toNat(eval(IEXP1, VALUATION, INPORTSANDACTIONS)) >=
-      toNat(eval(IEXP2, VALUATION, INPORTSANDACTIONS)) ] .
+eq evalB(IEXP1 > IEXP2, VALUATION, INPORTSANDACTIONS) =
+      eval(IEXP1, VALUATION, INPORTSANDACTIONS) >
+      eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+eq evalB(IEXP1 >= IEXP2, VALUATION, INPORTSANDACTIONS) =
+       eval(IEXP1, VALUATION, INPORTSANDACTIONS) >=
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
 endom
 

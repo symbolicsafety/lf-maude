@@ -12,22 +12,23 @@ in lf-representation
 omod ADAS-WITHOUT-CAMERA is 
  including LF-REPR .
 
- ops frame received brakesApplied requestStop : -> VarId [ctor] .
+ ops frame received brakesApplied requestStop counter1 counter2 counter3 : -> IVarId [ctor] .
  ops lidar adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .
  op t : -> TimerId [ctor] .
- ops in in1 in2 out out1 out2 inAdas inPedal : -> PortId [ctor] .
- op a : -> ActionId .
+ ops in in1 in2 out out1 out2 inAdas inPedal : -> IPortId [ctor] .
+ op a : -> IActionId .
  op init : -> Configuration .
  
  eq init = 
     < lidar : Reactor | 
       inports : none,
       outports : < out : Port | value : [0] >, 
-      state : frame |-> [0],
+      state : (frame |-> [0]) ; (counter1 |-> [0]),
       timers : < t : Timer | offset : 0, period : 34 >,
       actions : none,
       reactions : 
-      reaction when t --> out do { (frame := frame + [1]) ; (out <- frame) } >
+      reaction when t --> out do { (frame := frame + [1]) ;
+                                   (out <- frame) ; (counter1 := counter1 + [1])} >
 
     < adasProcessor : Reactor | 
       inports : < in1 : Port | value : [0] >,
@@ -53,7 +54,7 @@ omod ADAS-WITHOUT-CAMERA is
         state : received |-> [0],
         timers : none,
         actions : none,
-        reactions : reaction when in do { received := [in] }       
+        reactions : reaction when in do { received := in }       
     >
     
     < pedal : Reactor |
@@ -75,9 +76,11 @@ omod ADAS-WITHOUT-CAMERA is
       outports : none,
       timers : none,
       actions : none,
-      state : brakesApplied |-> [0],
-      reactions : (reaction when inAdas do { brakesApplied := [inAdas] })
-                  (reaction when inPedal do { brakesApplied := [inPedal] })
+      state : (brakesApplied |-> [0]) ; (counter2 |-> [0]) ; (counter3 |-> [0]),
+      reactions : (reaction when inAdas do { (brakesApplied := inAdas) ;
+                                             (counter3 := counter3 + [1])})
+                  (reaction when inPedal do { (brakesApplied := inPedal)  ;
+                                             (counter2 := counter2 + [1]) })
 
     >
 

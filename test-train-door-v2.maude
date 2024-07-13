@@ -1,9 +1,9 @@
 in dynamics.maude
 
-in TrainDoor_v1.maude
+in TrainDoor_v2.maude
 
 omod TEST-TRAIN is
-  including TRAINDOOR .
+  including TRAINDOOR-V2 .
   including DYNAMICS .
 
   ops env queue : -> Oid [ctor] .
@@ -13,14 +13,14 @@ omod TEST-TRAIN is
      { < env : Environment |
            physicalActions : < (controller . external) : PhysAct |
 	                           leftOfPeriod : 0,
-				   period : 5,
-				   possibleValues : ([true] : [false]) > >
+				   period : 50,
+				   possibleValues : ([true]) > >
        init
-       < queue : EventQueue | queue : addStartup(startup,init, empty) >} .
+       < queue : EventQueue | queue : empty >} .
                               
      
 endom
 
-red initSystem .
 
 rew [33] initSystem .
+

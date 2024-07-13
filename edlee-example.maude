@@ -9,9 +9,9 @@ omod EDWARD-LEE-EXAMPLE-PETER is
  including LF-REPR .
 
 
- op x : -> VarId [ctor] .
+ op x : -> IVarId [ctor] .
  ops reactor1 reactor2 reactor3 : -> ReactorId [ctor] .
- ops in in1 in2  out : -> PortId [ctor] .
+ ops in in1 in2  out : -> IPortId [ctor] .
  --- op startup : -> ActionId .
  op init : -> Configuration .
 
@@ -37,7 +37,7 @@ omod EDWARD-LEE-EXAMPLE-PETER is
       timers : none,
       actions : none,
       reactions : 
-        reaction when in --> out do { out <- [in] }
+        reaction when in --> out do { out <- in }
     > 
 
   < reactor3 : Reactor | 

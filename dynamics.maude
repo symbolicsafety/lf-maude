@@ -14,7 +14,8 @@ omod DYNAMICS is
   --- < q : EventQueue | queue : ... >
 
 
-  vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
+  vars REACTORS-AND-CONNECTIONS CONF1 CONF
+       PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
   var TI : TimeInf .
   vars T1 T T2 : Time .
   vars E Q PA : Oid .
@@ -24,6 +25,8 @@ omod DYNAMICS is
   var NZN : NzNat .
   var REACTORID : ReactorId .
   var TIMERID : TimerId .
+  var VAL : Value .
+  var ACTIONID : ActionId .
  
 
   *** We need some initialization, obviously.  TODO
@@ -139,5 +142,19 @@ omod DYNAMICS is
 
   eq addInitialTimers(REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 
+
+
+
+  op addStartup : ActionId Configuration EQueue -> EQueue .
+  --- addStartup(startup, init, empty)
+
+  eq addStartup(ACTIONID, < REACTORID : Reactor | actions : CONF
+                                                  < ACTIONID : LogicalAction |
+						       payload : VAL > >
+                REACTORS-AND-CONNECTIONS, QUEUE)
+   = addStartup(ACTIONID, < REACTORID : Reactor | actions : CONF >
+            REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), 0, QUEUE)) .
+
+  eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 endom
 

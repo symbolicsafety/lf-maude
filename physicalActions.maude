@@ -44,18 +44,18 @@ omod PHYSICAL-ACTIONS is
   sort ValueSet .
   subsort Value < ValueSet .
   op noValue : -> ValueSet [ctor] .
-  op _;_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
+  op _:_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
 
 
----  commented out for testing:
+---(  commented out for testing:
   rl [noAction] :
      < O : PhysAct | leftOfPeriod : 0, period : P > =>
      < O : PhysAct | leftOfPeriod : P > .
----     
+)---     
 
   rl [actionHappens] :
      < (RI . AI) : PhysAct | leftOfPeriod : 0, period : P,
-                     possibleValues : (V ; VS) >
+                     possibleValues : (V : VS) >
      =>
      < (RI . AI) : PhysAct | leftOfPeriod : P >
      scheduleAction(event(RI, AI, V)) .

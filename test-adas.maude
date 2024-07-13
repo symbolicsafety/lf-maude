@@ -15,9 +15,9 @@ omod TEST-ADAS is
            physicalActions : < (pedal . a) : PhysAct |
                                    leftOfPeriod : 5,
                                    period : 5,
-                                   possibleValues : [69] ; [71] > >
+                                   possibleValues : [69] : [71] > >
        init
        < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
 endom
 
-rew [50] initSystem .
+rew [51] initSystem .

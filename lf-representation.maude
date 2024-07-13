@@ -54,9 +54,12 @@ omod LF-REPR is
 
 --- All kinds of Oids:
 
-  sorts PortId VarId ReactorId TimerId ActionId ReactionId .
+  sorts PortId IPortId BPortId VarId IVarId BVarId ReactorId TimerId
+        ActionId IActionId BActionId ReactionId .
   subsorts  ReactorId ReactionId < Oid .
-
+  subsorts IPortId BPortId < PortId .
+  subsorts IVarId BVarId < VarId .
+  subsorts IActionId BActionId < ActionId .
 
   sort ActionTrigger .
   subsorts TimerId PortId ActionId < ActionTrigger < Oid .
@@ -94,25 +97,34 @@ omod LF-REPR is
   sort IntExpr BoolExpr Expr .
   subsort IntExpr BoolExpr < Expr .
 
+
+***(
   op [_] : PortId -> Expr [ctor] .   --- only input ports can be called for value
+  op [_] : IPortId -> IntExpr [ctor] .
+  op [_] : BPortId -> BoolExpr [ctor] .
+
   op [_] : ActionId -> Expr [ctor] .
-  subsort VarId < IntExpr .
+  op [_] : IActionId -> IntExpr [ctor] .
+  op [_] : BActionId -> BoolExpr [ctor] .
+)***
+
+
+  subsorts IPortId IVarId IActionId < IntExpr .
+  subsorts BPortId BVarId BActionId < BoolExpr .
   op _+_ : IntExpr IntExpr -> IntExpr .
   op _*_ : IntExpr IntExpr -> IntExpr .
   
   
-  ---- op value : PortId -> Value [ctor] .
-
-
   sort ReactionBody .
 
-  ops _===_ _<_ _>_ _<=_ _>=_ : IntExpr IntExpr ->   BoolExpr [ctor] .
-
+  ops _<_ _>_ _<=_ _>=_ : IntExpr IntExpr ->   BoolExpr [ctor] .
+  op _===_ : Expr Expr -> BoolExpr [ctor] .
 
   op skip : -> ReactionBody [ctor] .
   op _;_ : ReactionBody ReactionBody -> ReactionBody [ctor assoc id: skip] .
   op _:=_ : VarId Expr -> ReactionBody [ctor] .
   op if_then_fi : BoolExpr ReactionBody -> ReactionBody [ctor] .
+  op if_then_else_fi : BoolExpr ReactionBody ReactionBody -> ReactionBody [ctor] .
   op while_do_done : BoolExpr ReactionBody -> ReactionBody [ctor] .
   op _<-_ : PortId Expr ->  ReactionBody [ctor] .   
   op schedule : ActionId IntExpr Expr -> ReactionBody [ctor] .  --- ???????
