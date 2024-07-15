@@ -4,7 +4,8 @@ in TrainDoor_v2.maude
 
 omod TEST-TRAIN is
   including TRAINDOOR-V2 .
-  including DYNAMICS .
+  including DYNAMICS-WITHOUT-TICK .
+---  including SIMULATION-DYNAMICS .
 
   ops env queue : -> Oid [ctor] .
 
@@ -14,13 +15,56 @@ omod TEST-TRAIN is
            physicalActions : < (controller . external) : PhysAct |
 	                           leftOfPeriod : 0,
 				   period : 50,
-				   possibleValues : ([true]) > >
+				   possibleValues : ([true] : [false]),
+				   timeNonDet : true > >
        init
-       < queue : EventQueue | queue : empty >} .
+       < queue : EventQueue | queue : addStartup(startup,init, empty) >} .
                               
      
 endom
 
 
+omod SIMULATE-TRAIN is
+  including TEST-TRAIN .
+  including SIMULATION-DYNAMICS .
+endom  
+
+
+red initSystem .
+
 rew [33] initSystem .
 
+omod UNCLOCKED-TRAIN is
+  including TEST-TRAIN .
+  including UNBOUNDED-ANALYSIS-DYNAMICS  .
+endom  
+
+rew [33] initSystem .
+
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < train : Reactor | state : (moving |-> [true]) ; RS1:ReactorState,
+	                          ATTS1:AttributeSet >
+	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} .
+
+eof
+
+omod TIME-BOUNDED-TRAIN is
+  including TEST-TRAIN .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 40 .
+endom  
+
+
+rew initSystem in time 0 .
+
+
+--- time-bounded reachability
+search initSystem in time 0 =>*
+             {REST:Configuration
+	      < train : Reactor | state : (moving |-> [true]) ; RS1:ReactorState,
+	                          ATTS1:AttributeSet >
+	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} in time T:Time .

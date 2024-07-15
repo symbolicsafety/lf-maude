@@ -59,7 +59,7 @@ endom
 
 omod TEST-APG is
   including EDWARD-LEE-EXAMPLE-PETER .
-  including DYNAMICS .
+  including SIMULATION-DYNAMICS .
 
   ops env queue : -> Oid [ctor] .
 

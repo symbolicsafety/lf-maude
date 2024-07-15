@@ -10,7 +10,6 @@ omod TRAINDOOR is
  ops controller train door : -> ReactorId [ctor] .
  ops move lock : -> BPortId [ctor] .
  ops startup external : -> BActionId .
- ops counter1 counter2 counter3 : -> IVarId [ctor] .
  op init : -> Configuration .
  
  eq init = 
@@ -18,7 +17,7 @@ omod TRAINDOOR is
       inports : none,
       outports : < lock : Port | value : [false] > 
                  < move : Port | value : [false] >, 
-      state : counter3 |-> [0],
+      state : empty,
       timers : none,
       actions : < startup : LogicalAction | minDelay : 0, 
                                minSpacing : 0, 
@@ -32,8 +31,7 @@ omod TRAINDOOR is
       reactions : 
         (reaction when startup do { skip })
         reaction when external --> lock ; move do
-	{ (lock <- external ) ; (move <- external)
-	   ;  (counter3 := counter3 + [1])}    --- for testing
+	{ (lock <- external ) ; (move <- external)}    --- for testing
     >
 --- the startup stuff does not really do anything ...
 
@@ -41,21 +39,19 @@ omod TRAINDOOR is
     < train : Reactor | 
         inports : < move : Port | value : [false] >,
         outports : none,
-        state : (moving |-> [false]) ; (counter1 |-> [0]), 
+        state : (moving |-> [false]), 
         timers : none,
         actions : none,
-        reactions : reaction when move do {(counter1 := counter1 + [1]) ;
-	                                     moving := move }       
+        reactions : reaction when move do { moving := move }       
     >
     
     < door : Reactor | 
         inports : < lock : Port | value : [false] >,
         outports : none,
-        state : (locked |-> [false])  ; (counter2 |-> [0]),
+        state : (locked |-> [false]),
         timers : none,
         actions : none,
-        reactions : reaction when lock do { (counter2 := counter2 + [1]) ;
-	                                      locked := lock }       
+        reactions : reaction when lock do { locked := lock }       
     >
 
     (controller : lock --> door : lock)

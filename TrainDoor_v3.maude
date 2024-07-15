@@ -5,12 +5,12 @@ in lf-representation
 
 omod TRAINDOOR-V3 is 
  including LF-REPR .
- 
+
+---  op counter1 : -> IVarId [ctor] .
  ops isOpen locked : -> BVarId [ctor] .
  ops controller train door : -> ReactorId [ctor] .
  ops close lock unlock open : -> BPortId [ctor] .
  ops startup external extOpen : -> BActionId .
- ops counter1 counter2 counter3 : -> IVarId [ctor] .
  op init : -> Configuration .
  
  eq init = 
@@ -20,7 +20,7 @@ omod TRAINDOOR-V3 is
                  < open : Port | value : [false] >
 		 < unlock : Port | value : [false] > 
                  < close : Port | value : [false] >, 
-      state : counter3 |-> [0],
+      state : empty,
       timers : none,
       actions : < startup : LogicalAction | minDelay : 0, 
                                minSpacing : 0, 
@@ -34,9 +34,8 @@ omod TRAINDOOR-V3 is
       reactions : 
         (reaction when startup do { skip })
         reaction when external --> close ; lock ; open ; unlock do
-	{ if external then (close <- [true] ) ; (lock <- [true])
-	  else (open <- [true]) ; (unlock <- [true]) fi
-	   ;  (counter3 := counter3 + [1])}    --- for testing
+	{ if external then (close <- [true] ) ; (lock <- [true]) 
+	  else (open <- [true]) ; (unlock <- [true]) fi }
     >
 --- the startup stuff does not really do anything ...
 
@@ -47,28 +46,21 @@ omod TRAINDOOR-V3 is
 		  < open : Port | value : [false] >
 	          < close : Port | value : [false] >,
         outports : none,
-        state : (locked |-> [false])  ; (isOpen |-> [false]) ; (counter2 |-> [0]) ;
-	        (counter1 |-> [0]),
+        state : (locked |-> [false])  ; (isOpen |-> [false]),
         timers : none,
         actions : < extOpen : PhysicalAction | 
                                minDelay : 0, 
                                minSpacing : 0, 
                                policy : defer, 
                                payload : [false] >,
-        reactions : (reaction when close do { (counter2 := counter2 + [1]) ;
-	                                      isOpen := [true] })
+        reactions : (reaction when close do { isOpen := [false] })
                     (reaction when lock do
-		       { if isOpen === [false] then (counter2 := counter2 + [1]) ;
-	                                      locked := [true] fi })
-                    (reaction when unlock do { (counter2 := counter2 + [1]) ;
-	                                      locked := [false] }) 
+		       { if isOpen === [false] then locked := [true] fi })
+                    (reaction when unlock do { locked := [false] }) 
                     (reaction when open do
-		       { if locked === [false] then (counter2 := counter2 + [1]) ;
-	                                      isOpen := [true] fi }) 
+		       { if locked === [false] then isOpen := [true] fi }) 
                     (reaction when extOpen do
-		       {  (counter1 := counter1 + [1]) ;
-		          if locked === [false] then (counter2 := counter2 + [1]) ;
-	                                      isOpen := [true] fi }) 
+		       { if locked === [false] then isOpen := [true] fi }) 
 
    >
 

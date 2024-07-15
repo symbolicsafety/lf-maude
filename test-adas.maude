@@ -5,7 +5,7 @@ in dynamics.maude
 
 omod TEST-ADAS is
   including ADAS-WITHOUT-CAMERA .
-  including DYNAMICS .
+  including DYNAMICS-WITHOUT-TICK .
 
   ops env queue : -> Oid [ctor] .
 
@@ -15,9 +15,77 @@ omod TEST-ADAS is
            physicalActions : < (pedal . a) : PhysAct |
                                    leftOfPeriod : 5,
                                    period : 5,
-                                   possibleValues : [69] : [71] > >
+                                   possibleValues : [69] : [71],
+				   timeNonDet : true > >
        init
        < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
 endom
 
 rew [51] initSystem .
+
+
+omod TIME-BOUNDED-ADAS is
+  including TEST-ADAS .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 55 .
+endom  
+
+
+
+
+in model-checker.maude
+
+
+omod MODEL-CHECK-ADAS is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-ADAS .
+  subsort ClockedSystem < State .
+
+  --- generic atomic proposition:
+
+  var REST : Configuration .
+  var REACTORID : ReactorId .
+  var VAR : VarId .
+  var VAL : Value .
+  var RS : ReactorState .
+  var T : Time .
+  var O : Oid .
+
+  vars EQ1 EQ2 : EQueue .
+  var EVENT : Event .
+  var TAG : Tag .
+
+  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
+
+  eq {REST
+      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID is VAL = true . 
+
+  eq {REST
+      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >} in time T
+     |= VAR in REACTORID is VAL = true .
+
+
+  --- An event is in the event queue:
+  op _isInQueue : Event -> Prop [ctor] .
+
+  eq {REST
+      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
+     |=  EVENT isInQueue = true .
+
+  eq {REST
+      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
+     |=  EVENT isInQueue = true .
+
+endom
+
+
+red modelCheck(initSystem in time 0,
+               <> (brakesApplied in brakes is [1])) .
+
+--- exactly what Edward Lee wanted
+
+--- We have directly modified the ADAS-without-camera file
+---   by inserting the differenmt errors exemplified on page 19,
+--- and in neither case does the formula hold
+	       

@@ -7,6 +7,14 @@
 ---    * If the action happens, then we choose a value nondet
 ---      from the set of possible values.
 
+--- Late change:   For analysis purposes it may sometimes be convenient
+---                to analyze the system when a physical action
+---                always triggers, even though this looks a lot like
+---                timers, although timers cannot select values
+---                nondeterministically.  Mostly needed for train door.
+---                therefore we add a flag "timeNonDet" for time-nondeterministic
+---                physical actions.
+
 in eventQueue.maude
 
 omod PHYSICAL-ACTIONS is
@@ -36,7 +44,8 @@ omod PHYSICAL-ACTIONS is
 
   class PhysAct | leftOfPeriod : TimeInf,
 		  period : TimeInf,
-		  possibleValues : ValueSet .
+		  possibleValues : ValueSet,
+		  timeNonDet : Bool .
 
   op _._ : ReactorId ActionId -> Oid [ctor] .
   --- names of physical actions!
@@ -47,11 +56,11 @@ omod PHYSICAL-ACTIONS is
   op _:_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
 
 
----(  commented out for testing:
+---  commented out for testing:
   rl [noAction] :
-     < O : PhysAct | leftOfPeriod : 0, period : P > =>
+     < O : PhysAct | leftOfPeriod : 0, period : P, timeNonDet : true > =>
      < O : PhysAct | leftOfPeriod : P > .
-)---     
+---     
 
   rl [actionHappens] :
      < (RI . AI) : PhysAct | leftOfPeriod : 0, period : P,

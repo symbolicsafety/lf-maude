@@ -10,7 +10,6 @@ omod TRAINDOOR-V2 is
  ops controller train door : -> ReactorId [ctor] .
  ops move lock unlock stop : -> BPortId [ctor] .
  ops startup external : -> BActionId .
- ops counter1 counter2 counter3 : -> IVarId [ctor] .
  op init : -> Configuration .
  
  eq init = 
@@ -20,7 +19,7 @@ omod TRAINDOOR-V2 is
                  < move : Port | value : [false] >
 		 < unlock : Port | value : [false] > 
                  < stop : Port | value : [false] >, 
-      state : counter3 |-> [0],
+      state : empty,
       timers : none,
       actions : < startup : LogicalAction | minDelay : 0, 
                                minSpacing : 0, 
@@ -35,8 +34,7 @@ omod TRAINDOOR-V2 is
         (reaction when startup do { skip })
         reaction when external --> lock ; unlock ; move ; stop do
 	{ if external then (lock <- [true] ) ; (move <- [true])
-	  else (unlock <- [true]) ; (stop <- [true]) fi
-	   ;  (counter3 := counter3 + [1])}    --- for testing
+	  else (unlock <- [true]) ; (stop <- [true]) fi}  
     >
 --- the startup stuff does not really do anything ...
 
@@ -45,26 +43,22 @@ omod TRAINDOOR-V2 is
         inports : < move : Port | value : [false] >
 	          < stop : Port | value : [false] >,
         outports : none,
-        state : (moving |-> [false]) ; (counter1 |-> [0]), 
+        state : (moving |-> [false]), 
         timers : none,
         actions : none,
-        reactions : (reaction when move do {(counter1 := counter1 + [1]) ;
-	                                     moving := [true] })
-		    reaction when stop do {(counter1 := counter1 + [1]) ;
-	                                     moving := [false] } 
+        reactions : (reaction when move do { moving := [true] })
+		    reaction when stop do {  moving := [false] } 
     >
     
     < door : Reactor | 
         inports : < lock : Port | value : [false] >
 	          < unlock : Port | value : [false] >,
         outports : none,
-        state : (locked |-> [false])  ; (counter2 |-> [0]),
+        state : (locked |-> [false]),
         timers : none,
         actions : none,
-        reactions : (reaction when lock do { (counter2 := counter2 + [1]) ;
-	                                      locked := [true] })
-		    reaction when unlock do { (counter2 := counter2 + [1]) ;
-	                                      locked := [false] } 
+        reactions : (reaction when lock do { locked := [true] })
+		    reaction when unlock do { locked := [false] } 
     >
 
     (controller : lock --> door : lock)
