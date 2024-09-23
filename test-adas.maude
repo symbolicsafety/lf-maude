@@ -27,9 +27,96 @@ rew [51] initSystem .
 omod TIME-BOUNDED-ADAS is
   including TEST-ADAS .
   including TIME-BOUNDED-DYNAMICS  .
-  eq timeBound = 55 .
+  eq timeBound = 54 .
 endom  
 
+*** Some new stuff for the paper:
+
+--- 1. Time-bounded simulation:
+
+rew initSystem in time 0 .
+---(   Gives nice result:
+result ClockedSystem: {< lidar : Reactor |
+       inports : none,
+       outports : < out : Port |
+       value : [2] >,
+       state : ((frame |-> [2]) ; counter1 |-> [2]),
+       reactions : reaction when t --> out do{(frame := (frame + [1])) ; (out <-
+    frame) ; counter1 := (counter1 + [1])},
+       timers : < t : Timer |
+       offset : 0,
+       period : 34 >,
+       actions : none >
+< adasProcessor : Reactor |
+       inports : < in1 : Port |
+       value : [2] >,
+       outports : (< out1 : Port |
+       value : [1] >
+< out2 : Port |
+       value : [0] >),
+       state : requestStop |-> [1],
+       reactions : (reaction when in1 --> a do{(requestStop := [1]) ; schedule(
+    a, [0], [0])} reaction when a --> out1 ; out2 do{if requestStop === [1] then
+    out1 <- [1] fi}),
+       timers : none,
+       actions : < a : LogicalAction |
+       minDelay : 50,
+       minSpacing : 0,
+       policy : defer,
+       payload : [0] > >
+< dashboard : Reactor |
+       inports : < in : Port |
+       value : [0] >,
+       outports : none,
+       state : received |-> [0],
+       reactions : reaction when in --> none do{received := in},
+       timers : none,
+       actions : none >
+< pedal : Reactor |
+       inports : none,
+       outports : < out : Port |
+       value : [77] >,
+       state : empty,
+       reactions : reaction when a --> out do{out <- [77]},
+       timers : none,
+       actions : < a : PhysicalAction |
+       minDelay : 0,
+       minSpacing : 0,
+       policy : defer,
+       payload : [69] > >
+< brakes : Reactor |
+       inports : (< inAdas : Port |
+       value : [1] >
+< inPedal : Port |
+       value : [77] >),
+       outports : none,
+       state : ((brakesApplied |-> [1]) ; (counter2 |-> [5]) ; counter3 |-> [
+    1]),
+       reactions : (reaction when inAdas --> none do{(brakesApplied := inAdas) ;
+    counter3 := (counter3 + [1])} reaction when inPedal --> none do{(
+    brakesApplied := inPedal) ; counter2 := (counter2 + [1])}),
+       timers : none,
+       actions : none >
+< env : Environment |
+       physicalActions : < pedal . a : PhysAct |
+       period : 5,
+       leftOfPeriod : 5,
+       possibleValues : ([69] : [71]),
+       timeNonDet : true > >
+< queue : EventQueue |
+       queue : ((event(lidar, t, [0]) at tag(13, 0)) :: event(adasProcessor, a,
+    [0]) at tag(29, 0)) >
+(lidar : out --> adasProcessor : in1)
+(adasProcessor : out2 --> dashboard : in)
+(pedal : out --> brakes : inPedal)
+adasProcessor : out1 -- 5 --> brakes : inAdas}  in time 55
+)---
+
+
+--- Also a time-bounded search, for brakes applied:
+search [1] initSystem in time 0  =>*
+    {REST:Configuration  < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
+                                         ATTS:AttributeSet >} in time T:Time .
 
 
 
