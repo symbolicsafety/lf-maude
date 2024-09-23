@@ -70,7 +70,7 @@ omod ADAS-WITHOUT-CAMERA is
                                minSpacing : 0, 
                                policy : defer, 
                                payload : [0] >,
-      reactions : reaction when a --> out do { out <- [77] }
+      reactions : reaction when a --> out do { out <- [1] }
     >
 
     < brakes : Reactor |
