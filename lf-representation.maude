@@ -71,6 +71,8 @@ omod LF-REPR is
   ---  Of course, in a future more general setting, we can use
   ---    reactor.n   as the reaction id.
 
+  ***  NOW in complex version we try the following ReactionId instead:
+  op _._ : ReactorId Nat -> ReactionId [ctor] .
 
   sort OidSet . 
   subsort Oid < OidSet .
@@ -142,7 +144,28 @@ omod LF-REPR is
   eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
   
   var RB : ReactionBody .
+  var RL : ReactionList .
+  var N : Nat .
+  var REST : Configuration .
+  var OS2 : OidSet .
+  var REACTORID : ReactorId .
   
+
+  --- for more complex, journal paper, setting:
+  op reaction_when_-->_do`{_`} : Nat OidSet OidSet ReactionBody -> Reaction [ctor] .
+
+  op addIndices : ReactionList Nat -> ReactionList .
+  eq addIndices(nil, N) = nil .
+  eq addIndices((reaction when OS --> OS2 do {RB}) RL, N)
+   = (reaction N when OS --> OS2 do {RB}) addIndices(RL, s N) .
+
+  op addReactionIndices : Configuration -> Configuration .
+  eq addReactionIndices(< REACTORID : Reactor | reactions : RL > REST)
+   = < REACTORID : Reactor | reactions : addIndices(RL, 1) > addReactionIndices(REST) . 
+  eq addReactionIndices(REST) = REST [owise] .
+
+  *** Remember to add indices to reactions ASAP in the more complex setting!
+
 endom
   
   

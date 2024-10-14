@@ -4,59 +4,93 @@ in physicalActions.maude
 *** that each reaction is only triggered by one
 ***   "thing".  
 
+*** Journal version: Multiple triggers for a reaction.
+*** That would be completely trivial to implement.  
+*** However, what is the problem is that, in our
+*** understanding, multiple reactions in the same
+*** reactor could have exactly the same set of
+*** triggers.  Therefore, identifying a reaction
+*** by its reactors and set of triggers does not
+*** work. The situation is complicated since
+*** reactions most often do not have names in LF.
+*** Therefore, we now instead identify a reaction
+*** by a pair (r . i), where the reaction is the ith
+*** reaction declared in reactor r.
+
+*** In this code, we now assume that the function
+*** addReactionIndices is already call somewhere!
+***   This should be called somewhere in the interpreter,
+*** not by the user.
+
 
 omod RUNTIME-APG is
   including PHYSICAL-ACTIONS .
 
   vars NETWORK GRAPH : Configuration .
-  vars RECS RECS2 RECS3 : ReactionList .
+  vars RECS RECS2 RECS3 RL1 RL2 : ReactionList .
   vars REACTOR REACTOR2 REACTOR1 : ReactorId .
   vars TRIGGER TRIGGER1 TRIGGER2 : ActionTrigger .
   var VAL : Value .
   vars PRE SUCC : ReactionIdSet .
   vars O O1 O2 : PortId .
   vars OS OS1 OS2 : OidSet .
-  vars BODY BODY1 BODY2 : ReactionBody .
+  vars BODY BODY1 BODY2 RB : ReactionBody .
   vars EVENTS : Events .
   vars REACTION1 REACTION2 : ReactionId .
-
+  var N : Nat .
 
   --- graph data type:
 
   class RuntimeDependencies | apg : Configuration .
 
-  class APGNode | --- reaction : ReactionId,
+  class APGNode | triggers : TriggerStatus,
                   pre : ReactionIdSet,
 		  succ : ReactionIdSet,
 		  status : ExecutionStatus .
 
  sort ExecutionStatus .
  ops executed absent unknown present : -> ExecutionStatus [ctor] .
-                   
 
+ --- notice that our new ReactionId are  r . i.
 
+  sort TriggerStatus .
+  op _|->_ : ActionTrigger ExecutionStatus -> TriggerStatus [ctor] .
+  op empty : -> TriggerStatus [ctor] .
+  op _;_ : TriggerStatus TriggerStatus -> TriggerStatus [ctor assoc comm id: empty] .
   
 
+  --- Now an event may trigger multiple reactions, which makes
+  ---  this function much more tricky.
+  
   op initializeAPG : Events Configuration -> Configuration .
   --- initializeAPG(setOfEvents, main-LF-network) -> Graph
 
-  op initializeAPG : Events Configuration Configuration -> Configuration .
+eq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
+                 NETWORK
+		 < REACTOR : Reactor | reactions : (RL1
+		                                   (reaction N when (TRIGGER ; OS) --> OS2 do {RB})
+						    RL2) >)
+= < (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> present) ; setUnknown(OS)),
+                              pre : none, succ : none, status : present >
+  initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
+                 NETWORK
+		 < REACTOR : Reactor | reactions : (RL1 RL2) >) .
 
-  eq initializeAPG(EVENTS, NETWORK) =
-       initializeAPG(EVENTS, NETWORK, none) .
+eq initializeAPG(EVENTS, NETWORK) = none [owise] .
+  
 
-  eq initializeAPG(noEvent, NETWORK, GRAPH) = GRAPH .
-  eq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS, NETWORK, GRAPH) =
-       initializeAPG(EVENTS, NETWORK,
-                     GRAPH
-		     < (REACTOR . TRIGGER) : APGNode |
-                              pre : none, succ : none, status : present >) .
+op setUnknown : OidSet -> TriggerStatus .
+eq setUnknown(none) = empty .
+eq setUnknown(TRIGGER ; OS) = (TRIGGER |-> unknown) ; setUnknown(OS) . 
+
+
 
 
   op addDeps : Configuration Configuration -> Configuration .
   --- addDeps(graph, network)
   *** adds the links/dependencies to the empty nodes
-  
+
+---(
 
   eq addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC >
              GRAPH,
@@ -69,9 +103,32 @@ omod RUNTIME-APG is
   = addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC ; (REACTOR2 . O2) >
             addSucc(GRAPH, (REACTOR2 . O2), (REACTOR . TRIGGER)),
 	    NETWORK < REACTOR : Reactor | >) .
-
+  
 
   eq addDeps(GRAPH, NETWORK) = GRAPH [owise] .
+
+)---
+
+
+  eq addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC >
+             GRAPH,
+	     NETWORK < REACTOR : Reactor |
+		            reactions : RECS
+			                (reaction when TRIGGER --> O ; OS
+					          do {BODY})
+					RECS2 >
+	     (REACTOR : O --> REACTOR2 : O2))
+  = addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC ; (REACTOR2 . O2) >
+            addSucc(GRAPH, (REACTOR2 . O2), (REACTOR . TRIGGER)),
+	    NETWORK < REACTOR : Reactor | >) .
+  
+
+  eq addDeps(GRAPH, NETWORK) = GRAPH [owise] .
+
+
+
+
+
 
   op addSucc : Configuration ReactionId ReactionId -> Configuration .
   --- add third argument as new predecessor to node in second argument;
