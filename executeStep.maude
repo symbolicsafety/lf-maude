@@ -325,7 +325,7 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
   =  				       
      executeReactionBody(< REACTOR : Reactor |
                                        state : ((BVAR |->
-		      [evalB(BEXPR, ((BVAR |-> VAL) ; VALUATION), INPORTS ACTIONS)])
+		      [evalB(BEXPR, ((BVAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TRIGGERS-STATUS)])
 				        ; VALUATION) >,
 				       BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS) .
 
@@ -336,7 +336,7 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
 				       (if BEXP then BODY1 fi) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if evalB(BEXP, VALUATION, INPORTS ACTIONS) 
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS) 
 			 then (BODY1 ; BODY) else
 			 BODY fi,  OUTPUTS, QUEUE, TRIGGERS-STATUS) .
                                       
@@ -347,7 +347,7 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
 				       OUTPUTS, QUEUE, TRIGGERS-STATUS)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if evalB(BEXP, VALUATION, INPORTS ACTIONS)
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS)
 			 then (BODY1 ; BODY) else
 			 (BODY2 ; BODY) fi,  OUTPUTS, QUEUE, TRIGGERS-STATUS) .
 
@@ -359,7 +359,7 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
 				       (while BEXP do BODY1 done) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
   =  				       
      executeReactionBody(< REACTOR : Reactor | >,
-                         if evalB(BEXP, VALUATION, INPORTS ACTIONS) then
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS) then
 			 (BODY1 ; (while BEXP do BODY1 done) ; BODY) else
 			 BODY fi,  OUTPUTS, QUEUE, TRIGGERS-STATUS) .
 
@@ -372,9 +372,9 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
   =  				       
      executeReactionBody(< REACTOR : Reactor | outports : CONF
                                 < BPORT : Port | value : [evalB(BEXPR, VALUATION,
-				                             INPORTS ACTIONS)] > >,
+				                             INPORTS ACTIONS, TRIGGERS-STATUS)] > >,
 				       BODY, event(REACTOR, BPORT,
-				                 [evalB(BEXPR, VALUATION, INPORTS ACTIONS)])
+				                 [evalB(BEXPR, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS)])
 						   OUTPUTS,
 						   QUEUE, TRIGGERS-STATUS) .
 
@@ -426,7 +426,7 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
 				       OUTPUTS,
 				       schedule(event(REACTOR,  BACTIONID,
 				                      [evalB(BEXPR, VALUATION, INPORTS CONF
-				                 < BACTIONID : Action | minDelay : T >)]),
+				                 < BACTIONID : Action | minDelay : T >, TRIGGERS-STATUS)]),
 						T + eval(IEXPR, VALUATION, INPORTS CONF
 				                 < BACTIONID : Action | minDelay : T >),
 						QUEUE), TRIGGERS-STATUS) .
@@ -434,23 +434,23 @@ eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [ow
 
 
 
-op evalB : BoolExpr ReactorState Configuration -> Bool .
+op evalB : BoolExpr ReactorState Configuration TriggerStatus -> Bool . *** FOURTH PARAMETER NEW!
 op eval : IntExpr ReactorState Configuration -> Nat .
---- eval(expr, valuation, input ports AND actions)
+--- eval(expr, valuation, input ports AND actions, triggerStatus)
 
-eq evalB([B], VALUATION, INPORTSANDACTIONS) = B .
+eq evalB([B], VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) = B .
 eq eval([N], VALUATION, INPORTSANDACTIONS) = N .
 
 
 eq eval(IPORTID, VALUATION, CONF < IPORTID : Port | value : [N] >) = N .
-eq evalB(BPORTID, VALUATION, CONF < BPORTID : Port | value : [B] >) = B .
+eq evalB(BPORTID, VALUATION, CONF < BPORTID : Port | value : [B] >, TRIGGERS-STATUS) = B .
 
 
 eq eval(IACTIONID, VALUATION, CONF < IACTIONID : Action | payload : [N] >) = N .
-eq evalB(BACTIONID, VALUATION, CONF < BACTIONID : Action | payload : [B] >) = B .
+eq evalB(BACTIONID, VALUATION, CONF < BACTIONID : Action | payload : [B] >, TRIGGERS-STATUS) = B .
 
 eq eval(IVAR, VALUATION ; (IVAR |-> [N]), INPORTSANDACTIONS) = N .
-eq evalB(BVAR, VALUATION ; (BVAR |-> [B]), INPORTSANDACTIONS) = B .
+eq evalB(BVAR, VALUATION ; (BVAR |-> [B]), INPORTSANDACTIONS, TRIGGERS-STATUS) = B .
 
 eq eval(IEXP1 + IEXP2, VALUATION, INPORTSANDACTIONS) =
      eval(IEXP1, VALUATION, INPORTSANDACTIONS) + eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
@@ -462,27 +462,27 @@ eq eval(IEXP1 * IEXP2, VALUATION, INPORTSANDACTIONS) =
        eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
 
-eq evalB(IEXP1 === IEXP2, VALUATION, INPORTSANDACTIONS) =
+eq evalB(IEXP1 === IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
     eval(IEXP1, VALUATION, INPORTSANDACTIONS) ==
       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq evalB(BEXP1 === BEXP2, VALUATION, INPORTSANDACTIONS) =
-    evalB(BEXP1, VALUATION, INPORTSANDACTIONS) ==
-      evalB(BEXP2, VALUATION, INPORTSANDACTIONS) .
+eq evalB(BEXP1 === BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) ==
+      evalB(BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
 
-eq evalB(IEXP1 < IEXP2, VALUATION, INPORTSANDACTIONS) =
+eq evalB(IEXP1 < IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
        eval(IEXP1, VALUATION, INPORTSANDACTIONS) <
        eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq evalB(IEXP1 <= IEXP2, VALUATION, INPORTSANDACTIONS) =
+eq evalB(IEXP1 <= IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
        eval(IEXP1, VALUATION, INPORTSANDACTIONS) <=
        eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq evalB(IEXP1 > IEXP2, VALUATION, INPORTSANDACTIONS) =
+eq evalB(IEXP1 > IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
       eval(IEXP1, VALUATION, INPORTSANDACTIONS) >
       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
-eq evalB(IEXP1 >= IEXP2, VALUATION, INPORTSANDACTIONS) =
+eq evalB(IEXP1 >= IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
        eval(IEXP1, VALUATION, INPORTSANDACTIONS) >=
        eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
 
