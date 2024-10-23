@@ -1,12 +1,12 @@
 --- "Peter" example 
 
---- in runtime-apg.maude
-
 in dynamics.maude
+
+--- in dynamics.maude
 
 omod EDWARD-LEE-EXAMPLE-PETER is
 
- including LF-REPR .
+ including RUNTIME-APG .
 
 
  op x : -> IVarId [ctor] .
@@ -56,6 +56,11 @@ omod EDWARD-LEE-EXAMPLE-PETER is
 
 endom
 
+red generateAPG(event(reactor1, in2, [2]), addReactionIndices(init)) .
+
+eof
+
+
 
 omod TEST-APG is
   including EDWARD-LEE-EXAMPLE-PETER .
@@ -66,13 +71,13 @@ omod TEST-APG is
   op initSystem : -> GlobalSystem .
   eq initSystem =
       { < env : Environment | physicalActions : none >
-        init
+        addReactionIndices(init)
 	< queue : EventQueue | queue : event(reactor1, in2, [2]) at tag(0,0) >} .
 endom
 
 
 
---- red generateAPG(event(reactor1, in2, [2]), init) .
+
 
 --- red initializeAPG(event(y, startup, [0]), init) .
 
@@ -81,3 +86,5 @@ endom
 rew initSystem .
 
 search initSystem =>! CS:ClockedSystem .
+
+--- works perfectly in new complex setting ...

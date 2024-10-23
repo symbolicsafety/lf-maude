@@ -13,16 +13,16 @@ omod TEST-TRAIN is
      { < env : Environment |
            physicalActions : < (controller . external) : PhysAct |
 	                           leftOfPeriod : 0,
-				   period : 10,
+				   period : 10, --- 10 is correct
 				   possibleValues : ([true] : [false]),
 				   timeNonDet : false >
                              < (door . extOpen) : PhysAct |
 	                           leftOfPeriod : 0,
-				   period : 11,
-				   possibleValues : ([true]),
-				   timeNonDet : true > 
+				   period : 2,   --- should be 11
+ 				   possibleValues : ([true]),
+				   timeNonDet : false >    ---- should be true
        >
-       init
+       addReactionIndices(init)
        < queue : EventQueue | queue : empty >} .
                               
      
@@ -38,12 +38,20 @@ endom
 
 rew [100] initSystem .
 
+
+---(
 search [1] initSystem =>*
              {REST:Configuration
 	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} in time T:Time .
+)---
 
+search [1] initSystem =>*
+             {REST:Configuration
+	      < door : Reactor | state : (counter1 |-> [4]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} in time T:Time .
 
+eof
 
 omod UNCLOCKED-TRAIN is
   including TEST-TRAIN .
@@ -108,6 +116,8 @@ endom
 
 
 --- red modelCheck(initSystem, <> (locked in door is [true])) .
+
+--- red modelCheck(initSystem, <> (locked in door is [true])) .
 --- gives counterexample, as Marjan said it would.
 --- however, it seems to be the trivial counterxample,
 --- where the external button, to start the train, is never pushed.
@@ -124,6 +134,8 @@ red modelCheck(initSystem,
 	       (locked in door is [true]))
 	       /\ ([] <> (event(controller, external, [true]) isInQueue)))
 	       ->  <> (locked in door is [true])) .
+
+eof
 
 --- Holds when period of extOpen is 11 and external is NOT timeNonDet.
 --- Does not hold when external is timeNonDet.

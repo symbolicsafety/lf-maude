@@ -6,7 +6,7 @@ in lf-representation
 omod TRAINDOOR-V3 is 
  including LF-REPR .
 
----  op counter1 : -> IVarId [ctor] .
+  op counter1 : -> IVarId [ctor] .
  ops isOpen locked : -> BVarId [ctor] .
  ops controller train door : -> ReactorId [ctor] .
  ops close lock unlock open : -> BPortId [ctor] .
@@ -46,21 +46,21 @@ omod TRAINDOOR-V3 is
 		  < open : Port | value : [false] >
 	          < close : Port | value : [false] >,
         outports : none,
-        state : (locked |-> [false])  ; (isOpen |-> [false]),
+        state : (locked |-> [false])  ; (isOpen |-> [false]) ; (counter1 |-> [0]),
         timers : none,
         actions : < extOpen : PhysicalAction | 
                                minDelay : 0, 
                                minSpacing : 0, 
                                policy : defer, 
                                payload : [false] >,
-        reactions : (reaction when close do { isOpen := [false] })
+        reactions : (reaction when close do {isOpen := [false]})
                     (reaction when lock do
 		       { if isOpen === [false] then locked := [true] fi })
                     (reaction when unlock do { locked := [false] }) 
-                    (reaction when open do
-		       { if locked === [false] then isOpen := [true] fi }) 
-                    (reaction when extOpen do
-		       { if locked === [false] then isOpen := [true] fi }) 
+                    (reaction when (open) do                     *** new!
+		       { if locked === [false] then isOpen := [true] fi  ;  (counter1 := counter1 + [1]) }) 
+                  (reaction when extOpen do
+		       { if locked === [false] then isOpen := [true] fi   ;  (counter1 := counter1 + [1])}) 
 
    >
 

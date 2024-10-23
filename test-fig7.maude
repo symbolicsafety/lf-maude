@@ -70,7 +70,7 @@ omod TEST-FIG7 is
   op initSystem : -> GlobalSystem .
   eq initSystem =
       {< env : Environment | physicalActions : none >
-       init
+       addReactionIndices(init)
        < queue : EventQueue | queue : addStartup(startup, init, empty) >} .
 endom
 
@@ -81,6 +81,9 @@ omod SIMULATE-FIG7 is
 endom  
 
 red initSystem .
+
+
+
 
 rew [33] initSystem .
 
@@ -108,13 +111,18 @@ endom
 
 rew [33] initSystem .
 
+
 search [1] initSystem =>*  {REST:Configuration
                             < x : Reactor | state : (s |-> [2]), ATTS:AttributeSet >} .
+
+
 
 --- convenient syntax:
 search [1] initSystem =>* SYSTEM:GlobalSystem such that
                            valueOf x . s in SYSTEM:GlobalSystem == [2] .
 --- also works; no solution for 2, but solution for 3
+
+
 
 *** Some temporal logic model checking:
 
@@ -165,3 +173,7 @@ omod MODEL-CHECK-ADAS is
 endom
 
 red modelCheck(initSystem, <> [] (s in x is [3])) .
+
+
+*** Everything works for our journal version per October 16, 2024, Tbilisi
+
