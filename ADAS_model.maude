@@ -1,9 +1,9 @@
 *** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
 
-in lf-representation
+in runtime-apg
 
 omod ADAS is 
- including LF-REPR .
+ including RUNTIME-APG .
 
  ops frame received brakesApplied requestStop : -> VarId [ctor] .
  ops lidar camera adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .
@@ -88,3 +88,6 @@ omod ADAS is
     (adasProcessor : out2 --> dashboard : in)
     pedal : out --> brakes : inPedal .
 endom
+
+
+red generateAPG(event(camera, t, [165]), addReactionIndices(init)) .
