@@ -80,7 +80,7 @@ omod DYNAMICS-WITHOUT-TICK is
    = min(TI, smallestTimer(PHYSICAL-ACTIONS)) .
 
 
-
+***(    New version: we remove the tickMicro rule ...
  crl [tickMicro] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
@@ -93,14 +93,14 @@ omod DYNAMICS-WITHOUT-TICK is
    --- condition ensures no mess/nondet between generating
    --- physical actions and reducing????
    --- CORRECT????
-
+)***
 
 
 
   crl [step] :
       {< E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(0, 0)) :: QUEUE >} 
+       < Q : EventQueue | queue : (EVENTS at tag(0, N)) :: QUEUE >} 
     =>
       {< E : Environment | physicalActions : CONF1 >
        NEW-NETWORK
