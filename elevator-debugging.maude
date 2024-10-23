@@ -75,7 +75,7 @@ omod ELEVATOR is including RUNTIME-APG .
                                                   payload : [0] >,
 
 	  reactions :
-	     (reaction when call1Pressed --> call1 do { (call1 <- [1]) ; (direction := [58]) }) --- executed
+	     (reaction when call1Pressed --> call1 do { (call1 <- [1]) }) --- executed
 	     (reaction when call2Pressed --> call2 do { call2 <- [1] })
 	     (reaction when simStopPressed --> stop do { stop <- [1] })
 --- (reaction when (motorUp ; motorDown) --> motorDone do {direction := [12345678]}) ----
@@ -156,3 +156,83 @@ endom
 
 search [1] initSystem =>* {none} .
 
+*** Property 1:
+--- elevator moves only when door is closed and stop is off
+--- simulator's (???) direction should be diff from 0 only when its
+---    doorState is closed and
+
+--- Main property: if it is moving, the door mst be closed:
+---    this guy assumes that doorState = 1 means open, and direction greater than zero means moving:
+search [1] initSystem =>*
+             {REST:Configuration
+	      < simulator : Reactor | state : ((direction |-> [NZ:NzNat]) ; (doorState |-> [0])),
+	                              AS1:AttributeSet >} .
+
+--- this finds a bad state, also when doorState is 1 it finds a state
+
+--- We must have misunderstood something ... now let's check the controller:
+search [1] initSystem =>*
+             {REST:Configuration
+	      < control : Reactor |
+	          state : ((direction |-> [NZ:NzNat]) ; (doorIsOpen |-> [0]) ; RS:ReactorState),
+	                              AS1:AttributeSet >} .
+--- this gives no solution:
+---(
+search [1] in UNBOUNDED-ELEVATOR : initSystem =>* {REST:Configuration
+< control : Reactor |
+       AS1:AttributeSet,
+       state : (RS:ReactorState ; (doorIsOpen |-> [1]) ; direction |-> [NZ:NzNat]) >}  .
+
+No solution.
+states: 53  rewrites: 7060 in 25ms cpu (25ms real) (281847 rewrites/second)
+)---
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < control : Reactor |
+	          state : ((direction |-> [NZ:NzNat]) ; RS:ReactorState),
+	                              AS1:AttributeSet >} .
+
+*** NOTICE: we look at the LF code, and the control's 'direction' variable is never changed!!!
+
+*** Final attempt:
+search [1] initSystem =>*
+             {REST:Configuration
+	      < simulator : Reactor | state : ((direction |-> [NZ:NzNat]) ; RS1:ReactorState),
+	                              AS1:AttributeSet >
+	      < control : Reactor | AS2:AttributeSet,
+                                    state : (RS2:ReactorState ; (doorIsOpen |-> [1])) >} .
+
+*** No solution.  Good!!
+
+--- Final sanity check: the thing can move when doors are closed:
+search [1] initSystem =>*
+             {REST:Configuration
+	      < simulator : Reactor | state : ((direction |-> [NZ:NzNat]) ; RS1:ReactorState),
+	                              AS1:AttributeSet >
+	      < control : Reactor | AS2:AttributeSet,
+                                    state : (RS2:ReactorState ; (doorIsOpen |-> [0])) >} .
+
+--- Good! finds state!
+
+*** Conclusion: their model is wrong/strange. Their analysis takes forever, whereas
+***   ours only encounters 53 states and model checks in short time.
+
+*** What we SHOULD do is:
+---  a. add nondeterministic physical actions modeling the user, so that all the interesting
+---        properties can be model checked in temporal logic
+--- b. maybe add analysis for the 'flow' stuff.
+--- However, the example and (erroneous) LF code is so confusing so
+--- it is probably better to move on.
+
+
+
+
+
+
+
+
+
+
+				         
+              				      
