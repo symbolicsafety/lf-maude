@@ -17,7 +17,7 @@ omod TEST-TRAIN is
 				   period : 50,
 				   possibleValues : ([true] : [false]),
 				   timeNonDet : true > >
-       init
+       addReactionIndices(init)
        < queue : EventQueue | queue : addStartup(startup,init, empty) >} .
                               
      
@@ -34,6 +34,8 @@ red initSystem .
 
 rew [33] initSystem .
 
+
+
 omod UNCLOCKED-TRAIN is
   including TEST-TRAIN .
   including UNBOUNDED-ANALYSIS-DYNAMICS  .
@@ -49,12 +51,11 @@ search [1] initSystem =>*
 	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} .
 
-eof
 
 omod TIME-BOUNDED-TRAIN is
   including TEST-TRAIN .
   including TIME-BOUNDED-DYNAMICS  .
-  eq timeBound = 40 .
+  eq timeBound = 149 .
 endom  
 
 
