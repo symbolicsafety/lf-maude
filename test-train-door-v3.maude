@@ -18,9 +18,9 @@ omod TEST-TRAIN is
 				   timeNonDet : false >
                              < (door . extOpen) : PhysAct |
 	                           leftOfPeriod : 0,
-				   period : 2,   --- should be 11
+				   period : 11,   --- should be 11, user can block if 2 
  				   possibleValues : ([true]),
-				   timeNonDet : false >    ---- should be true
+				   timeNonDet : true >    ---- should be true
        >
        addReactionIndices(init)
        < queue : EventQueue | queue : empty >} .
@@ -39,33 +39,32 @@ endom
 rew [100] initSystem .
 
 
+
 ---(
 search [1] initSystem =>*
              {REST:Configuration
 	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} in time T:Time .
-)---
+)--- finds a good state
 
-search [1] initSystem =>*
-             {REST:Configuration
-	      < door : Reactor | state : (counter1 |-> [4]) ; RS2:ReactorState,
-	                          ATTS2:AttributeSet >} in time T:Time .
 
-eof
 
 omod UNCLOCKED-TRAIN is
   including TEST-TRAIN .
   including UNBOUNDED-ANALYSIS-DYNAMICS  .
 endom  
 
-
+---(
 rew [33] initSystem .
+)---
 
-
+---(
 search [1] initSystem =>*
              {REST:Configuration
-	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState,
-	                          ATTS2:AttributeSet >} .
+	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState, ATTS2:AttributeSet >} .
+)---
+
+
 
 
 in model-checker.maude

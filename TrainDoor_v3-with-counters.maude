@@ -58,7 +58,7 @@ omod TRAINDOOR-V3 is
 		       { if isOpen === [false] then locked := [true] fi })
                     (reaction when unlock do { locked := [false] }) 
                     (reaction when (extOpen ; open) do                     *** new!
-		       { if locked === [false] then isOpen := [true] fi }) 
+		       { if locked === [false] then isOpen := [true] fi  ;  (counter1 := counter1 + [1]) }) 
              ---     (reaction when extOpen do
 	---	       { if locked === [false] then isOpen := [true] fi   ;  (counter1 := counter1 + [1])}) 
 
