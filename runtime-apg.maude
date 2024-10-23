@@ -33,7 +33,7 @@ omod RUNTIME-APG is
   var TRIGGERS : OidSet .
   var VAL : Value .
   vars PRE SUCC REACTIONIDS NEW-SUCCESSORS : ReactionIdSet .
-  vars O O1 O2 PORTID : PortId .
+  vars O O1 O2 PORTID PORTID1 PORTID2 : PortId .
   vars OS OS1 OS2 : OidSet .
   vars BODY BODY1 BODY2 RB : ReactionBody .
   vars EVENTS : Events .
@@ -106,26 +106,57 @@ ceq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
       if not (REACTOR . N) inGraph GRAPH .					      
 
 
-eq initializeAPG(EVENTS, NETWORK, GRAPH) = setDelayedAbsent(GRAPH, NETWORK) [owise] .  ***
+eq initializeAPG(EVENTS, NETWORK, GRAPH) = GRAPH [owise] .  ***
 
 --- New, subtle case: an 'unknown' input could result from a delayed connection,
 --- in which case we set it to 'absent' in this late-comer function ...
+--- Or, all sources of a trigger are absent from the APG.
 
-op setDelayedAbsent : Configuration Configuration -> Configuration .
+op setUnconnectedAbsent : Configuration Configuration -> Configuration .
 
-eq setDelayedAbsent(< (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> unknown) ; TRIGGER-STATUS) > GRAPH,
-                    NETWORK  (REACTOR2 : O -- T --> REACTOR : TRIGGER)) 
- = setDelayedAbsent(< (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> absent) ; TRIGGER-STATUS) > GRAPH,
-                    NETWORK  (REACTOR2 : O -- T --> REACTOR : TRIGGER)) .
+--- First, delayed connections are not part of the APG:
 
+eq setUnconnectedAbsent(< (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> unknown) ; TRIGGER-STATUS) >
+                        GRAPH,
+                        NETWORK  (REACTOR2 : O -- T --> REACTOR : TRIGGER)) 
+ = setUnconnectedAbsent(< (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> absent) ; TRIGGER-STATUS) > GRAPH,
+                        NETWORK  (REACTOR2 : O -- T --> REACTOR : TRIGGER)) .
 
+--- second, if the sources of immediate connections are not in the APG, then we
+---   we know that they are absent:
 
-ceq setDelayedAbsent(< (REACTOR . N) : APGNode | triggers : TRIGGER-STATUS, status : unknown > GRAPH,
+ceq setUnconnectedAbsent(< (REACTOR . N) : APGNode | triggers : ((PORTID |-> unknown) ; TRIGGER-STATUS) >
+                         GRAPH,
+                         NETWORK) 
+ = setUnconnectedAbsent(< (REACTOR . N) : APGNode | triggers : ((PORTID |-> absent) ; TRIGGER-STATUS) >
+                        GRAPH,
+                        NETWORK)
+     if not someSourceInAPG(REACTOR, PORTID, GRAPH, NETWORK) .			
+
+--- now, we set status to absent if we are sure about that:
+
+ceq setUnconnectedAbsent(< (REACTOR . N) : APGNode | triggers : TRIGGER-STATUS, status : unknown > GRAPH,
                     NETWORK) 
-  = setDelayedAbsent(< (REACTOR . N) : APGNode | status : absent > GRAPH, NETWORK)
+  = setUnconnectedAbsent(< (REACTOR . N) : APGNode | status : absent > GRAPH, NETWORK)
    if allTriggersDecided(TRIGGER-STATUS) .
 
-eq setDelayedAbsent(GRAPH, NETWORK) = GRAPH [owise] .
+eq setUnconnectedAbsent(GRAPH, NETWORK) = GRAPH [owise] .
+
+
+op someSourceInAPG : ReactorId PortId Configuration Configuration -> Bool .
+--- holds if there IS a reaction in the APG which can send immediate message to Reactor.Portid
+
+
+eq someSourceInAPG(REACTOR, PORTID,
+                   < (REACTOR2 . N) : APGNode | >  GRAPH,
+		   < REACTOR2 : Reactor | reactions : (RL1
+		                                      (reaction N when OS --> (PORTID2 ; OS2) do {BODY})
+						       RL2) >
+                   NETWORK
+		   (REACTOR2 : PORTID2 --> REACTOR : PORTID)) = true .
+
+eq someSourceInAPG(REACTOR, PORTID, GRAPH, NETWORK) = false [owise] .
+
 
 
 
@@ -218,7 +249,7 @@ eq setUnknown(TRIGGER ; OS) = (TRIGGER |-> unknown) ; setUnknown(OS) .
 
 
   eq generateAPG(EVENTS, NETWORK)
-   = addVerticalDeps(addDeps(initializeAPG(EVENTS, NETWORK, none), NETWORK))  .
+   = setUnconnectedAbsent(addVerticalDeps(addDeps(initializeAPG(EVENTS, NETWORK, none), NETWORK)), NETWORK) .
 
 
 ---  eq generateAPG(EVENTS, NETWORK)
