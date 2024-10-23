@@ -4,6 +4,10 @@
 *** This is a version to run on Lepri's Maude 2.7 TCTL model checker for
 ***     good dold Real-Time Maude ...
 
+*** Note that, as is, ADAS is an infinite-state system, since the frame variable
+***  increase beyond any bound. We therefore change it to rest frame when it reaches 10.
+*** Furthermore, the ADAS processor couldn't care less about these values ...
+
 --- in rtm-tctl.maude
 
 in dynamics
@@ -25,13 +29,13 @@ in dynamics
     < lidar : Reactor | 
       inports : none,
       outports : < out : Port | value : [0] >, 
-      state : (frame |-> [0]) ; (counter1 |-> [0]),
+      state : (frame |-> [0]),
       timers : < t : Timer | offset : 0, period : 34 >, --- 0 and 34 originally
           --- change above values to 11 and 17 for error number 3 in p19
       actions : none,
       reactions : 
-      reaction when t --> out do { (frame := frame + [1]) ;
-                                   (out <- frame) ; (counter1 := counter1 + [1])} >
+      reaction when t --> out do { if (frame === [10]) then (frame := [1]) else (frame := frame + [1]) fi ;
+                                   (out <- frame)} >
 
    < camera : Reactor | 
       inports : none,
@@ -40,7 +44,8 @@ in dynamics
       timers : < t : Timer | offset : 0, period : 17 >,	
       actions : none,
       reactions : 
-      reaction when t --> out do { (frame := frame + [1]) ; (out <- frame) } >
+      reaction when t --> out do { if (frame === [10]) then (frame := [1]) else (frame := frame + [1]) fi
+                                  ; (out <- frame) } >
 
 
     < adasProcessor : Reactor | 
@@ -91,11 +96,9 @@ in dynamics
       outports : none,
       timers : none,
       actions : none,
-      state : (brakesApplied |-> [0]) ; (counter2 |-> [0]) ; (counter3 |-> [0]),
-      reactions : (reaction when inAdas do { (brakesApplied := inAdas) ;
-                                             (counter3 := counter3 + [1])})
-                  (reaction when inPedal do { (brakesApplied := inPedal)  ;
-                                             (counter2 := counter2 + [1]) })
+      state : (brakesApplied |-> [0]),
+      reactions : (reaction when inAdas do { (brakesApplied := inAdas)})
+                  (reaction when inPedal do { (brakesApplied := inPedal) })
 
     >
 
@@ -133,25 +136,105 @@ endtom)
 (tomod TCTL-CHECK-ADAS is
    including TEST-ADAS .
    including TCTL-MODEL-CHECKER  .
+
+   ops brakeApplied stopRequested pedalPressed : -> Prop [ctor] .
+
+   var REST : Configuration .  var N : Nat .  vars EQ1 EQ2 : EQueue .  var EVENTS : Events .
+   var TAG : Tag .
+   
+
+   eq {REST <  brakes : Reactor | state : (brakesApplied |-> [ N ]) >} |= brakeApplied = (N == 1) .
+
+   eq {REST <  adasProcessor : Reactor | state : (requestStop |-> [ N ]) >} |= stopRequested = (N == 1) .
+
+   eq {REST  < queue : EventQueue | queue : (EQ1 :: ((event(pedal, a, [ N ]) EVENTS) at TAG) :: EQ2) >}
+       |=  pedalPressed = true .
+
+   eq {REST  < queue : EventQueue | queue : EQ2 >}
+       |=  pedalPressed = false [owise] .
+   
+
 endtom)
 
 
 
+(set tick det .)
+
+(trew initSystem in time < 178 .)
+
+(tsearch [1] initSystem  =>* {REST:Configuration
+                < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
+		                     AS:AttributeSet >} in time <= 10 .)
+
+(tsearch [1] initSystem  =>* {REST:Configuration
+                < queue : EventQueue | queue : (EQ1 ::
+		((event(pedal, a, [ N ]) EVENTS) at TAG) :: EQ2) >} in time <= 10 .)
+
+
+
+--- we will always apply the brakes within time 55:
+(mc-tctl initSystem |= AF[<= than 55] brakeApplied .)
+
+
+***(   in  12 seconds ...
+Check
+mc-tctl_|=_. initSystem |= AF[<= than 55] brakeApplied .
+in TCTL-CHECK-ADAS with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E not brakeApplied U[o 55,INF o] tt) .
+
+Property satisfied
+)***
 
 
 
 
-eof
+--- When requestStop is 1 then within time 55 the brakeApplied
+
+--- (mc-tctl initSystem |= AG (stopRequested implies (AF[<= than 55] brakeApplied)) .)
+
+***(  Output:
+rewrites: 1544021 in 13496ms cpu (13718ms real) (114399 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG (stopRequested implies AF[<= than 55] brakeApplied) .
+in TCTL-CHECK-ADAS with mode deterministic time increase
 
 
---- Property: within time 55, the brakes are applied.
----  Since we know that the timer t has offset 0, it will
---- fire at time 0, then 34, then 68, etc.
---- Therefore, it is enough to verify the time-bounded
---- formula <>_<= 55 (brakesApplied), which is what we will do.
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,INF o] stopRequested and (E not brakeApplied U[o 55,INF o] tt)) .
 
---- We will also show that the other error cases also give errors.
---- While Real-Time Maude has a timed CTL model checker, we only use
---- Maude and "home-made" time-bounded analysis in this case.
+Property satisfied
+)***
 
---- red generateAPG(event(camera, t, [165]), addReactionIndices(init)) .
+*** Property not satisfied for bound 54 ...
+
+
+*** What we are really interested in in this nondeterministic model is
+***   that each time the driver presses the pedal, within time 0, the brakes will
+***   apply.
+
+--- In our interpreter, when a physical action happens, the even is entered into
+---    the event queue with delay 0.
+
+(mc-tctl initSystem |=   AG  (pedalPressed implies AF[<= than 0] brakeApplied) .)
+
+
+***(   Result:
+
+rewrites: 1538850 in 13938ms cpu (14090ms real) (110403 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG (pedalPressed implies AF[<= than 0] brakeApplied) .
+in TCTL-CHECK-ADAS with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,INF o] pedalPressed and (E not brakeApplied U[o 0,INF o] tt)) .
+
+Property satisfied
+)***
+
+

@@ -1,10 +1,11 @@
 *** This is a model of the third train door example given on Figure 7 in
 *** the Verification of Cyberphysical Systems paper.
 
-in lf-representation
+in dynamics
 
-omod TRAINDOOR-V3 is 
- including LF-REPR .
+
+(tomod TRAINDOOR-V3 is 
+ including RUNTIME-APG .
 
   op counter1 : -> IVarId [ctor] .
  ops isOpen locked : -> BVarId [ctor] .
@@ -69,4 +70,82 @@ omod TRAINDOOR-V3 is
     (controller : open -- 7 --> door : open)
     (controller : close -- 3 --> door : close) .
    
-endom
+endtom)
+
+
+(tomod TEST-TRAIN is
+  including TRAINDOOR-V3 .
+  including SIMULATION-DYNAMICS .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (controller . external) : PhysAct |
+                                   leftOfPeriod : 0,
+                                   period : 10, --- 10 is correct
+                                   possibleValues : ([true] : [false]),
+                                   timeNonDet : false >
+                             < (door . extOpen) : PhysAct |
+                                   leftOfPeriod : 0,
+                                   period : 11,   --- should be 11, user can block if 2 
+                                   possibleValues : ([true]),
+                                   timeNonDet : true >    ---- should be true
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : empty >} .
+                              
+     
+endtom)
+
+(set tick det .)
+
+(trew initSystem in time < 178 .)
+
+
+*** Note: the TCTL model checker has major problems when we do not define
+*** also the false cases!
+
+(tomod TCTL-CHECK-TRAIN is
+   including TEST-TRAIN .
+   including TCTL-MODEL-CHECKER  .
+
+   ops driverPushOpen doorOpen : -> Prop [ctor] .
+
+   var REST : Configuration .  var N : Nat .  vars EQ1 EQ2 : EQueue .  var EVENTS : Events .
+   var TAG : Tag .   var RS : ReactorState .  var B : Bool .
+   
+
+   eq {REST <  door : Reactor | state : (isOpen |-> [ B ]) ; RS >} |= doorOpen = B .
+
+   eq {REST  < queue : EventQueue | queue : (EQ1 :: (event(controller, external, [false]) EVENTS at TAG)
+                                             :: EQ2) >}
+       |= driverPushOpen  = true .
+   
+   eq {REST  < queue : EventQueue | queue : EQ1 >}
+       |= driverPushOpen  = false [owise] .
+
+endtom)
+
+
+ (mc-tctl initSystem |= AG (driverPushOpen implies AF[<= than 6] doorOpen) .)
+
+
+
+***(   Result:
+
+rewrites: 4414312 in 125706ms cpu (129681ms real) (35115 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG (driverPushOpen implies AF[<= than 7] doorOpen) .
+in TCTL-CHECK-TRAIN with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,INF o] driverPushOpen and (E not doorOpen U[o 7,INF o] tt)) .
+
+Property satisfied
+)***
+
+*** Cecking the same property for bounds less than 7 returns Not satisfied!
