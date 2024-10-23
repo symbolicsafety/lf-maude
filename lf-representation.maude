@@ -132,6 +132,14 @@ omod LF-REPR is
   op schedule : ActionId IntExpr Expr -> ReactionBody [ctor] .  --- ???????
   --- schedule(action, extra time, value)
 
+
+  *** NEW IN TBILISI:
+  op isPresent : ActionTrigger -> BoolExpr [ctor] .  
+  op _==/=_ : Expr Expr -> BoolExpr [ctor] .
+  op !_ : BoolExpr -> BoolExpr [ctor] .
+  ops _&&_ _||_ : BoolExpr BoolExpr -> BoolExpr [ctor assoc comm] .
+
+
   sorts ReactionList Reaction .
   subsort Reaction < ReactionList .
   
