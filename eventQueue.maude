@@ -11,7 +11,7 @@ in lf-representation.maude
 --- Note: also actions need to be scheduled and put into event queue.
 ---   we guess
 
-omod EVENTS is
+(tomod EVENTS is
   including LF-REPR .
 
   --- At the moment, we do NOT deal with hierarchical
@@ -74,7 +74,7 @@ omod EVENTS is
        insert(EVENTS at tag(NZT, 0), QUEUE) .
 
   eq schedule(EVENTS, 0, QUEUE) = insert(EVENTS at tag(0,1), QUEUE) .
-endom
+endtom)
 
 
 

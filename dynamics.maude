@@ -2,7 +2,7 @@
 
 in executeStep.maude
 
-omod DYNAMICS-WITHOUT-TICK is
+(tomod DYNAMICS-WITHOUT-TICK is
   including EXECUTE-STEP .
   including TIMED-PRELUDE .
 
@@ -167,7 +167,7 @@ omod DYNAMICS-WITHOUT-TICK is
             REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), 0, QUEUE)) .
 
   eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
-endom
+endtom)
 
 
 
@@ -186,7 +186,7 @@ endom
 
 *** Case 1: standard tick rule for simulation:
 
-omod SIMULATION-DYNAMICS is
+(tomod SIMULATION-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 CONF
@@ -232,12 +232,12 @@ omod SIMULATION-DYNAMICS is
      if T := smallestTimer(CONF1)
         /\ T > 0
 	/\ CONF1 =/= none .      --- implied by typing of T
-endom
+endtom)
 
 
 *** Case 2: for unbounded and unclocked analyses:
 
-omod UNBOUNDED-ANALYSIS-DYNAMICS is
+(tomod UNBOUNDED-ANALYSIS-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 CONF
@@ -281,7 +281,7 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
      if T := smallestTimer(CONF1)
         /\ T > 0
 	/\ CONF1 =/= none .      --- implied by typing of T
-endom
+endtom)
 
 
 
@@ -290,7 +290,7 @@ endom
 ***    a. start with state {...} in time 0
 ***    b. set the value of the constant 'timeBound' to the desired value.
 
-omod TIME-BOUNDED-DYNAMICS is
+(tomod TIME-BOUNDED-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 CONF
@@ -339,4 +339,4 @@ omod TIME-BOUNDED-DYNAMICS is
         /\ T > 0
 	/\ CONF1 =/= none       --- implied by typing of T
 	/\ T3 + T <= timeBound .
-endom
+endtom)

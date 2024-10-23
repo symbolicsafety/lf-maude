@@ -17,7 +17,7 @@
 
 in eventQueue.maude
 
-omod PHYSICAL-ACTIONS is
+(tomod PHYSICAL-ACTIONS is
   including EVENTS .
 
   --- The ENVIRONMENT represents all external actions,
@@ -78,5 +78,5 @@ omod PHYSICAL-ACTIONS is
      < O : Environment | physicalActions : CONF >
      < O2 : EventQueue | queue : schedule(EVENT, 0, QUEUE) > .
 
-endom
+endtom)
 

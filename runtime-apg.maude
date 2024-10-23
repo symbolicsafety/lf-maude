@@ -23,7 +23,7 @@ in physicalActions.maude
 *** not by the user.
 
 
-omod RUNTIME-APG is
+(tomod RUNTIME-APG is
   including PHYSICAL-ACTIONS .
 
   vars NETWORK GRAPH : Configuration .
@@ -257,5 +257,5 @@ eq setUnknown(TRIGGER ; OS) = (TRIGGER |-> unknown) ; setUnknown(OS) .
 
 *** Remember that the function addReactionIndices must be called before generateAPG is called!!!
 
-endom
+endtom)
 
