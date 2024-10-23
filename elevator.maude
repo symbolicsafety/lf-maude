@@ -1,0 +1,153 @@
+in dynamics.maude
+   
+--- directions: 0: not moving, 1: up, 2: down   
+
+
+omod ELEVATOR is including RUNTIME-APG .
+
+  ops floor doorIsOpen stopPressed direction doorState : -> IVarId [ctor] .
+  ops control simulator : -> ReactorId [ctor] .
+  ops call1 call2 stop reachFloor doorStatus motorUp motorDown doorCommand : -> IPortId [ctor] .
+  ops motorDone checkDoor resetDirection : -> IActionId [ctor] .
+  ops call1Pressed call2Pressed simStopPressed : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < control : Reactor |
+          inports : < call1 : Port | value : [0] >  < call2 : Port | value : [0] >
+	            < stop : Port | value : [0] >   < reachFloor : Port | value : [0] >
+		    < doorStatus : Port | value : [0] >,
+	  outports : < motorUp : Port | value : [0] >  < motorDown : Port | value : [0] >
+	             < doorCommand : Port | value : [0] >,
+	  state : (floor |-> [0]) ; (doorIsOpen |-> [0]) ; (stopPressed |-> [0]) ; (direction |-> [0]),
+	  timers : none,
+	  actions : none,
+	  reactions :
+	    (reaction when call1 --> (motorDown ; doorCommand) do
+	        { if ((stopPressed ==/= [1])
+		      &&
+		      (doorIsOpen ==/= [1])
+		      &&
+		      (floor ==/= [1])
+		      &&
+		      (direction === [0]))
+		  then ((doorCommand <- [0]) ; (motorDown <- [1])) fi})
+            (reaction when call2 --> (motorUp ; doorCommand) do
+	        { if ((stopPressed ==/= [1])
+		      &&
+		      (doorIsOpen ==/= [1])
+		      &&
+		      (floor ==/= [2])
+		      &&
+		      (direction === [0]))
+		  then ((doorCommand <- [0]) ; (motorUp <- [1])) fi})
+            (reaction when stop --> doorCommand do
+	        { if (stopPressed === [0]) then ((stopPressed := [1]) ; (doorCommand <- [1]))
+		  else ((stopPressed := [0]) ; (doorCommand <- [0])) fi })
+            (reaction when reachFloor --> doorCommand do
+ 	        {  (floor := reachFloor) ; (doorCommand <- [1]) })
+            (reaction when doorStatus do {doorIsOpen := doorStatus})       >	
+
+    < simulator : Reactor |
+          inports : < motorUp : Port | value : [0] >  < motorDown : Port | value : [0] >
+	            < doorCommand : Port | value : [0] >,
+	  outports : < call1 : Port | value : [0] >  < call2 : Port | value : [0] >
+	             < stop : Port | value : [0] >   < reachFloor : Port | value : [0] >
+		     < doorStatus : Port | value : [0] >,
+	  state : (direction |-> [0]) ; (doorState |-> [0]),
+	  timers : < call1Pressed : Timer | offset : 0, period : 15 >
+	           < call2Pressed : Timer | offset : 5, period : 15 >
+		   < simStopPressed : Timer | offset : 10, period : 15 >,
+	  actions : < motorDone : LogicalAction | minDelay : 5, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < checkDoor : LogicalAction | minDelay : 2, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < resetDirection : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >,
+
+	  reactions :
+	     (reaction when call1Pressed --> call1 do { call1 <- [1] })
+	     (reaction when call2Pressed --> call2 do { call2 <- [1] })
+	     (reaction when simStopPressed --> stop do { stop <- [1] })
+	     (reaction when (motorUp ; motorDown) --> motorDone do
+	         { if (isPresent(motorUp)
+		       &&
+                      (! isPresent(motorDown)))
+		   then ((direction := [1]) ; (schedule(motorDone, [0], [0])))
+		   else (if (isPresent(motorDown)
+		             &&
+			     (! isPresent(motorUp)))
+			 then ((direction := [2]) ; (schedule(motorDone, [0], [0]))) fi)       
+                   fi })
+            (reaction when motorDone --> (reachFloor ; resetDirection) do
+	        { (if (direction === [1]) then (reachFloor <- [2])
+		  else  (if (direction === [2]) then (reachFloor <- [1]) fi)
+		  fi)  ;
+		  schedule(resetDirection, [0], [0])  })
+            (reaction when resetDirection do {direction := [0]})
+	    (reaction when doorCommand --> checkDoor do
+	        { (doorState := doorCommand) ; (schedule(checkDoor, [0], [0])) })
+            (reaction when checkDoor --> doorStatus do { doorStatus <- doorState })  	>	
+		     
+    (control : motorUp --> simulator : motorUp)
+    (control : motorDown --> simulator : motorDown)
+    (control : doorCommand --> simulator : doorCommand)
+    (simulator : call1 --> control : call1)
+    (simulator : call2 --> control : call2)
+    (simulator : stop --> control : stop)
+    (simulator : reachFloor --> control : reachFloor)
+    (simulator : doorStatus --> control : doorStatus)   .
+
+endom
+
+
+
+red generateAPG(event(simulator, call1Pressed, [0]),  addReactionIndices(init)) .
+
+
+
+--- 7  desired properties:
+---    i. elevator moves only when door is closed and stop is off
+---    ii. (not applicable to this aplication)
+---    iii.   --"--
+---    iv.   --"--
+---    v. the signals sent to the motor should not be contradictory
+---    vi. the elevator should move when it should (??)
+---    vii. do not move unless called
+
+
+
+omod TEST-ELEVATOR is
+  including ELEVATOR .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+endom
+
+omod SIMULATE-ELEVATOR is
+  including TEST-ELEVATOR .
+  including SIMULATION-DYNAMICS .
+endom  
+
+rew [100] initSystem .
+
+omod UNBOUNDED-ELEVATOR is
+  including TEST-ELEVATOR .
+  including UNBOUNDED-ANALYSIS-DYNAMICS  .
+endom  
+
+search [1] initSystem =>* {none} .
+

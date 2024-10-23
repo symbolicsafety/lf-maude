@@ -1,0 +1,79 @@
+in dynamics.maude
+
+
+omod AIRCRAFT-DOOR is including RUNTIME-APG .
+
+  ops ramp doorOpen : -> IVarId [ctor] .
+  ops controller vision door : -> ReactorId [ctor] .
+  ops in out : -> IPortId [ctor] .
+  op startup : -> IActionId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < controller : Reactor |
+          inports : none,
+	  outports : < out : Port | value : [0] >,
+	  state : empty,
+	  timers : none,
+	  actions : < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	  reactions :
+	    (reaction when startup --> out do {out <- [1]}) >
+
+    < vision : Reactor |
+          inports : < in : Port | value : [0] >,
+	  outports : < out : Port | value : [0] >,
+	  state : ramp |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when in --> out do {if (ramp === [1]) then out <- [0] else out <- [1] fi} > 
+
+    < door : Reactor |
+          inports : < in : Port | value : [0] >,
+	  outports : none,
+	  state : doorOpen |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when in do {doorOpen := in} > 
+
+    (controller : out --> vision : in)
+    (vision : out --> door : in) .
+endom
+
+--- red generateAPG(event(controller, startup, [0]),  addReactionIndices(init)) .
+
+
+--- desired property: (vision.ramp == 0) => (G[0sec] door-reaction-invoked => doorOpen == 1) .
+--- whem ramp is 0, the door reaction should be invoced and the doorOpen should be 1.
+
+omod TEST-AIRCRAFT-DOOR is
+  including AIRCRAFT-DOOR .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >} .
+endom
+
+omod SIMULATE-AIRCRAFT-DOOR is
+  including TEST-AIRCRAFT-DOOR .
+  including SIMULATION-DYNAMICS .
+endom  
+
+rew initSystem .
+
+search initSystem =>! GS:GlobalSystem .    --- obvious trivial result
+
+*** Not covered by us:
+--- 1. a property denoting that an action has been performed.
+---     can be solved by TLR model checking
+--- 2. timed temporal logic properties
+
+
