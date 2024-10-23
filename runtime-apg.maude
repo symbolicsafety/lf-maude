@@ -30,14 +30,17 @@ omod RUNTIME-APG is
   vars RECS RECS2 RECS3 RL1 RL2 : ReactionList .
   vars REACTOR REACTOR2 REACTOR1 : ReactorId .
   vars TRIGGER TRIGGER1 TRIGGER2 : ActionTrigger .
+  var TRIGGERS : OidSet .
   var VAL : Value .
-  vars PRE SUCC : ReactionIdSet .
-  vars O O1 O2 : PortId .
+  vars PRE SUCC REACTIONIDS NEW-SUCCESSORS : ReactionIdSet .
+  vars O O1 O2 PORTID : PortId .
   vars OS OS1 OS2 : OidSet .
   vars BODY BODY1 BODY2 RB : ReactionBody .
   vars EVENTS : Events .
-  vars REACTION1 REACTION2 : ReactionId .
-  var N : Nat .
+  vars REACTION1 REACTION2 REACTIONID : ReactionId .
+  vars N N1 N2 : Nat .
+  var TRIGGER-STATUS : TriggerStatus .
+  var T : Time .
 
   --- graph data type:
 
@@ -57,27 +60,79 @@ omod RUNTIME-APG is
   op _|->_ : ActionTrigger ExecutionStatus -> TriggerStatus [ctor] .
   op empty : -> TriggerStatus [ctor] .
   op _;_ : TriggerStatus TriggerStatus -> TriggerStatus [ctor assoc comm id: empty] .
-  
+
+  op allTriggersDecided : TriggerStatus -> Bool .
+  eq allTriggersDecided((PORTID |-> unknown) ; TRIGGER-STATUS) = false .
+  eq allTriggersDecided(TRIGGER-STATUS) = true [owise] .
+
 
   --- Now an event may trigger multiple reactions, which makes
   ---  this function much more tricky.
   
-  op initializeAPG : Events Configuration -> Configuration .
-  --- initializeAPG(setOfEvents, main-LF-network) -> Graph
+  op initializeAPG : Events Configuration Configuration -> Configuration .
+  --- initializeAPG(setOfEvents, main-LF-network, graphToBuild) -> Graph
+
 
 eq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
                  NETWORK
 		 < REACTOR : Reactor | reactions : (RL1
 		                                   (reaction N when (TRIGGER ; OS) --> OS2 do {RB})
-						    RL2) >)
-= < (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> present) ; setUnknown(OS)),
-                              pre : none, succ : none, status : present >
+						    RL2) >,
+		 GRAPH
+		 < (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> unknown) ; TRIGGER-STATUS) >)
+=
   initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
                  NETWORK
-		 < REACTOR : Reactor | reactions : (RL1 RL2) >) .
+		 < REACTOR : Reactor |  >,
+		 GRAPH < (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> present) ; TRIGGER-STATUS) >) .
 
-eq initializeAPG(EVENTS, NETWORK) = none [owise] .
-  
+
+
+
+
+ceq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
+                 NETWORK
+		 < REACTOR : Reactor | reactions : (RL1
+		                                   (reaction N when (TRIGGER ; OS) --> OS2 do {RB})
+						    RL2) >,
+		GRAPH)
+  =
+    initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
+                  NETWORK
+	          < REACTOR : Reactor | >,
+		  GRAPH
+		  < (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> present) ; setUnknown(OS)),
+                                              pre : none, succ : none, status : present >)
+      if not (REACTOR . N) inGraph GRAPH .					      
+
+
+eq initializeAPG(EVENTS, NETWORK, GRAPH) = setDelayedAbsent(GRAPH, NETWORK) [owise] .  ***
+
+--- New, subtle case: an 'unknown' input could result from a delayed connection,
+--- in which case we set it to 'absent' in this late-comer function ...
+
+op setDelayedAbsent : Configuration Configuration -> Configuration .
+
+eq setDelayedAbsent(< (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> unknown) ; TRIGGER-STATUS) > GRAPH,
+                    NETWORK  (REACTOR2 : O -- T --> REACTOR : TRIGGER)) 
+ = setDelayedAbsent(< (REACTOR . N) : APGNode | triggers : ((TRIGGER |-> absent) ; TRIGGER-STATUS) > GRAPH,
+                    NETWORK  (REACTOR2 : O -- T --> REACTOR : TRIGGER)) .
+
+
+
+ceq setDelayedAbsent(< (REACTOR . N) : APGNode | triggers : TRIGGER-STATUS, status : unknown > GRAPH,
+                    NETWORK) 
+  = setDelayedAbsent(< (REACTOR . N) : APGNode | status : absent > GRAPH, NETWORK)
+   if allTriggersDecided(TRIGGER-STATUS) .
+
+eq setDelayedAbsent(GRAPH, NETWORK) = GRAPH [owise] .
+
+
+
+op _inGraph_ : ReactionId Configuration -> Bool .
+eq REACTIONID inGraph GRAPH < REACTIONID : APGNode | > = true .
+eq REACTIONID inGraph GRAPH = false [owise] .
+
 
 op setUnknown : OidSet -> TriggerStatus .
 eq setUnknown(none) = empty .
@@ -90,110 +145,86 @@ eq setUnknown(TRIGGER ; OS) = (TRIGGER |-> unknown) ; setUnknown(OS) .
   --- addDeps(graph, network)
   *** adds the links/dependencies to the empty nodes
 
----(
+--- we iterate over connections ... but now in the more advanced setting
+--- one input port can trigger multiple reactions
 
-  eq addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC >
+  ceq addDeps(< (REACTOR . N) : APGNode | succ : SUCC >
              GRAPH,
-	     NETWORK < REACTOR : Reactor |
-		            reactions : RECS
-			                (reaction when TRIGGER --> O ; OS
-					          do {BODY})
-					RECS2 >
+	     NETWORK
+	     < REACTOR : Reactor | reactions : RL1 (reaction N when TRIGGERS --> O ; OS do {BODY}) RL2 >
 	     (REACTOR : O --> REACTOR2 : O2))
-  = addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC ; (REACTOR2 . O2) >
-            addSucc(GRAPH, (REACTOR2 . O2), (REACTOR . TRIGGER)),
-	    NETWORK < REACTOR : Reactor | >) .
-  
+  = addDeps(< (REACTOR . N) : APGNode | succ : SUCC ; NEW-SUCCESSORS >
+            addSucc(GRAPH, NEW-SUCCESSORS, (REACTOR . N), NETWORK
+	                 < REACTOR : Reactor | reactions : RL1
+			                        (reaction N when TRIGGERS --> O ; OS do {BODY}) RL2 >),
+	    NETWORK < REACTOR : Reactor | >) 
+  if NEW-SUCCESSORS := triggeredBy(REACTOR2, O2,
+                                   NETWORK < REACTOR : Reactor | >) .
 
-  eq addDeps(GRAPH, NETWORK) = GRAPH [owise] .
-
-)---
+   eq addDeps(GRAPH, NETWORK) = GRAPH [owise] .
 
 
-  eq addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC >
-             GRAPH,
-	     NETWORK < REACTOR : Reactor |
-		            reactions : RECS
-			                (reaction when TRIGGER --> O ; OS
-					          do {BODY})
-					RECS2 >
-	     (REACTOR : O --> REACTOR2 : O2))
-  = addDeps(< (REACTOR . TRIGGER) : APGNode | succ : SUCC ; (REACTOR2 . O2) >
-            addSucc(GRAPH, (REACTOR2 . O2), (REACTOR . TRIGGER)),
-	    NETWORK < REACTOR : Reactor | >) .
-  
 
-  eq addDeps(GRAPH, NETWORK) = GRAPH [owise] .
+
+  op triggeredBy : ReactorId ActionTrigger Configuration -> ReactionIdSet .
+
+  eq triggeredBy(REACTOR2, O2, NETWORK
+                               < REACTOR2 : Reactor |
+			           reactions : (RL1 (reaction N when (O2 ; OS2) --> OS do {BODY}) RL2) >)
+  = (REACTOR2 . N) ; triggeredBy(REACTOR2, O2, NETWORK < REACTOR2 : Reactor | reactions : (RL1 RL2) >) .
+
+  eq triggeredBy(REACTOR2, O2, NETWORK) = none [owise] .
 
 
 
 
 
 
-  op addSucc : Configuration ReactionId ReactionId -> Configuration .
-  --- add third argument as new predecessor to node in second argument;
+  op addSucc : Configuration ReactionIdSet  ReactionId Configuration -> Configuration .
+  --- add third argument as new predecessor to nodes in second argument;
   ---   if node in second argument does not exist; create it:
 
-  eq addSucc(GRAPH < REACTION1 : APGNode | pre : PRE >, REACTION1, REACTION2)
-   = GRAPH < REACTION1 : APGNode | pre : PRE ; REACTION2 > .
+  eq addSucc(GRAPH < REACTION1 : APGNode | pre : PRE >, REACTION1 ; REACTIONIDS, REACTION2, NETWORK)
+   = addSucc(GRAPH < REACTION1 : APGNode | pre : PRE ; REACTION2 >, REACTIONIDS, REACTION2, NETWORK) .
 
-  eq addSucc(GRAPH, REACTION1, REACTION2)
-   = GRAPH < REACTION1 : APGNode |
-               pre : REACTION2, succ : none, status : unknown > [owise] .
-  
+  eq addSucc(GRAPH, (REACTOR . N) ; REACTIONIDS, REACTION2,
+             NETWORK < REACTOR : Reactor | reactions : (RL1 (reaction N when OS --> OS2 do {RB}) RL2) >)
+   = addSucc(GRAPH < (REACTOR . N) : APGNode | triggers : setUnknown(OS),
+                                               pre : REACTION2, succ : none, status : unknown >,
+             REACTIONIDS, REACTION2, NETWORK < REACTOR : Reactor | >)  [owise] .
 
-  op findSuccessors : ReactionId Configuration -> ReactionIdSet .
-  --- findSuccessors(reaction, NETWORK)
+  eq addSucc(GRAPH, none, REACTION2, NETWORK) = GRAPH .
 
-  eq findSuccessors(REACTOR . TRIGGER,
-                    NETWORK < REACTOR : Reactor |
-		            reactions : RECS
-			                (reaction when TRIGGER --> OS do {BODY})
-					RECS2 >)
-   =  findInputs(REACTOR, OS, NETWORK) .
 
-  op findInputs : ReactorId OidSet Configuration -> ReactionIdSet .
-
-  eq findInputs(REACTOR, (O ; OS), (REACTOR : O --> REACTOR2 : O2) NETWORK)
-     = (REACTOR2 . O2) ; findInputs(REACTOR, (O ; OS), NETWORK) .
-
-  eq findInputs(REACTOR, OS, NETWORK) = none [owise] .
-
-  op addVerticalDeps : Configuration Configuration -> Configuration .
+  op addVerticalDeps : Configuration -> Configuration .
   --- AT THE END: add vertical dependencies; assuming all nodes already in
-  ---   graph.
+  ---   graph.  Now easier, since we now have numbers of the reactions in a reactor.
   
 
   ceq addVerticalDeps(GRAPH
-                      < (REACTOR . TRIGGER1) : APGNode | succ : SUCC >
-		      < (REACTOR . TRIGGER2) : APGNode | pre : PRE >,
-		      NETWORK
-		      < REACTOR : Reactor |
-		            reactions : RECS
-			                (reaction when TRIGGER1 --> OS1
-					          do {BODY1})
-					RECS2
-				        (reaction when TRIGGER2 --> OS2
-					          do {BODY2})
-					RECS3 >)
+                      < (REACTOR . N1) : APGNode | succ : SUCC >
+		      < (REACTOR . N2) : APGNode | pre : PRE >)
   = addVerticalDeps(GRAPH
-                      < (REACTOR . TRIGGER1) : APGNode |
-		          succ : SUCC ; (REACTOR . TRIGGER2) >
-		      < (REACTOR . TRIGGER2) : APGNode |
-		          pre : PRE ; (REACTOR . TRIGGER1) >,
-		      NETWORK
-		      < REACTOR : Reactor | >)
-    if (not (REACTOR . TRIGGER2) in SUCC) or (not (REACTOR . TRIGGER1) in PRE) .
+                      < (REACTOR . N1) : APGNode | succ : SUCC ; (REACTOR . N2) >
+		      < (REACTOR . N2) : APGNode | pre : PRE ; (REACTOR . N1) >)
+    if N1 < N2   /\  (not (REACTOR . N2) in SUCC) or (not (REACTOR . N1) in PRE) .
 
-  eq addVerticalDeps(GRAPH, NETWORK) = GRAPH [owise] .
+  eq addVerticalDeps(GRAPH) = GRAPH [owise] .
 
   
   *** THE WHOLE SHEBANG!
 
   op generateAPG : Events Configuration -> Configuration .
 
+
   eq generateAPG(EVENTS, NETWORK)
-   = addVerticalDeps(addDeps(initializeAPG(EVENTS, NETWORK), NETWORK), NETWORK)  .
+   = addVerticalDeps(addDeps(initializeAPG(EVENTS, NETWORK, none), NETWORK))  .
+
+
+---  eq generateAPG(EVENTS, NETWORK)
+---   = addDeps(initializeAPG(EVENTS, NETWORK), NETWORK)  .  *** just for debugging!
+
+*** Remember that the function addReactionIndices must be called before generateAPG is called!!!
 
 endom
 
