@@ -184,19 +184,6 @@ eq propagateImmediateOutputs(EVENTS, NETWORK) = NETWORK [owise] .
 op updateGraph : Configuration ReactorId OidSet Configuration Events -> Configuration .
 --- updateGraph(graph, executed reactor, output ports of reaction, network, actual outputs)
 
---- positive case
----(   OLD version
-eq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
-               REACTOR1, OS, NETWORK
-	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
-	       event(REACTOR1, PORTID1, VALUE) EVENTS)
- =
- updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : present > GRAPH,
-               REACTOR1, OS, 
-	       NETWORK,
-	       event(REACTOR1, PORTID1, VALUE) EVENTS) .
-)---
-
 --- new complex version
 --- positive case: some unknown input becomes present at a downstream guy:
 eq updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TRIGGERS-STATUS) > GRAPH,
@@ -211,22 +198,6 @@ eq updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; 
 	       event(REACTOR1, PORTID1, VALUE) EVENTS) .
 
 
-
-
----(   OLD VERSION IN SIMPLE SETTING  ....
---- negative case 1:
-ceq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH,
-               REACTOR1, (PORTID1 ; OS), 
-	       NETWORK
-	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
-	       EVENTS)
- =
- updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : absent > GRAPH,
-               REACTOR1, (PORTID1 ; OS),
-	       NETWORK,
-	       EVENTS)
-   if not (REACTOR1 . PORTID1)	presentIn EVENTS .
-)---
 
 
 --- negative case 1; updated complex setting:
@@ -248,21 +219,6 @@ ceq updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ;
    if not (REACTOR1 . PORTID1)	presentIn EVENTS .
 
 
----(   OLD VERSION ... simple setting ....
---- negative case 2: recursively propagate absent:
-eq updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : unknown > GRAPH
-                < (REACTOR3 . PORTID3) : APGNode | status : absent >,
-               REACTOR1, OS, 
-	       NETWORK
-	       (REACTOR3 : PORTID3 --> REACTOR2 : PORTID2),
-	       EVENTS)
- =
- updateGraph(< (REACTOR2 . PORTID2) : APGNode | status : absent >
-             < (REACTOR3 . PORTID3) : APGNode | > GRAPH,
-               REACTOR1, OS, 
-	       NETWORK,
-	       EVENTS) .
-)---
 
 --- NEW version!
 --- transitive negative case
