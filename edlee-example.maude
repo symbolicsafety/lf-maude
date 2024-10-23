@@ -58,7 +58,7 @@ endom
 
 red generateAPG(event(reactor1, in2, [2]), addReactionIndices(init)) .
 
-eof
+
 
 
 
