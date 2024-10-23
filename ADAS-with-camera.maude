@@ -1,11 +1,6 @@
-*** Second attempt: to avoid too much mess in the first step,
-***   we only assume that each reaction is triggered by one port/action/timer
+*** This treats ADAS as is, WITH multiple triggers for the ADAS-controller.
+*** We can now handle this case.
 
-***  It is conceptually trivial to consider the case with
-***    multiple input ports, but adds lots of cases, and will
-***    treated in the near future.
-
-*** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
 
 in dynamics
 
