@@ -1,0 +1,102 @@
+*** Maude representation of LF fibonacci example.
+
+in dynamics.maude
+
+omod FIBONACCI is including RUNTIME-APG .
+
+  ops n result lastResult secondLastResult : -> IVarId [ctor] .
+  ops fib printer : -> ReactorId [ctor] .
+  ops in out : -> IPortId [ctor] .
+  ops incrementN saveLast saveSecondLast : -> IActionId [ctor] .
+  op t  : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < fib : Reactor |
+          inports : none,
+          outports : < out : Port | value : [0] >,
+          state : (n |-> [0]) ; (result |-> [0]) ; (lastResult |-> [0]) ; (secondLastResult |-> [0]),
+          timers : < t : Timer | offset : 0, period : 1 >,
+          actions : < incrementN : LogicalAction | minDelay : 0, 
+                                                   minSpacing : 0, 
+                                                   policy : defer, 
+                                                   payload : [0] >
+                    < saveLast : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < saveSecondLast : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >,
+          reactions :
+            (reaction when t --> (out ; incrementN ; saveLast ; saveSecondLast) do
+                { if (n < [2]) then (result := [1])
+		  else (result := lastResult + secondLastResult) fi   ;
+		  (out <- result) ;
+		  schedule(incrementN, [0], [0]) ;
+		  schedule(saveLast, [0], [0]) ;
+		  schedule(saveSecondLast, [0], [0]) })
+            (reaction when incrementN  do {(n := n + [1])})
+            (reaction when saveSecondLast do {(secondLastResult := lastResult)})
+	    (reaction when saveLast  do {lastResult := result})  >
+
+    < printer : Reactor |
+             inports : < in : Port | value : [0] >,
+             outports : none,
+	     state : (result |-> [0]),
+	     timers : none,
+	     actions : none,
+	     reactions :
+	        (reaction when in do {result := in}) >
+
+   (fib : out --> printer : in) .
+
+endom
+
+
+
+omod TEST-FIBONACCI is
+  including FIBONACCI .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+endom
+
+
+omod TIME-BOUNDED-FIBONACCI is
+  including TEST-FIBONACCI .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 10 .
+endom  
+
+
+rew initSystem in time 0 .
+
+search initSystem in time 0 =>* {none} in time T:Time .
+
+---(
+search in TIME-BOUNDED-FIBONACCI : initSystem in time 0 =>* {none}  in time T:Time .
+
+No solution.
+states: 33  rewrites: 4032 in 9ms cpu (9ms real) (424734 rewrites/second)
+)---
+
+
+--- search explicitly for 89, which is the 10th fibonacci number:
+
+search initSystem in time 0 =>*
+         {REST:Configuration
+	  < printer : Reactor | AS:AttributeSet,
+	                        state : (result |-> [89]) >} in time T:Time .
+
+--- Finds TWO states at time 10, states 32 and 33.
+--- states: 33  rewrites: 4026 in 12ms cpu (13ms real) (319650 rewrites/second)
+
