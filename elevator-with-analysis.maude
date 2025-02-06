@@ -117,6 +117,28 @@ endom
 red generateAPG(event(simulator, call1Pressed, [0]),  addReactionIndices(init)) .
 
 
+***(   From LF repository:
+-------------------
+Safety Requirements
+-------------------
+
+The controller is supposed to satisfy the following safety requirements:
+
+R1  The elevator shall move only when the door is closed and the stop switch 
+    is off.
+R2  [Not applicable for this implementation] The elevator shall not try to pass the end positions
+    (that is, try go through the roof or the floor).
+R3  [Not applicable for this implementation] A moving elevator shall halt only if the stop switch is on, or the door 
+    is open, or the elevator has arrived at the destination floor.
+R4  [Not applicable for this implementation] The elevator shall halt before changing direction.
+R5  The signals sent to the motor shall not be contradictory.
+R6  The elevator shall move when it should. 
+R7  [Not a safety property] The elevator shall stay on a floor indefinitely 
+    while there is no call to the other floor.
+)***
+
+
+
 
 --- 7  desired properties:
 ---    i. elevator moves only when door is closed and stop is off
@@ -133,13 +155,14 @@ omod TEST-ELEVATOR is
   including ELEVATOR .
   including DYNAMICS-WITHOUT-TICK .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
       {< env : Environment | physicalActions : none >
        addReactionIndices(init)
-       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
 endom
 
 omod SIMULATE-ELEVATOR is
@@ -221,18 +244,75 @@ search [1] initSystem =>*
 *** What we SHOULD do is:
 ---  a. add nondeterministic physical actions modeling the user, so that all the interesting
 ---        properties can be model checked in temporal logic
---- b. maybe add analysis for the 'flow' stuff.
+--- b. maybe add analysis for the 'flow' stuff.      DONE, in general ...
 --- However, the example and (erroneous) LF code is so confusing so
 --- it is probably better to move on.
 
+--- All commands in less than 39ms
 
 
+***(   In the LF benchmarks repository, the property is written as follows:
+
+spec="G[0, 15 sec]((Elevator_s_reaction_3 && (Elevator_s_direction != 0)) 
+                   ==> (Elevator_s_doorStatus == 0 && Elevator_c_StopPressed == 0))",
+CT=15, expect=true
+
+)***
+
+--- The spec is a mess, but we can obviously analyze this property in three ways:
+---   1. Directly with bounded behaviors up to 15 in Maude itself, since
+---      apart from the initial G[0,15] there are no other timed temporal operators.
+---   2. Do the whole thing using Real-Time Maude's timed CTL model checker.
+---   3. Prove in Maude the stronger property [] (...)
+---      which of course implies G[0,15] (...)
+--- Obviously, case 3 is very strong and more general than 1 and 2.
+
+--- NOTE!  In the above LF requirement spec, we do not know what && really means.
+--- What is its semantics???   Because it combines a state properties with flow properties,
+---  and talk about the same state (there are no temporal operators in the formula)
+--- do they refer to the state variable values after or before Elevator_s_reaction_3
+--- is executed???    We have sent an email to Edward asking for clariifcation.
+
+--- We can of course do LTL model checking, but here search is enough, since this is a state property:
+--- Search for a BAD state where the state prop does not hold:
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < simulator : Reactor | state : ((direction |-> [NZ:NzNat]) ; (doorState |-> [N2:Nat])),
+	                              AS1:AttributeSet >
+	      < control : Reactor | AS2:AttributeSet,
+                                    state : (RS2:ReactorState ; (stopPressed |-> [N3:Nat])) >
+	      < rxns : Invoked | reactions : (simulator . 4) ; RIDS:ReactionIdSet >}
+         such that N2:Nat =/= 0   or   N3:Nat =/= 0  .	      
+
+***(    Result:
+search [1] in UNBOUNDED-ELEVATOR : initSystem =>* {REST:Configuration
+< control : Reactor |
+       AS2:AttributeSet,
+       state : (RS2:ReactorState ; stopPressed |-> [N3:Nat]) >
+< simulator : Reactor |
+       AS1:AttributeSet,
+       state : ((direction |-> [NZ:NzNat]) ; doorState |-> [N2:Nat]) >
+< rxns : Invoked |
+       reactions : (RIDS:ReactionIdSet ; (simulator . 4)) >}  such that N2:Nat =/= 0 or N3:Nat =/= 0 = true .
+
+Solution 1 (state 5)
+states: 6  rewrites: 1389 in 3ms cpu (4ms real) (353885 rewrites/second)
+REST:Configuration --> < env : Environment |
+       physicalActions : none >
+< queue : EventQueue |
+       queue : ((event(simulator, resetDirection, [0]) at tag(0, 1)) :: (event(simulator, checkDoor, [0]) at tag(2, 0))
+    :: ((event(simulator, motorDone, [0]) event(simulator, simStopPressed, [0])) at tag(5, 0)) :: (event(simulator,
+    call1Pressed, [0]) at tag(10, 0)) :: event(simulator, call2Pressed, [0]) at tag(15, 0)) >
+...
+NZ:NzNat --> 1
+N2:Nat --> 1
+RIDS:ReactionIdSet --> (control . 2) ; (control . 4) ; (simulator . 2) ; (simulator . 5) ; (simulator . 7)
+Maude> 
+)***
 
 
-
-
-
-
-
-				         
-              				      
+--- We found an unexpected counterexample.  show path 5 gives us the whole path leading to the bad state.
+--- Our model checking is based on our current understand of the seamntics of LF property spec language,
+--- so that could explain the undesired result.  Or, the spec, which seems a little bit messy, could
+--- have a flaw ...

@@ -7,7 +7,7 @@ omod TEST-TRAIN is
   including DYNAMICS-WITHOUT-TICK .
 ---  including SIMULATION-DYNAMICS .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
@@ -18,7 +18,8 @@ omod TEST-TRAIN is
 				   possibleValues : ([true] : [false]),
 				   timeNonDet : true > >
        addReactionIndices(init)
-       < queue : EventQueue | queue : addStartup(startup,init, empty) >} .
+       < queue : EventQueue | queue : addStartup(startup,init, empty) >
+       < rxns : Invoked | reactions : none >} .
                               
      
 endom
@@ -67,3 +68,19 @@ search initSystem in time 0 =>*
 	                          ATTS1:AttributeSet >
 	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} in time T:Time .
+
+***(  Result:
+
+search in TIME-BOUNDED-TRAIN : initSystem in time 0 =>* {REST:Configuration
+< train : Reactor |
+       ATTS1:AttributeSet,
+       state : (RS1:ReactorState ; moving |-> [true]) >
+< door : Reactor |
+       ATTS2:AttributeSet,
+       state : (RS2:ReactorState ; locked |-> [false]) >}  in time T:Time .
+
+No solution.
+states: 87  rewrites: 4499 in 24ms cpu (27ms real) (180429 rewrites/second)
+Maude> 
+)***
+

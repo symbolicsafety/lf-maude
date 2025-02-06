@@ -61,13 +61,14 @@ omod TEST-FIBONACCI is
   including FIBONACCI .
   including DYNAMICS-WITHOUT-TICK .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
       {< env : Environment | physicalActions : none >
        addReactionIndices(init)
-       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
 endom
 
 
@@ -99,4 +100,36 @@ search initSystem in time 0 =>*
 
 --- Finds TWO states at time 10, states 32 and 33.
 --- states: 33  rewrites: 4026 in 12ms cpu (13ms real) (319650 rewrites/second)
+--- 9ms in Feb 25, same old machine.
 
+***(  Property given in LF benchmarks repository:
+
+spec="G[10 nsec](Fibonacci_printer_reaction_0 ==> Fibonacci_printer_result == 89)", expect=true
+
+)***
+
+--- Notice G[10], and not G[0,10]!  We can of course use Real-Time Maude's Timed CTL model
+--- checker, but an easy solution here is to do an invariant check when the system clock shows 10:
+
+--- search for breach of invariant when ssytem clock is 10:
+search initSystem in time 0 =>*
+         {REST:Configuration
+	  < printer : Reactor | AS:AttributeSet,
+	                        state : (result |-> [N:Nat]) >
+          < rxns : Invoked | reactions : (printer . 1) ; RIDS:ReactionIdSet >} in time 10
+       such that N:Nat =/= 89  .
+
+***(    Result:
+search in TIME-BOUNDED-FIBONACCI : initSystem in time 0 =>* {REST:Configuration
+< printer : Reactor |
+       AS:AttributeSet,
+       state : result |-> [N:Nat] >
+< rxns : Invoked |
+       reactions : (RIDS:ReactionIdSet ; (printer . 1)) >}  in time 10 such that N:Nat =/= 89 = true .
+
+No solution.
+states: 33  rewrites: 4033 in 9ms cpu (10ms real) (415045 rewrites/second)
+Maude> 
+)***
+
+--- Perfect!

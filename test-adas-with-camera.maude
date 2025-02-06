@@ -1,3 +1,6 @@
+*** New, Feb 25, we add an object of the "Invoked" class which stores the reactions performed in each step.
+
+
 in ADAS-with-camera.maude
 
 
@@ -7,7 +10,7 @@ omod TEST-ADAS is
   including ADAS-WITH-CAMERA .
   including DYNAMICS-WITHOUT-TICK .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
@@ -18,8 +21,13 @@ omod TEST-ADAS is
                                    possibleValues : [69] : [71],
 				   timeNonDet : true > >
        addReactionIndices(init)
-       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .      --- new Feb
 endom
+
+red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .
+
+
 
 rew [51] initSystem .
 
@@ -29,6 +37,16 @@ omod TIME-BOUNDED-ADAS is
   including TIME-BOUNDED-DYNAMICS  .
   eq timeBound = 55 .
 endom  
+
+search [1] initSystem in time 0 =>* {REST:Configuration
+                < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
+		                     AS:AttributeSet >} in time T:Time .
+
+search [1] initSystem in time 0 =>* {REST:Configuration
+                < queue : EventQueue |
+		        queue : (EQ1:EQueue :: ((event(pedal, a, [N:Nat]) EVENTS:Events) at TAG:Tag) :: EQ2:EQueue) >}
+                in time T:Time .
+
 
 
 
@@ -50,6 +68,8 @@ omod MODEL-CHECK-ADAS is
   var RS : ReactorState .
   var T : Time .
   var O : Oid .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
 
   vars EQ1 EQ2 : EQueue .
   var EVENT : Event .
@@ -77,11 +97,24 @@ omod MODEL-CHECK-ADAS is
       < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
      |=  EVENT isInQueue = true .
 
+  --- NEW Feb25: a reaction is/was invoken in this/last step:
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}
+     |=  reaction RID invoked = true .
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}  in time T
+     |=  reaction RID invoked = true .
+
 endom
 
 
 red modelCheck(initSystem in time 0,
                <> (brakesApplied in brakes is [1])) .
+
+
 
 --- exactly what Edward Lee wanted
 
@@ -90,3 +123,43 @@ red modelCheck(initSystem in time 0,
 --- and in neither case does the formula hold
 
 --- works as a charm in complex setting, with camera!
+
+--- New Feb25:
+red modelCheck(initSystem in time 0,
+               [] ((reaction (lidar . 1) invoked) -> (<> (brakesApplied in brakes is [1])))) .
+
+--- property in Lee paper:
+red modelCheck(initSystem in time 0,
+               [] ((reaction (lidar . 1) invoked /\ requestStop in adasProcessor is [1])
+	       -> <> brakesApplied in brakes is [1])) .
+
+
+--- Another inttesting property is that after the pedal has been pressed, the brakles are
+--- applied immediately.
+
+--- In the new setting of Feb 2025, we can check this easily as follows:
+--- There is no reachable state, where the reaction pedal.1 has been invoked,
+--- but where the b.brakesAppled =/= 1.  Here we expert exploit the fact that our states
+--- have the form (newState, reactionsInvokedToReachNewState).
+---    Otherwise, we could of course also use our Timed CTL model checker
+--- and model check the property   AG (p.1 invoked   implies  AG[<= than 0] b.brakesApplied is [1])
+
+search [1] initSystem in time 0 =>*
+             {REST:Configuration
+              < brakes : Reactor | state : (brakesApplied |-> [N:Nat]) ; RS:ReactorState,
+		                     AS:AttributeSet >
+
+              < rxns : Invoked | reactions : ((pedal . 1) ; RIDS:ReactionIdSet) >} in time T:Time 
+           such that N:Nat =/= 1 .      --- bad state; brakesApplied must be 1 when pedal pressed
+
+***(   Result:
+No solution.
+states: 184  rewrites: 10757 in 31ms cpu (33ms real) (338771 rewrites/second)
+)***
+
+
+--- Everything perfect with ADAS.  If we bound the frame variables, we can of course
+--- also do unbopunded model checking.
+--- NOTE: In the LF benchmarks, the pedal is removed, since they do not deal with
+---    physical actions
+

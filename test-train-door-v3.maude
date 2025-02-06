@@ -6,7 +6,7 @@ omod TEST-TRAIN is
   including TRAINDOOR-V3 .
   including DYNAMICS-WITHOUT-TICK .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
@@ -23,7 +23,8 @@ omod TEST-TRAIN is
 				   timeNonDet : true >    ---- should be true
        >
        addReactionIndices(init)
-       < queue : EventQueue | queue : empty >} .
+       < queue : EventQueue | queue : empty >
+       < rxns : Invoked | reactions : none >} .
                               
      
 endom
@@ -135,6 +136,7 @@ red modelCheck(initSystem,
 	       ->  <> (locked in door is [true])) .
 
 eof
+
 
 --- Holds when period of extOpen is 11 and external is NOT timeNonDet.
 --- Does not hold when external is timeNonDet.
