@@ -2,7 +2,9 @@
 *** We can now handle this case.
 
 *** This is a version to run on Lepri's Maude 2.7 TCTL model checker for
-***     good dold Real-Time Maude ...
+***     good old Real-Time Maude ...
+
+*** Now WITH action predicates, Feb 2025.
 
 *** Note that, as is, ADAS is an infinite-state system, since the frame variable
 ***  increase beyond any bound. We therefore change it to rest frame when it reaches 10.
@@ -117,7 +119,7 @@ endtom)
   including DYNAMICS-WITHOUT-TICK .
   including SIMULATION-DYNAMICS .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
@@ -128,7 +130,8 @@ endtom)
                                    possibleValues : [69] : [71],
                                    timeNonDet : true > >
        addReactionIndices(init)
-       < queue : EventQueue | queue : addInitialTimers(init, empty) >} .
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
 endtom)
 
 
@@ -141,6 +144,10 @@ endtom)
 
    var REST : Configuration .  var N : Nat .  vars EQ1 EQ2 : EQueue .  var EVENTS : Events .
    var TAG : Tag .
+   var RID : ReactionId .
+   var RIDS : ReactionIdSet .
+   var T : Time .
+   var O : Oid .
    
 
    eq {REST <  brakes : Reactor | state : (brakesApplied |-> [ N ]) >} |= brakeApplied = (N == 1) .
@@ -153,6 +160,32 @@ endtom)
    eq {REST  < queue : EventQueue | queue : EQ2 >}
        |=  pedalPressed = false [owise] .
    
+
+  --- NEW Feb25: a reaction is/was invoken in this/last step:
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}
+     |=  reaction RID invoked = true .
+
+  eq {REST}
+     |=  reaction RID invoked = false [owise] .
+
+
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}  in time T
+     |=  reaction RID invoked = true .
+
+  eq {REST}  in time T
+     |=  reaction RID invoked = false [owise] .
+
+  op stopRequestedAndLidarInvoked : -> Prop [ctor] .
+  eq {REST <  adasProcessor : Reactor | state : (requestStop |-> [ 1 ]) >
+           < rxns : Invoked | reactions : ((lidar . 1) ; RIDS) >} |= stopRequestedAndLidarInvoked = true .
+
+  eq {REST} |= stopRequestedAndLidarInvoked = false [owise] .
+
 
 endtom)
 
@@ -172,8 +205,10 @@ endtom)
 
 
 
+
+
 --- we will always apply the brakes within time 55:
-(mc-tctl initSystem |= AF[<= than 55] brakeApplied .)
+--- (mc-tctl initSystem |= AF[<= than 55] brakeApplied .)
 
 
 ***(   in  12 seconds ...
@@ -193,7 +228,8 @@ Property satisfied
 
 --- When requestStop is 1 then within time 55 the brakeApplied
 
---- (mc-tctl initSystem |= AG (stopRequested implies (AF[<= than 55] brakeApplied)) .)
+
+(mc-tctl initSystem |= AG[<= than 10] (stopRequested implies (AF[<= than 55] brakeApplied)) .)
 
 ***(  Output:
 rewrites: 1544021 in 13496ms cpu (13718ms real) (114399 rewrites/second)
@@ -219,7 +255,7 @@ Property satisfied
 --- In our interpreter, when a physical action happens, the even is entered into
 ---    the event queue with delay 0.
 
-(mc-tctl initSystem |=   AG  (pedalPressed implies AF[<= than 0] brakeApplied) .)
+--- (mc-tctl initSystem |=   AG  (pedalPressed implies AF[<= than 0] brakeApplied) .)
 
 
 ***(   Result:
@@ -238,3 +274,102 @@ Property satisfied
 )***
 
 
+
+*** New commands Feb 2025, with 'mixed' dataflow + state-based properties!
+
+---(mc-tctl initSystem |= AG ((reaction (lidar . 1) invoked) implies (AF[<= than 55] brakeApplied)) .)
+
+***(   Result:
+rewrites: 1809832 in 14648ms cpu (14787ms real) (123554 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG (reaction lidar . 1 invoked implies AF[<= than 55] brakeApplied) .
+in TCTL-CHECK-ADAS with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,INF o] reaction lidar . 1 invoked and (E not brakeApplied U[o 55,INF o]
+    tt)) .
+
+Property satisfied
+)***
+
+--- (mc-tctl initSystem |= AG[<= than 10] ((reaction (lidar . 1) invoked) implies (AF[<= than 54] brakeApplied)) .)
+
+***(   Result:
+rewrites: 1816041 in 14422ms cpu (14528ms real) (125914 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG[<= than 10] (reaction lidar . 1 invoked implies AF[<= than 55] brakeApplied) .
+in TCTL-CHECK-ADAS with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,10 c] reaction lidar . 1 invoked and (E not brakeApplied U[o 55,INF o] tt))
+    .
+
+Property satisfied
+)***
+
+
+(mc-tctl initSystem |= AG[<= than 10] (stopRequestedAndLidarInvoked
+                                       implies (AF[<= than 55] brakeApplied)) .)
+
+***(   Result:
+rewrites: 1815558 in 14688ms cpu (14754ms real) (123602 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG[<= than 10] (stopRequestedAndLidarInvoked implies AF[<= than 55] brakeApplied) .
+in TCTL-CHECK-ADAS with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,10 c] stopRequestedAndLidarInvoked and (E not brakeApplied U[o 55,INF o]
+    tt)) .
+
+Property satisfied
+)***
+--- Property NOT satisfied for bound 54
+
+
+
+***( Two things worth remarking:
+1. Because of Lin et al have an event-based semantics, they must have a much trickier timed temporal
+   logic formula to formalize the simple thing that
+   "when the LIDAR reaction invokes and the ADAS processor requests stop at the same tag, ..."
+   In our case, of course all the reactions at the same tag are performed in the same step,
+   and therefore we can just look at single states and can therefore define this desired
+   coincidence in a very simple way:
+
+  op stopRequestedAndLidarInvoked : -> Prop [ctor] .
+  eq {REST <  adasProcessor : Reactor | state : (requestStop |-> [ 1 ]) >
+           < rxns : Invoked | reactions : ((lidar . 1) ; RIDS) >} |= stopRequestedAndLidarInvoked = true .
+
+  eq {REST} |= stopRequestedAndLidarInvoked = false [owise] .
+
+2. The TCTL model checker seems to have some porblems in some formulas.  For examples, above,
+(mc-tctl initSystem |= AG[<= than 10] ((stopRequested and (reaction (lidar . 1) invoked))
+                                       implies (AF[<= than 55] brakeApplied)) .)
+
+does not work.   We are currently debugging the TCTL model checker,
+which works for most formulas.
+The answer, when we get one, is correct, but some times, there is no answer,
+and no answer quickly.
+)***
+
+
+--- NOTICE: In general, our states are tuples
+--- (newState, reactionInvokedToReachNewState)
+--- so we should be aware of the order.  If you want
+--- something like "if X == 2" then reaction R should fire
+--- cannot be checked by just looking at such a (newState, reactionsFired)
+--- pair.  However, a property "if R fires then X == 2 [afterwards]" can be
+--- checked by just inspecting such a (newState, reactionsFiredToReachNewState)
+--- pair.    The latter properties are the ones appearing in the "Towards verifying ..."
+--- paper, as well as in the benchmarks repository.
+---    Note 2:  Since we handle all reactions at a given tag in one step,
+---  we do not need much of the complexity of the LF formulas and stuff, which
+---  use interleaving of all the reactions that take place at the same time.
+--- The main property for ADAS example has the for us desired form.
+--- Of course, we can also check the former, non-existing, properties, since
+--- the pre-state is available in the previous state.

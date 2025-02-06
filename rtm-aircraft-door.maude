@@ -1,0 +1,128 @@
+in dynamics.maude
+
+
+(tomod AIRCRAFT-DOOR is including RUNTIME-APG .
+
+  ops ramp doorOpen : -> IVarId [ctor] .
+  ops controller vision door : -> ReactorId [ctor] .
+  ops in out : -> IPortId [ctor] .
+  op startup : -> IActionId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < controller : Reactor |
+          inports : none,
+	  outports : < out : Port | value : [0] >,
+	  state : empty,
+	  timers : none,
+	  actions : < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	  reactions :
+	    (reaction when startup --> out do {out <- [1]}) >
+
+    < vision : Reactor |
+          inports : < in : Port | value : [0] >,
+	  outports : < out : Port | value : [0] >,
+	  state : ramp |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when in --> out do {if (ramp === [1]) then out <- [0] else out <- [1] fi} > 
+
+    < door : Reactor |
+          inports : < in : Port | value : [0] >,
+	  outports : none,
+	  state : doorOpen |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when in do {doorOpen := in} > 
+
+    (controller : out --> vision : in)
+    (vision : out --> door : in) .
+endtom)
+
+--- red generateAPG(event(controller, startup, [0]),  addReactionIndices(init)) .
+
+
+--- desired property: (vision.ramp == 0) => (G[0sec] door-reaction-invoked => doorOpen == 1) .
+--- whem ramp is 0, the door reaction should be invoced and the doorOpen should be 1.
+
+(tomod TEST-AIRCRAFT-DOOR is
+  including AIRCRAFT-DOOR .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endtom)
+
+(tomod SIMULATE-AIRCRAFT-DOOR is
+  including TEST-AIRCRAFT-DOOR .
+  including SIMULATION-DYNAMICS .
+endtom)  
+
+
+(set tick det .)
+
+
+(trew initSystem in time < 178 .)
+
+
+(tomod TCTL-CHECK-AIRCRAFT-DOOR is
+   including SIMULATE-AIRCRAFT-DOOR .
+   including TCTL-MODEL-CHECKER  .
+
+   var REST : Configuration .
+   vars REACTOR : ReactorId .
+   var RID : ReactionId .
+   var RIDS : ReactionIdSet .
+   var VAR : VarId .
+   vars VAL VAL2 : Value .
+   var VALS : ReactorState .
+   var O : Oid .
+ 
+   op valueOf_in_is_ : VarId ReactorId Value -> Prop [ctor] .
+
+   eq {REST <  REACTOR : Reactor | state : (VAR |-> VAL) ; VALS >} |= valueOf VAR in REACTOR is VAL2
+    = VAL == VAL2 .
+
+
+  --- NEW Feb25: a reaction is/was invoken in this/last step:
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}
+     |=  reaction RID invoked = true .
+
+  eq {REST} |=  reaction RID invoked = false [owise] .
+endtom)
+
+(mc-tctl initSystem |= (valueOf ramp in vision is [0])   implies
+                          AG[<= than 0] ((reaction (door . 1) invoked)  implies  (valueOf doorOpen in door is [1])) .)
+
+
+***( Result:
+rewrites: 28135 in 102ms cpu (107ms real) (274737 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= valueOf ramp in vision is[0]implies AG[<= than 0] (reaction door . 1 invoked implies
+    valueOf doorOpen in door is[1]) .
+in TCTL-CHECK-AIRCRAFT-DOOR with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,0 c] not valueOf doorOpen in door is[1] and reaction door . 1 invoked) or
+    not valueOf ramp in vision is[0] .
+
+Property satisfied
+)***
+
+
+*** Property in LF repository checked with success!!

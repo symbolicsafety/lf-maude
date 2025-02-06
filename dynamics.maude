@@ -1,4 +1,5 @@
---- First attempt at the overall dynamics of our interpreter.
+--- Feb 2025 version of overall interpreter. Adds the set of reactions
+--- performed in the "last" step.
 
 in executeStep.maude
 
@@ -18,7 +19,7 @@ in executeStep.maude
        PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
   var TI : TimeInf .
   vars T1 T T2 : Time .
-  vars E Q PA : Oid .
+  vars E Q PA RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
   vars QUEUE NEW-QUEUE : EQueue .
@@ -27,7 +28,7 @@ in executeStep.maude
   var TIMERID : TimerId .
   var VAL : Value .
   var ACTIONID : ActionId .
- 
+  var INVOKED : ReactionIdSet .
 
   *** We need some initialization, obviously.  DONE
 
@@ -37,8 +38,17 @@ in executeStep.maude
   *** make the physical action happen first.
   ---  In reality physical actions and events probably
   ---  will never happen at the same time.
-  
 
+
+*** NEW Feb'25:
+--- We add a new object keeping track of the reactions that were performed
+--- in the last step.
+
+  class Invoked | reactions : ReactionIdSet .
+
+
+
+ 
 *** We comment out the following "standard" tick rule, since the user
 *** can select below the appropriate tick rule for her analysis purposes
 *** by including different modules.
@@ -100,15 +110,17 @@ in executeStep.maude
   crl [step] :
       {< E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(0, N)) :: QUEUE >} 
+       < Q : EventQueue | queue : (EVENTS at tag(0, N)) :: QUEUE >
+       < RXNS : Invoked | >} 
     =>
       {< E : Environment | physicalActions : CONF1 >
        NEW-NETWORK
-       < Q : EventQueue | queue : NEW-QUEUE >} 
+       < Q : EventQueue | queue : NEW-QUEUE >
+       < RXNS : Invoked | reactions : INVOKED >} 
      --- NOTE: this could also generate future events that need to be inserted
      ---        into the event queue
    if   smallestTimer(CONF1) > 0
-      /\ networkQueue(NEW-NETWORK, NEW-QUEUE) :=
+      /\ networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED) :=
             executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE) .
 
    *** Note: condition ensures that physical actions are generated
@@ -193,7 +205,7 @@ endtom)
        PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
   var TI : TimeInf .
   vars T1 T T2 : Time .
-  vars E Q PA : Oid .
+  vars E Q PA RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
   vars QUEUE NEW-QUEUE : EQueue .
@@ -208,12 +220,14 @@ endtom)
    crl [tick] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >}
+      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
+      < RXNS : Invoked | >}
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >}
+                                 :: decreaseTags(QUEUE, T) >
+      < RXNS : Invoked | reactions : none >}
      in time T
      if T := min(T1, smallestTimer(CONF1))
         /\ T > 0 .
@@ -223,11 +237,13 @@ endtom)
     crl [extraTickRuleForPhysActs] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >}
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | >}
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >}
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | reactions : none >}
      in time T
      if T := smallestTimer(CONF1)
         /\ T > 0
@@ -244,7 +260,7 @@ endtom)
        PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
   var TI : TimeInf .
   vars T1 T T2 : Time .
-  vars E Q PA : Oid .
+  vars E Q PA RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
   vars QUEUE NEW-QUEUE : EQueue .
@@ -259,12 +275,14 @@ endtom)
    crl [tick] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >}
+      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
+      < RXNS : Invoked | >}
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >}
+                                 :: decreaseTags(QUEUE, T) >
+      < RXNS : Invoked | reactions : none >}
      if T := min(T1, smallestTimer(CONF1))
         /\ T > 0 .
 
@@ -273,11 +291,13 @@ endtom)
     crl [extraTickRuleForPhysActs] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >}
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | >}
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >}
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | reactions : none >}
      if T := smallestTimer(CONF1)
         /\ T > 0
 	/\ CONF1 =/= none .      --- implied by typing of T
@@ -297,7 +317,7 @@ endtom)
        PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
   var TI : TimeInf .
   vars T1 T T2 T3 : Time .
-  vars E Q PA : Oid .
+  vars E Q PA RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
   vars QUEUE NEW-QUEUE : EQueue .
@@ -313,12 +333,14 @@ endtom)
    crl [tick] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >} in time T3
+      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
+      < RXNS : Invoked | >} in time T3
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >}
+                                 :: decreaseTags(QUEUE, T) >
+      < RXNS : Invoked | reactions : none >}
      in time (T3 + T)
      if T := min(T1, smallestTimer(CONF1))
         /\ T > 0
@@ -329,11 +351,13 @@ endtom)
     crl [extraTickRuleForPhysActs] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >} in time T3 
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | >} in time T3 
      =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >}
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | reactions : none >}
      in time (T3 + T)
      if T := smallestTimer(CONF1)
         /\ T > 0

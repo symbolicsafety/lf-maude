@@ -7,7 +7,6 @@
 --- in rtm-prelude
 in rtm-tctl.maude
 
-
 (tomod LF-REPR is  
    protecting NAT-TIME-DOMAIN-WITH-INF .
 

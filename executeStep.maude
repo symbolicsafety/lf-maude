@@ -20,7 +20,7 @@ in runtime-apg.maude
 
 var TRIGGERS-STATUS : TriggerStatus .
 
-  vars PRE SUCC : ReactionIdSet .
+  vars PRE SUCC REACTIONIDSET INVOKED : ReactionIdSet .
 
   vars REACTIONS1 REACTIONS2 RL1 RL2 : ReactionList .
 
@@ -39,8 +39,7 @@ var TRIGGERS-STATUS : TriggerStatus .
 
   vars BODY BODY1 BODY2 BODY3 RB : ReactionBody .
   var REACTIONID : ReactionId .
-  var REACTIONIDSET : ReactionIdSet .
-
+ 
   var STATUS : ExecutionStatus .
 
   var T : Time .
@@ -64,18 +63,17 @@ var TRIGGERS-STATUS : TriggerStatus .
 *** addReactionIndices!!
 --- ---------
 
-  op executeStep : Events Configuration EQueue -> Network+Queue .
+  op executeStep : Events Configuration EQueue -> Network+Queue+Reactions .
 
-  op executeStep : Configuration Configuration EQueue -> Network+Queue .
-  --- executeStep(APGgraph, network, event queue)
+  op executeStep : Configuration Configuration EQueue ReactionIdSet -> Network+Queue+Reactions .
+  --- executeStep(APGgraph, network, event queue, reactionTakenInThisStep)
 
-
-  sort Network+Queue .    --- return new state of system plus updated event queue
-  op networkQueue : Configuration EQueue -> Network+Queue [ctor] .
+  sort Network+Queue+Reactions .    --- return new state of system plus updated event queue
+  op networkQueueRxns : Configuration EQueue ReactionIdSet -> Network+Queue+Reactions [ctor] .
 
 
   eq executeStep(EVENTS, NETWORK, QUEUE)
-  =  executeStep(generateAPG(EVENTS, NETWORK), addEventsToPorts(EVENTS, NETWORK), QUEUE) .
+  =  executeStep(generateAPG(EVENTS, NETWORK), addEventsToPorts(EVENTS, NETWORK), QUEUE, none) .
 
 
 --- At the moment, we assume that the reactions in NETWORK have already been given indices
@@ -119,14 +117,16 @@ var TRIGGERS-STATUS : TriggerStatus .
 		  < REACTOR : Reactor | reactions : REACTIONS1
 		                                    reaction N when TRIGGERS --> OS do {BODY}
 						    REACTIONS2 >,
-		  QUEUE)
+		  QUEUE,
+		  INVOKED)
    =
       executeStep(< (REACTOR . N) : APGNode | status : executed >
                   updateGraph(GRAPH, REACTOR, OS, NETWORK < REACTOR : Reactor | >, OUTPUTS),
                   propagateImmediateOutputs(OUTPUTS,
 		                            NETWORK
 		                            OBJECT),    --- updated reactor
-                  scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE))
+                  scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE),
+		  INVOKED ; (REACTOR . N))
    if presetOK(PRE, GRAPH)   /\
       allTriggersDecided(TRIGGERS-STATUS)  /\ 
         result(OBJECT, OUTPUTS, RESULT-QUEUE) :=
@@ -137,7 +137,7 @@ var TRIGGERS-STATUS : TriggerStatus .
 
 
  *** Comment out for debugging with APG graph:
- eq executeStep(GRAPH, NETWORK, QUEUE) = networkQueue(NETWORK, QUEUE) [owise] .
+ eq executeStep(GRAPH, NETWORK, QUEUE, INVOKED) = networkQueueRxns(NETWORK, QUEUE, INVOKED) [owise] .
 
 
 op presetOK : ReactionIdSet Configuration -> Bool .
@@ -512,6 +512,7 @@ eq evalB(BEXP1 || BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
 
 eq evalB(! BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
     not evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
+
 
 
 endtom)

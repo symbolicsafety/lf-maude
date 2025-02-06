@@ -77,7 +77,7 @@ endtom)
   including TRAINDOOR-V3 .
   including SIMULATION-DYNAMICS .
 
-  ops env queue : -> Oid [ctor] .
+  ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
@@ -94,9 +94,8 @@ endtom)
                                    timeNonDet : true >    ---- should be true
        >
        addReactionIndices(init)
-       < queue : EventQueue | queue : empty >} .
-                              
-     
+       < queue : EventQueue | queue : empty >
+       < rxns : Invoked | reactions : none >} .
 endtom)
 
 (set tick det .)
@@ -148,4 +147,4 @@ mc-tctl_|=_. initSystem |= not (E tt U[c 0,INF o] driverPushOpen and (E not door
 Property satisfied
 )***
 
-*** Cecking the same property for bounds less than 7 returns Not satisfied!
+*** Checking the same property for bounds less than 7 returns Not satisfied!
