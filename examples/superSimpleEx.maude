@@ -1,7 +1,6 @@
 *** This is a model of the third train door example given on Figure 7 in
 *** the Verification of Cyberphysical Systems paper.
 
-in lf-representation
 
 omod TRAINDOOR-V3-DEBUG is 
  including LF-REPR .

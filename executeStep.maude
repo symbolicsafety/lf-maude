@@ -1,6 +1,5 @@
 --- Execute the next set of events from the eventqueue
 
-in runtime-apg.maude
 
 omod EXECUTE-STEP is
   including RUNTIME-APG .

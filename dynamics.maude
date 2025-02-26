@@ -1,6 +1,5 @@
 --- First attempt at the overall dynamics of our interpreter.
 
-in executeStep.maude
 
 omod DYNAMICS-WITHOUT-TICK is
   including EXECUTE-STEP .

@@ -1,9 +1,8 @@
-in dynamics.maude
 
-in TrainDoor_v2.maude
+in TrainDoor_v1.maude
 
 omod TEST-TRAIN is
-  including TRAINDOOR-V2 .
+  including TRAINDOOR .
   including DYNAMICS-WITHOUT-TICK .
 ---  including SIMULATION-DYNAMICS .
 
@@ -14,7 +13,7 @@ omod TEST-TRAIN is
      { < env : Environment |
            physicalActions : < (controller . external) : PhysAct |
 	                           leftOfPeriod : 0,
-				   period : 50,
+				   period : 5,
 				   possibleValues : ([true] : [false]),
 				   timeNonDet : true > >
        addReactionIndices(init)
@@ -35,8 +34,6 @@ red initSystem .
 
 rew [33] initSystem .
 
-
-
 omod UNCLOCKED-TRAIN is
   including TEST-TRAIN .
   including UNBOUNDED-ANALYSIS-DYNAMICS  .
@@ -44,34 +41,19 @@ endom
 
 rew [33] initSystem .
 
-
-search [1] initSystem =>*
+search initSystem =>*
              {REST:Configuration
 	      < train : Reactor | state : (moving |-> [true]) ; RS1:ReactorState,
 	                          ATTS1:AttributeSet >
 	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} .
 
-***( Result:
-search in UNCLOCKED-TRAIN : initSystem =>* {REST:Configuration
-< train : Reactor |
-       ATTS1:AttributeSet,
-       state : (RS1:ReactorState ; moving |-> [true]) >
-< door : Reactor |
-       ATTS2:AttributeSet,
-       state : (RS2:ReactorState ; locked |-> [false]) >}  .
-
-No solution.
-states: 17  rewrites: 946 in 4ms cpu (5ms real) (193416 rewrites/second)
-)***
-
-
 
 
 omod TIME-BOUNDED-TRAIN is
   including TEST-TRAIN .
   including TIME-BOUNDED-DYNAMICS  .
-  eq timeBound = 149 .
+  eq timeBound = 40 .
 endom  
 
 
@@ -85,3 +67,19 @@ search initSystem in time 0 =>*
 	                          ATTS1:AttributeSet >
 	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} in time T:Time .
+
+***(  Result:
+
+search in TIME-BOUNDED-TRAIN : initSystem in time 0 =>* {REST:Configuration
+< train : Reactor |
+       ATTS1:AttributeSet,
+       state : (RS1:ReactorState ; moving |-> [true]) >
+< door : Reactor |
+       ATTS2:AttributeSet,
+       state : (RS2:ReactorState ; locked |-> [false]) >}  in time T:Time .
+
+No solution.
+states: 87  rewrites: 4499 in 24ms cpu (27ms real) (180429 rewrites/second)
+Maude> 
+)***
+

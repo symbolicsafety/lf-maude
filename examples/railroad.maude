@@ -5,7 +5,6 @@
 *** For out, 0 is arrive, 1 is leave
 *** For mode, 0 is away, 1 is wait, 2 is bridge
 
-in dynamics.maude
 
 omod RAILROAD  is including RUNTIME-APG .
 

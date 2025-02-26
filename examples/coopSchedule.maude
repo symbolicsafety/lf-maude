@@ -1,4 +1,3 @@
-in dynamics.maude
 
 omod COOP-SCHEDULE is including RUNTIME-APG .
 

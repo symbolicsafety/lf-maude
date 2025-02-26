@@ -1,4 +1,3 @@
-in dynamics.maude
 
 
 omod AIRCRAFT-DOOR is including RUNTIME-APG .

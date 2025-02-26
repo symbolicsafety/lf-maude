@@ -4,7 +4,6 @@
 --- No physical time, like LF-verif paper
 --- 
 
-in rtm-prelude
 
 omod LF-REPR is
   protecting NAT .

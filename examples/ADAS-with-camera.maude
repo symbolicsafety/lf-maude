@@ -2,7 +2,6 @@
 *** We can now handle this case.
 
 
-in dynamics
 
 omod ADAS-WITH-CAMERA is 
  including RUNTIME-APG .

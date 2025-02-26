@@ -1,4 +1,3 @@
-in physicalActions.maude
 
 *** Assumption for the moment: for simplicity we assume
 *** that each reaction is only triggered by one

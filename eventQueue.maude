@@ -1,4 +1,3 @@
-in lf-representation.maude
 
 *** Try to model event queues ...
 --- Event: input port + "tag" + value

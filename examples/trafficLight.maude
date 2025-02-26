@@ -1,4 +1,3 @@
-in dynamics.maude
 
 omod TRAFFIC-LIGHT is including RUNTIME-APG .
 

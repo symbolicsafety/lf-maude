@@ -3,7 +3,6 @@
 *** of things.  Yes, it is simple, but maybe because of that
 *** it could be useful:
 
-in lf-representation
 
 omod FIG7 is
 
@@ -59,7 +58,6 @@ omod FIG7 is
 endom
 
 
-in dynamics.maude
 
 omod TEST-FIG7 is
   including FIG7 .

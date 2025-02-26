@@ -1,6 +1,5 @@
 *** Maude representation of LF fibonacci example.
 
-in dynamics.maude
 
 omod FIBONACCI is including RUNTIME-APG .
 

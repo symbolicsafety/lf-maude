@@ -1,7 +1,5 @@
 in ADAS-without-camera.maude
 
-in dynamics.maude
-
 
 omod TEST-ADAS is
   including ADAS-WITHOUT-CAMERA .

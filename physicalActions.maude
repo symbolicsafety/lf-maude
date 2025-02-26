@@ -15,7 +15,6 @@
 ---                therefore we add a flag "timeNonDet" for time-nondeterministic
 ---                physical actions.
 
-in eventQueue.maude
 
 omod PHYSICAL-ACTIONS is
   including EVENTS .

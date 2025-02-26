@@ -1,8 +1,6 @@
 --- Figure 7 in "Toward a Lingua Franca ..."
 
---- in runtime-apg.maude
 
-in executeStep.maude
 
 omod FIG7 is
 
