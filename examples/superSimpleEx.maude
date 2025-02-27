@@ -3,9 +3,10 @@
 
 
 omod TRAINDOOR-V3-DEBUG is 
- including LF-REPR .
+  including LF-REPR .
+  protecting NAT-LF-TIME .
 
- ops counter1 counter2 counter3 : -> IVarId [ctor] .
+ ops counter1 counter2 counter3 : -> RVarId [ctor] .
  ops isOpen locked : -> BVarId [ctor] .
  ops controller train door : -> ReactorId [ctor] .
  ops close lock unlock open : -> BPortId [ctor] .

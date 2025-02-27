@@ -1,8 +1,10 @@
+---Kyungmin: sort ZTime (for zero) is added
+
 fmod TIME is 
-   sorts Time NzTime .
-   subsort NzTime < Time .
+   sorts Time ZTime NzTime .
+   subsort ZTime NzTime < Time .
    
-   op zero : -> Time .
+   op zero : -> ZTime .
    op _plus_ : Time Time -> Time [assoc comm prec 33 gather (E e)] .
    op _monus_ : Time Time -> Time [prec 33 gather (E e)] .
    op _le_ : Time Time -> Bool [prec 37] .
@@ -90,6 +92,7 @@ fmod NAT-TIME-DOMAIN is
   protecting NAT .
  
   subsort Nat < Time .
+  subsort Zero < ZTime .
   subsort NzNat < NzTime .
 
   vars N N' : Nat .
@@ -128,11 +131,14 @@ fmod NAT-TIME-DOMAIN-WITH-INF is
 
   eq INF + TI = INF .
 
+  ---Kyungmin: must use minimum and maximum in LTIME-INF
+---(
   --- NEW: must also extend the built-in 'min' and'max' to TimeInf:
   ops min max : TimeInf TimeInf -> TimeInf [ditto] .
   eq max(INF, TI:TimeInf) = INF .
   eq min(INF, TI:TimeInf) = TI:TimeInf .
-  endfm
+)---
+endfm
 
 
 --- changed!
@@ -151,6 +157,7 @@ fmod POSRAT-TIME-DOMAIN is
   protecting POSITIVE-RAT .
 
   subsort NNegRat < Time .
+  subsort Zero < ZTime .
   subsort PosRat < NzTime .
 
   vars R R' : NNegRat .

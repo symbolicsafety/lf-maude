@@ -10,16 +10,15 @@
 ***   on triggers.
 
 
+omod TRAFFIC-LIGHT is 
+  including LF-REPR .
+  protecting NAT-LF-TIME .
+  protecting RUNTIME-APG .
 
-
-
-
-omod TRAFFIC-LIGHT is including RUNTIME-APG .
-
-  ops count mode : -> IVarId [ctor] .
+  ops count mode : -> RVarId [ctor] .
   ops trafficLight pedestrian : -> ReactorId [ctor] .
-  ops out ped sigR sigY sigG : -> IPortId [ctor] .
-  ops startup resetCount : -> IActionId [ctor] .
+  ops out ped sigR sigY sigG : -> RPortId [ctor] .
+  ops startup resetCount : -> RActionId [ctor] .
   op t : -> TimerId [ctor] .
 
   --- 0 is red, 1 is green, 2 is yellow, and 3 is pending, for "mode"

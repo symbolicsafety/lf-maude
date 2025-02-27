@@ -4,8 +4,6 @@
 in ADAS-with-camera.maude
 
 
-
-
 omod TEST-ADAS is
   including ADAS-WITH-CAMERA .
   including DYNAMICS-WITHOUT-TICK .

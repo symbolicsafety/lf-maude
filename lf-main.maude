@@ -1,5 +1,7 @@
 
 load rtm-prelude
+
+load lf-basic-types
 load lf-representation
 
 load eventQueue

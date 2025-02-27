@@ -10,43 +10,62 @@
 --- Note: also actions need to be scheduled and put into event queue.
 ---   we guess
 
-omod EVENTS is
-  including LF-REPR .
-
-  --- At the moment, we do NOT deal with hierarchical
-  --- models, so that an input port is uniquely identified by
-  --- reactorId . portId
-
-  var NZT : NzTime .
-  vars T T1 T2 : Time .
-  vars MS1 MS2 : Nat .
-  vars EVENTS EVENTS1 EVENTS2 : Events .
-  vars TAG TAG1 TAG2 : Tag .
-  var QUEUE : EQueue .
-
+fmod EVENT is
+  protecting REACTOR-ID .
+  protecting ACTION-TRIGGER .
+  protecting LF-VALUE .
 
   --- Single events:
   sort Event .
-
   op event : ReactorId ActionTrigger Value -> Event [ctor] .
+endfm
+
+
+---NOTE: currently not used
+fmod TIMED-EVENT is
+  protecting TIME .
+  protecting EVENT .
+
+  sort TimedEvent .   --- ???
+  op _inTime_ : Event Time -> TimedEvent [ctor] .   ---  needed?
+endfm
+
+
+fmod TAG is
+  protecting NAT .
+  protecting TIME .
+
+  vars T1 T2 : Time .
+  vars MS1 MS2 : Nat .
  
   sort Tag .    --- Superdense time
   op tag : Time Nat -> Tag [ctor] .
 
   op _<_ : Tag Tag -> Bool .
-  eq tag(T1, MS1) < tag(T2, MS2) = T1 < T2 or ((T1 == T2) and MS1 < MS2) .
+  eq tag(T1, MS1) < tag(T2, MS2) = T1 lt T2 or ((T1 == T2) and MS1 < MS2) .
+endfm
 
-  sort TimedEvent .   --- ???
-  op _inTime_ : Event Time -> TimedEvent [ctor] .   ---  needed?
+
+fmod TAGGED-EVENTS is
+  protecting EVENT .
+  protecting TAG .
+
+  sort TaggedEvents .
+  op _at_ : Events Tag -> TaggedEvents [ctor] .
 
   sort Events . 
   subsort Event < Events .
   op noEvent : -> Events [ctor] .
   op __ : Events Events -> Events [assoc comm id: noEvent ctor] .
+endfm
 
-  sort TaggedEvents .
-  op _at_ : Events Tag -> TaggedEvents [ctor] .
 
+omod EVENT-QUEUE is
+  protecting TAGGED-EVENTS .
+
+  --- At the moment, we do NOT deal with hierarchical
+  --- models, so that an input port is uniquely identified by
+  --- reactorId . portId
 
   class EventQueue | queue : EQueue .  --- class according to majority vote
 
@@ -55,24 +74,27 @@ omod EVENTS is
   op empty : -> EQueue [ctor] .
   op _::_ : EQueue EQueue -> EQueue [ctor assoc id: empty] .
 
-  
-  op insert : TaggedEvents EQueue -> EQueue .
-  --- insert an already correctly tagged set of events!
+  var ZERO : ZTime .
+  var NZT : NzTime .
+  vars EVENTS EVENTS1 EVENTS2 : Events .
+  vars TAG TAG1 TAG2 : Tag .
+  var QUEUE : EQueue .
 
+  --- insert an already correctly tagged set of events!
+  op insert : TaggedEvents EQueue -> EQueue .
   eq insert(EVENTS at TAG, empty) = EVENTS at TAG . 
-  eq insert(EVENTS1 at TAG1, (EVENTS2 at TAG2) :: QUEUE) =
-      if TAG1 < TAG2 then ((EVENTS1 at TAG1) :: (EVENTS2 at TAG2) :: QUEUE)
-      else (if TAG1 == TAG2 then
-            (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
-	    else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
+  eq insert(EVENTS1 at TAG1, (EVENTS2 at TAG2) :: QUEUE) 
+   = if TAG1 < TAG2 
+     then ((EVENTS1 at TAG1) :: (EVENTS2 at TAG2) :: QUEUE)
+     else (if TAG1 == TAG2 
+           then (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
+	   else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
 
   op schedule : Events Time EQueue -> EQueue .
   --- note events could also be 'actions'
   --- NOTE: these are our educated guesses ....
-  eq schedule(EVENTS, NZT, QUEUE) =
-       insert(EVENTS at tag(NZT, 0), QUEUE) .
-
-  eq schedule(EVENTS, 0, QUEUE) = insert(EVENTS at tag(0,1), QUEUE) .
+  eq schedule(EVENTS, NZT, QUEUE)  = insert(EVENTS at tag(NZT, 0), QUEUE) .
+  eq schedule(EVENTS, ZERO, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) .
 endom
 
 

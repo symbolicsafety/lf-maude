@@ -1,11 +1,13 @@
 
 
-omod AIRCRAFT-DOOR is including RUNTIME-APG .
+omod AIRCRAFT-DOOR is 
+  including LF-REPR .
+  protecting NAT-LF-TIME .
 
-  ops ramp doorOpen : -> IVarId [ctor] .
+  ops ramp doorOpen : -> RVarId [ctor] .
   ops controller vision door : -> ReactorId [ctor] .
-  ops in out : -> IPortId [ctor] .
-  op startup : -> IActionId [ctor] .
+  ops in out : -> RPortId [ctor] .
+  op startup : -> RActionId [ctor] .
 
   op init : -> Configuration .
 

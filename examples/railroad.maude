@@ -6,12 +6,15 @@
 *** For mode, 0 is away, 1 is wait, 2 is bridge
 
 
-omod RAILROAD  is including RUNTIME-APG .
+omod RAILROAD  is 
+  including LF-REPR .
+  protecting NAT-LF-TIME .
+  protecting RUNTIME-APG .
 
-  ops sOut sMode west east nearW nearE : -> IVarId [ctor] .
+  ops sOut sMode west east nearW nearE : -> RVarId [ctor] .
   ops trainW trainE controller : -> ReactorId [ctor] .
-  ops signal signalW signalE inW out inE : -> IPortId [ctor] .
-  ops startup outUpdated toModeAway toModeWait toModeBridge westUpdated eastUpdated : -> IActionId [ctor] .
+  ops signal signalW signalE inW out inE : -> RPortId [ctor] .
+  ops startup outUpdated toModeAway toModeWait toModeBridge westUpdated eastUpdated : -> RActionId [ctor] .
   op t   : -> TimerId [ctor] .
 
   op init : -> Configuration .

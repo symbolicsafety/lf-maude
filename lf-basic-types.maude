@@ -1,0 +1,88 @@
+
+--- Ids and basic types
+
+fmod TIMER-ID is
+  sorts TimerId .
+endfm
+
+
+fmod PORT-ID is
+  sorts PortId RPortId BPortId .
+  subsorts RPortId BPortId < PortId .
+endfm
+
+
+fmod ACTION-ID is
+  sorts ActionId RActionId BActionId .
+  subsorts RActionId BActionId < ActionId .
+endfm
+
+
+fmod REACTOR-ID is
+  sorts ReactorId .
+endfm
+
+
+fmod VAR-ID is
+  sorts VarId RVarId BVarId .
+  subsorts RVarId BVarId < VarId .
+endfm
+
+
+fmod ACTION-TRIGGER is
+  protecting TIMER-ID .
+  protecting PORT-ID .
+  protecting ACTION-ID .
+
+  sort ActionTrigger .
+  subsorts TimerId PortId ActionId < ActionTrigger .
+endfm
+
+
+fmod REACTION-ID is
+  protecting NAT .
+  protecting REACTOR-ID .
+  protecting ACTION-TRIGGER .
+
+  sorts ReactionId .
+  op _._ : ReactorId ActionTrigger -> ReactionId [ctor] .
+  *** Important: under the current assumption that each
+  ***   reaction is triggered by exactly ONE trigger, we can
+  ***   identify a reaction by its reactor and its trigger.
+  ---  Of course, in a future more general setting, we can use
+  ---    reactor.n   as the reaction id.
+
+  ***  NOW in complex version we try the following ReactionId instead:
+  op _._ : ReactorId Nat -> ReactionId [ctor] .
+endfm
+
+
+fmod PHYSICAL-ACTION-ID is
+  extending REACTION-ID .
+
+  sort PhysActId .
+  subsort PhysActId < ReactionId .
+  op _._ : ReactorId ActionId -> PhysActId [ctor] .
+endfm
+
+
+fmod LF-TIME is
+  protecting RAT .
+  protecting TIME .
+
+  --- Time casting operators. 
+  --- MUST BE DEFINED for each time domain.
+  op toRat : Time ~> Rat .
+  op toTime : Rat ~> Time .
+endfm
+
+
+--- NAT time domain for LF
+fmod NAT-LF-TIME is
+  including LF-TIME .
+  protecting NAT-TIME-DOMAIN-WITH-INF .
+
+  eq toRat(N:Nat) = N:Nat .
+  eq toTime(N:Nat) = N:Nat .
+endfm
+

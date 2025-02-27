@@ -17,23 +17,10 @@
 
 
 omod PHYSICAL-ACTIONS is
-  including EVENTS .
-
-  --- The ENVIRONMENT represents all external actions,
-  ---   namely, the physical actions:
-
-  vars O O2 : Oid .
-  var AI : ActionId .
-  var RI : ReactorId .
-  var P : TimeInf .
-  var V : Value .
-  var VS : ValueSet .
-  var QUEUE : EQueue .
-  var CONF : Configuration .
-  var EVENT : Event .
-
-
-  class Environment | physicalActions : Configuration .
+  protecting TIME-INF .
+  protecting EVENT-QUEUE .
+  protecting PHYSICAL-ACTION-ID .
+  extending PERIODIC-OBJ .
 
   --- Dynamically, each physical action has:
   ---    * home address
@@ -42,40 +29,60 @@ omod PHYSICAL-ACTIONS is
   ---    * range of values
 
   class PhysAct | leftOfPeriod : TimeInf,
-		  period : TimeInf,
-		  possibleValues : ValueSet,
-		  timeNonDet : Bool .
+                  possibleValues : ValueSet,
+                  timeNonDet : Bool .
+  subclass PhysAct < PeriodicObj .
 
-  op _._ : ReactorId ActionId -> Oid [ctor] .
+  subsort PhysActId < Oid .
+  
+---  op _._ : ReactorId ActionId -> Oid [ctor] .
   --- names of physical actions!
 
   sort ValueSet .
   subsort Value < ValueSet .
   op noValue : -> ValueSet [ctor] .
   op _:_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
+endom
 
 
----  commented out for testing:
-  rl [noAction] :
-     < O : PhysAct | leftOfPeriod : 0, period : P, timeNonDet : true > =>
-     < O : PhysAct | leftOfPeriod : P > .
----     
+omod ENVIRONMENTS is
+  protecting PHYSICAL-ACTIONS .
 
-  rl [actionHappens] :
-     < (RI . AI) : PhysAct | leftOfPeriod : 0, period : P,
-                     possibleValues : (V : VS) >
-     =>
-     < (RI . AI) : PhysAct | leftOfPeriod : P >
-     scheduleAction(event(RI, AI, V)) .
+  --- The ENVIRONMENT represents all external actions,
+  ---   namely, the physical actions:
+
+  class Environment | physicalActions : Configuration .
+
+  vars O O2 : Oid .
+  var AI : ActionId .
+  var RI : ReactorId .
+  var ZERO : ZTime .
+  var P : TimeInf .
+  var V : Value .
+  var VS : ValueSet .
+  var QUEUE : EQueue .
+  var CONF : Configuration .
+  var EVENT : Event .
 
   msg scheduleAction : Event -> Msg .
 
-  eq < O : Environment | physicalActions :
-                         CONF scheduleAction(EVENT) >
-     < O2 : EventQueue | queue : QUEUE >
-    =
-     < O : Environment | physicalActions : CONF >
-     < O2 : EventQueue | queue : schedule(EVENT, 0, QUEUE) > .
+---  commented out for testing:
+  rl [noAction] :
+     < O : PhysAct | leftOfPeriod : ZERO, period : P, timeNonDet : true > 
+  => < O : PhysAct | leftOfPeriod : P > .
+---     
 
+  rl [actionHappens] :
+     < (RI . AI) : PhysAct | leftOfPeriod : ZERO, period : P,
+                             possibleValues : (V : VS) >
+   =>
+     < (RI . AI) : PhysAct | leftOfPeriod : P >
+     scheduleAction(event(RI, AI, V)) .
+
+  eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
+     < O2 : EventQueue | queue : QUEUE >
+   =
+     < O : Environment | physicalActions : CONF >
+     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) > .
 endom
 

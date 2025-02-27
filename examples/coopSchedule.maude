@@ -1,10 +1,12 @@
 
-omod COOP-SCHEDULE is including RUNTIME-APG .
+omod COOP-SCHEDULE is 
+  including LF-REPR .
+  protecting NAT-LF-TIME .
 
-  op counter : -> IVarId [ctor] .
+  op counter : -> RVarId [ctor] .
   ops trigger task1 task2 task3 task4 task5 : -> ReactorId [ctor] .
-  ops cnt out : -> IPortId [ctor] .
-  ops startup : -> IActionId [ctor] .
+  ops cnt out : -> RPortId [ctor] .
+  ops startup : -> RActionId [ctor] .
   op t : -> TimerId [ctor] .
 
   op init : -> Configuration .
