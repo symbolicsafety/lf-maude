@@ -1,0 +1,521 @@
+--- Execute the next set of events from the eventqueue
+
+in runtime-apg.maude
+
+omod EXECUTE-STEP is
+  including RUNTIME-APG .
+
+  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF INPORTSANDACTIONS
+       TIMERS : Configuration .
+
+  vars PORT PORTID PORTID1 PORTID2 PORTID3 OUTPORTID : PortId .
+  vars BPORT BPORTID : BPortId .
+  vars IPORT IPORTID : IPortId .
+  
+
+  vars REACTOR REACTOR1 REACTOR2 REACTOR3 REACTORID REACTORID1
+       REACTORID2 REACTORID3 : ReactorId .
+
+  vars TRIGGER : ActionTrigger .
+
+var TRIGGERS-STATUS : TriggerStatus .
+
+  vars PRE SUCC REACTIONIDSET INVOKED : ReactionIdSet .
+
+  vars REACTIONS1 REACTIONS2 RL1 RL2 : ReactionList .
+
+  vars ACTIONID : ActionId .
+    vars IACTIONID : IActionId .   vars BACTIONID : BActionId .
+
+  vars EVENTS OUTPUTS : Events .
+
+  vars QUEUE RESULT-QUEUE : EQueue .
+
+  vars VAL VALUE OLD-VALUE : Value .
+
+  vars OS OS1 OS2 TRIGGERS : OidSet .
+
+  var OBJECT : Object .
+
+  vars BODY BODY1 BODY2 BODY3 RB : ReactionBody .
+  var REACTIONID : ReactionId .
+
+
+  var STATUS : ExecutionStatus .
+
+  var T : Time .
+  var TI : TimeInf .
+
+  var TIMERID : TimerId .
+
+    var VAR : VarId .    var IVAR : IVarId .    var BVAR : BVarId . 
+
+  var VALUATION : ReactorState .
+
+  var EXPR : Expr .
+  vars BEXP BEXP1 BEXP2 BEXPR BEXPR2 BEXPR1 : BoolExpr .
+
+  vars IEXP IEXP1 IEXP2 IEXPR IEXPR2 : IntExpr .
+  vars N N2 N3 : Nat .
+  var B : Bool .
+
+
+*** Don't forget that somewhere in the new setting, we must call
+*** addReactionIndices!!
+--- ---------
+
+--- All new Feb 25: add reactions in this step:
+
+  op executeStep : Events Configuration EQueue -> Network+Queue+Reactions .
+
+  op executeStep : Configuration Configuration EQueue ReactionIdSet -> Network+Queue+Reactions .
+  --- executeStep(APGgraph, network, event queue)
+
+  sort Network+Queue+Reactions .
+  --- return new state of system plus updated event queue plus reations invoked in this step
+  op networkQueueRxns : Configuration EQueue ReactionIdSet -> Network+Queue+Reactions [ctor] .
+
+
+  eq executeStep(EVENTS, NETWORK, QUEUE)
+  =  executeStep(generateAPG(EVENTS, NETWORK), addEventsToPorts(EVENTS, NETWORK), QUEUE, none) .
+
+
+--- At the moment, we assume that the reactions in NETWORK have already been given indices
+
+  --- quick auxiliary function
+  op addEventsToPorts : Events Configuration -> Configuration .
+
+  eq addEventsToPorts(noEvent, NETWORK) = NETWORK .
+  eq addEventsToPorts(event(REACTOR, PORT, VAL) EVENTS,
+                      NETWORK < REACTOR : Reactor |
+		                 inports : PORTS < PORT : Port | > >)
+   =
+     addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
+		                 inports : PORTS < PORT : Port | value : VAL > >) .
+
+
+
+  eq addEventsToPorts(event(REACTOR, ACTIONID, VAL) EVENTS,
+                      NETWORK < REACTOR : Reactor |
+		                 actions : ACTIONS < ACTIONID : Action | > >)
+   =
+     addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
+		                 actions : ACTIONS < ACTIONID : Action | payload : VAL > >) .
+
+
+  eq addEventsToPorts(event(REACTOR, TIMERID, VAL) EVENTS,
+                      NETWORK < REACTOR : Reactor |
+		                 timers : TIMERS < TIMERID : Timer | > >)
+   =
+     addEventsToPorts(EVENTS, NETWORK < REACTOR : Reactor |
+                                          timers : TIMERS < TIMERID : Timer | > >) .
+		               
+
+
+
+
+
+  ceq executeStep(< (REACTOR . N) : APGNode | triggers : TRIGGERS-STATUS, status : present,
+                                              pre : PRE >   GRAPH,
+                  NETWORK
+		  < REACTOR : Reactor | reactions : REACTIONS1
+		                                    reaction N when TRIGGERS --> OS do {BODY}
+						    REACTIONS2 >,
+		  QUEUE,
+		  INVOKED)
+   =
+      executeStep(< (REACTOR . N) : APGNode | status : executed >
+                  updateGraph(GRAPH, REACTOR, OS, NETWORK < REACTOR : Reactor | >, OUTPUTS),
+                  propagateImmediateOutputs(OUTPUTS,
+		                            NETWORK
+		                            OBJECT),    --- updated reactor
+                  scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE),
+		  INVOKED ; (REACTOR . N))
+   if presetOK(PRE, GRAPH)   /\
+      allTriggersDecided(TRIGGERS-STATUS)  /\ 
+        result(OBJECT, OUTPUTS, RESULT-QUEUE) :=
+	  executeReaction(< REACTOR : Reactor | reactions : REACTIONS1
+		                                    reaction N when TRIGGERS --> OS do {BODY}
+						    REACTIONS2 >,
+			  N, TRIGGERS-STATUS, QUEUE) .			    
+
+
+ *** Comment out for debugging with APG graph:
+ eq executeStep(GRAPH, NETWORK, QUEUE, INVOKED) = networkQueueRxns(NETWORK, QUEUE, INVOKED) [owise] .
+
+
+op presetOK : ReactionIdSet Configuration -> Bool .
+
+eq presetOK(none, GRAPH) = true .
+eq presetOK(REACTIONID ; REACTIONIDSET,
+            GRAPH < REACTIONID : APGNode | status : STATUS >)
+  =  if STATUS == executed or STATUS == absent then
+          presetOK(REACTIONIDSET, GRAPH)  else false fi .
+
+
+op scheduleDelayedInputs : Events Configuration EQueue -> EQueue .
+
+eq scheduleDelayedInputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK
+       (REACTORID : PORTID -- T --> REACTORID2 : PORTID2),
+       QUEUE)
+ =
+   scheduleDelayedInputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK,
+       schedule(event(REACTORID2, PORTID2, VALUE), T, QUEUE)) .
+
+eq scheduleDelayedInputs(EVENTS, NETWORK, QUEUE) = QUEUE [owise] .
+
+
+op propagateImmediateOutputs : Events Configuration -> Configuration .
+
+ceq propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK
+       < REACTORID2 : Reactor | inports : INPORTS
+                                          < PORTID2 : Port | value : OLD-VALUE > >
+       (REACTORID : PORTID --> REACTORID2 : PORTID2))
+ =
+   propagateImmediateOutputs(event(REACTORID, PORTID, VALUE) EVENTS,
+       NETWORK        < REACTORID2 : Reactor | inports : INPORTS
+                                          < PORTID2 : Port | value : VALUE > >
+       (REACTORID : PORTID --> REACTORID2 : PORTID2))
+   if OLD-VALUE =/= VALUE .    
+
+eq propagateImmediateOutputs(EVENTS, NETWORK) = NETWORK [owise] .
+
+
+
+op updateGraph : Configuration ReactorId OidSet Configuration Events -> Configuration .
+--- updateGraph(graph, executed reactor, output ports of reaction, network, actual outputs)
+
+--- new complex version
+--- positive case: some unknown input becomes present at a downstream guy:
+eq updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TRIGGERS-STATUS) > GRAPH,
+               REACTOR1, OS, NETWORK
+	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
+	       event(REACTOR1, PORTID1, VALUE) EVENTS)
+ =
+ updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> present) ; TRIGGERS-STATUS),
+                                          status : present > GRAPH,
+               REACTOR1, OS, 
+	       NETWORK (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
+	       event(REACTOR1, PORTID1, VALUE) EVENTS) .
+
+
+
+
+--- negative case 1; updated complex setting:
+ceq updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TRIGGERS-STATUS),
+                                             status : STATUS > GRAPH,
+               REACTOR1, (PORTID1 ; OS), 
+	       NETWORK
+	       (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
+	       EVENTS)
+ =
+ updateGraph(< (REACTOR2 . N) : APGNode | triggers : ((PORTID2 |-> absent) ; TRIGGERS-STATUS),
+                                          status : (if STATUS == unknown and
+					             allTriggersDecided((PORTID2 |-> absent) ; TRIGGERS-STATUS)
+					            then absent else STATUS fi) >
+	     GRAPH,
+               REACTOR1, (PORTID1 ; OS),
+	       NETWORK (REACTOR1 : PORTID1 --> REACTOR2 : PORTID2),
+	       EVENTS)
+   if not (REACTOR1 . PORTID1)	presentIn EVENTS .
+
+
+
+--- NEW version!
+--- transitive negative case
+eq updateGraph(< (REACTOR2 . N2) : APGNode | triggers : ((PORTID2 |-> unknown) ; TRIGGERS-STATUS),
+                                             status : STATUS > GRAPH
+                < (REACTOR3 . N3) : APGNode | status : absent >,
+               REACTOR1, OS, 
+	       NETWORK
+	       < REACTOR3 : Reactor | reactions : (RL1
+	                                          (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB})
+						  RL2) > 
+	       (REACTOR3 : PORTID3 --> REACTOR2 : PORTID2),
+	       EVENTS)
+ =
+ updateGraph(< (REACTOR2 . N2) : APGNode | triggers : ((PORTID2 |-> absent) ; TRIGGERS-STATUS),
+                                           status : (if STATUS == unknown and
+					            allTriggersDecided((PORTID2 |-> absent) ; TRIGGERS-STATUS)
+					             then absent else STATUS fi) >
+             < (REACTOR3 . PORTID3) : APGNode | > GRAPH,
+               REACTOR1, OS, 
+	       NETWORK
+	       < REACTOR3 : Reactor | >
+	       (REACTOR3 : PORTID3 --> REACTOR2 : PORTID2),
+	       EVENTS) .
+
+
+
+
+eq updateGraph(GRAPH, REACTOR1, OS, NETWORK, EVENTS) = GRAPH  [owise] .
+
+
+op _presentIn_ : ReactionId Events -> Bool .
+
+eq (REACTOR . OUTPORTID) presentIn event(REACTOR, OUTPORTID, VALUE) EVENTS = true .
+eq (REACTOR . OUTPORTID) presentIn EVENTS = false [owise] .
+
+
+  *** Execute a single reaction.
+  *** Effects: change the state of the reactor;
+  ***          generate some outputs;
+  ***          schedule actions [future]
+
+  op executeReaction : Object Nat TriggerStatus EQueue -> ReactorOutputsFutureevents .
+  --- executeReaction(reactor to be executed, reaction to be exe, its triggerstatus, queue)
+
+  sort ReactorOutputsFutureevents .
+  op result : Object Events EQueue -> ReactorOutputsFutureevents [ctor] .
+
+
+  eq executeReaction(< REACTOR : Reactor |
+                                    timers : TIMERS,  
+                                    reactions : REACTIONS1
+	                                        (reaction N when TRIGGERS --> OS do {BODY})
+		                                REACTIONS2 >,
+		      N, TRIGGERS-STATUS,
+		      QUEUE)
+    =
+      executeReactionBody(< REACTOR : Reactor | >, BODY, noEvent,
+                          scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE), TRIGGERS-STATUS) .
+
+
+
+op scheduleTriggeringTimers : ReactorId Configuration TriggerStatus EQueue -> EQueue .
+
+eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
+                            ((TIMERID |-> present) ; TRIGGERS-STATUS),
+			    QUEUE)
+ = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
+                            TRIGGERS-STATUS,
+			    if TI > 0 and TI < INF then
+		               schedule(event(REACTOR, TIMERID, [0]), TI, QUEUE)
+		            else QUEUE fi) .
+
+
+eq scheduleTriggeringTimers(REACTOR, TIMERS, TRIGGERS-STATUS, QUEUE) = QUEUE [owise] .
+
+
+
+
+
+
+
+  op executeReactionBody : Object ReactionBody Events EQueue TriggerStatus -> ReactorOutputsFutureevents .
+
+
+  eq  executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, TRIGGERS-STATUS) =
+        result(< REACTOR : Reactor | >, OUTPUTS, QUEUE) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : ((IVAR |-> VAL) ; VALUATION),
+				       inports : INPORTS, actions : ACTIONS >,
+				       (IVAR := IEXPR) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor |
+                                       state : ((IVAR |->
+			 [eval(IEXPR, ((IVAR |-> VAL) ; VALUATION), INPORTS ACTIONS)])
+				        ; VALUATION) >,
+				       BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : ((BVAR |-> VAL) ; VALUATION),
+				       inports : INPORTS, actions : ACTIONS >,
+				       (BVAR := BEXPR) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor |
+                                       state : ((BVAR |->
+		      [evalB(BEXPR, ((BVAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TRIGGERS-STATUS)])
+				        ; VALUATION) >,
+				       BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS) .
+
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state :  VALUATION,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (if BEXP then BODY1 fi) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | >,
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS) 
+			 then (BODY1 ; BODY) else
+			 BODY fi,  OUTPUTS, QUEUE, TRIGGERS-STATUS) .
+                                      
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state :  VALUATION,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (if BEXP then BODY1 else BODY2 fi) ; BODY,
+				       OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | >,
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS)
+			 then (BODY1 ; BODY) else
+			 (BODY2 ; BODY) fi,  OUTPUTS, QUEUE, TRIGGERS-STATUS) .
+
+
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state :  VALUATION,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (while BEXP do BODY1 done) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | >,
+                         if evalB(BEXP, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS) then
+			 (BODY1 ; (while BEXP do BODY1 done) ; BODY) else
+			 BODY fi,  OUTPUTS, QUEUE, TRIGGERS-STATUS) .
+
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       outports : CONF < BPORT : Port | >,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (BPORT <- BEXPR) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | outports : CONF
+                                < BPORT : Port | value : [evalB(BEXPR, VALUATION,
+				                             INPORTS ACTIONS, TRIGGERS-STATUS)] > >,
+				       BODY, event(REACTOR, BPORT,
+				                 [evalB(BEXPR, VALUATION, INPORTS ACTIONS, TRIGGERS-STATUS)])
+						   OUTPUTS,
+						   QUEUE, TRIGGERS-STATUS) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       outports : CONF < IPORT : Port | >,
+				       inports : INPORTS, actions : ACTIONS >,
+				       (IPORT <- IEXPR) ; BODY, OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | outports : CONF
+                                < IPORT : Port | value : [eval(IEXPR, VALUATION,
+				                             INPORTS ACTIONS)] > >,
+				       BODY, event(REACTOR, IPORT,
+				                   [eval(IEXPR, VALUATION, INPORTS ACTIONS)])
+						   OUTPUTS,
+						   QUEUE, TRIGGERS-STATUS) .
+
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       inports : INPORTS,
+				       actions : CONF
+				                 < IACTIONID : Action | minDelay : T > >,
+				       schedule(IACTIONID, IEXPR, IEXPR2) ; BODY,
+				       OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | actions : CONF
+                                                < IACTIONID : Action | > >,
+				       BODY,
+				       OUTPUTS,
+				       schedule(event(REACTOR,  IACTIONID,
+				                      [eval(IEXPR2, VALUATION, INPORTS CONF
+				                 < IACTIONID : Action | minDelay : T >)]),
+						T + eval(IEXPR, VALUATION, INPORTS CONF
+				                 < IACTIONID : Action | minDelay : T >),
+						QUEUE), TRIGGERS-STATUS) .
+
+  eq executeReactionBody(< REACTOR : Reactor |
+                                       state : VALUATION,
+				       inports : INPORTS,
+				       actions : CONF
+				                 < BACTIONID : Action | minDelay : T > >,
+				       schedule(BACTIONID, IEXPR, BEXPR) ; BODY,
+				       OUTPUTS, QUEUE, TRIGGERS-STATUS)
+  =  				       
+     executeReactionBody(< REACTOR : Reactor | actions : CONF
+                                                < BACTIONID : Action | > >,
+				       BODY,
+				       OUTPUTS,
+				       schedule(event(REACTOR,  BACTIONID,
+				                      [evalB(BEXPR, VALUATION, INPORTS CONF
+				                 < BACTIONID : Action | minDelay : T >, TRIGGERS-STATUS)]),
+						T + eval(IEXPR, VALUATION, INPORTS CONF
+				                 < BACTIONID : Action | minDelay : T >),
+						QUEUE), TRIGGERS-STATUS) .
+
+
+
+
+op evalB : BoolExpr ReactorState Configuration TriggerStatus -> Bool . *** FOURTH PARAMETER NEW!
+op eval : IntExpr ReactorState Configuration -> Nat .
+--- eval(expr, valuation, input ports AND actions, triggerStatus)
+
+eq evalB([B], VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) = B .
+eq eval([N], VALUATION, INPORTSANDACTIONS) = N .
+
+
+eq eval(IPORTID, VALUATION, CONF < IPORTID : Port | value : [N] >) = N .
+eq evalB(BPORTID, VALUATION, CONF < BPORTID : Port | value : [B] >, TRIGGERS-STATUS) = B .
+
+
+eq eval(IACTIONID, VALUATION, CONF < IACTIONID : Action | payload : [N] >) = N .
+eq evalB(BACTIONID, VALUATION, CONF < BACTIONID : Action | payload : [B] >, TRIGGERS-STATUS) = B .
+
+eq eval(IVAR, VALUATION ; (IVAR |-> [N]), INPORTSANDACTIONS) = N .
+eq evalB(BVAR, VALUATION ; (BVAR |-> [B]), INPORTSANDACTIONS, TRIGGERS-STATUS) = B .
+
+eq eval(IEXP1 + IEXP2, VALUATION, INPORTSANDACTIONS) =
+     eval(IEXP1, VALUATION, INPORTSANDACTIONS) + eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+
+
+eq eval(IEXP1 * IEXP2, VALUATION, INPORTSANDACTIONS) =
+     eval(IEXP1, VALUATION, INPORTSANDACTIONS) *
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+
+eq evalB(IEXP1 === IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    eval(IEXP1, VALUATION, INPORTSANDACTIONS) ==
+      eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+eq evalB(BEXP1 === BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) ==
+      evalB(BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
+
+eq evalB(IEXP1 < IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+       eval(IEXP1, VALUATION, INPORTSANDACTIONS) <
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+eq evalB(IEXP1 <= IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+       eval(IEXP1, VALUATION, INPORTSANDACTIONS) <=
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+eq evalB(IEXP1 > IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+      eval(IEXP1, VALUATION, INPORTSANDACTIONS) >
+      eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+eq evalB(IEXP1 >= IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+       eval(IEXP1, VALUATION, INPORTSANDACTIONS) >=
+       eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+*** NEW GUY:
+eq evalB(isPresent(TRIGGER), VALUATION,  INPORTSANDACTIONS, ((TRIGGER |-> present) ; TRIGGERS-STATUS))
+ = true .
+
+eq evalB(isPresent(TRIGGER), VALUATION,  INPORTSANDACTIONS, TRIGGERS-STATUS) = false [owise] .
+
+*** MORE TBILISI NEW GUYS:
+
+eq evalB(IEXP1 ==/= IEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    eval(IEXP1, VALUATION, INPORTSANDACTIONS) =/=
+      eval(IEXP2, VALUATION, INPORTSANDACTIONS) .
+
+eq evalB(BEXP1 ==/= BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =/=
+      evalB(BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
+
+eq evalB(BEXP1 && BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) and
+      evalB(BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
+
+eq evalB(BEXP1 || BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) or
+      evalB(BEXP2, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
+
+eq evalB(! BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) =
+    not evalB(BEXP1, VALUATION, INPORTSANDACTIONS, TRIGGERS-STATUS) .
+
+
+endom

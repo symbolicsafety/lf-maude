@@ -1,0 +1,72 @@
+--- Figure 7 in "Toward a Lingua Franca ..."
+
+--- in runtime-apg.maude
+
+in executeStep.maude
+
+omod FIG7 is
+
+ including LF-REPR .
+
+
+ op s : -> IVarId [ctor] .
+ ops relay x y : -> ReactorId [ctor] .
+ ops inc dbl r out : -> IPortId [ctor] .
+ op startup : -> IActionId .
+ op init : -> Configuration .
+
+ eq init = 
+
+    < x : Reactor | 
+      inports : < dbl : Port | value : [0] > 
+                 < inc : Port | value : [0] >,
+      outports : none, 
+      state : s |-> [1],
+      timers : none,
+      actions : none,
+      reactions : 
+        (reaction when dbl do { s := s + s })
+        reaction when inc  do { s := s + [1] }
+    >
+
+    < relay : Reactor | 
+      inports : < r : Port | value : [0] >,
+      outports : < out : Port | value : [0] >, 
+      state : empty,
+      timers : none,
+      actions : none,
+      reactions : 
+        reaction when r --> out do { out <- r }
+    >
+    < y : Reactor | 
+      inports : none,
+      outports : < dbl : Port | value : [0] > 
+                 < inc : Port | value : [0] >, 
+      state : empty,
+      timers : none,
+      actions : < startup : LogicalAction | minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [0] >,
+      reactions : 
+        reaction when startup --> dbl ; inc do { (dbl <- [1]) ; (inc <- [1]) }
+    >
+
+   (y : dbl --> relay : r)
+   (relay : out --> x : dbl)
+   (y : inc --> x : inc) .
+endom
+
+
+omod TEST-APG is
+  including FIG7 .
+  including EXECUTE-STEP .
+endom
+
+
+
+--- red generateAPG(event(y, startup, [0]) event(x, inc, [77]),  init) .
+
+--- red initializeAPG(event(y, startup, [0]), init) .
+
+red executeStep(event(y, startup, [7]),  addReactionIndices(init), empty) .

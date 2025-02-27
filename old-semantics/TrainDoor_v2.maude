@@ -1,0 +1,69 @@
+*** This is a model of the second train door example given on Figure 5 in
+*** the Verification of Cyberphysical Systems paper.
+
+in lf-representation
+
+omod TRAINDOOR-V2 is 
+ including LF-REPR .
+ 
+ ops moving locked : -> BVarId [ctor] .
+ ops controller train door : -> ReactorId [ctor] .
+ ops move lock unlock stop : -> BPortId [ctor] .
+ ops startup external : -> BActionId .
+ op init : -> Configuration .
+ 
+ eq init = 
+    < controller : Reactor | 
+      inports : none,
+      outports : < lock : Port | value : [false] > 
+                 < move : Port | value : [false] >
+		 < unlock : Port | value : [false] > 
+                 < stop : Port | value : [false] >, 
+      state : empty,
+      timers : none,
+      actions : < startup : LogicalAction | minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [0] >
+                < external : PhysicalAction | 
+                               minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [false] >,
+      reactions : 
+        (reaction when startup do { skip })
+        reaction when external --> lock ; unlock ; move ; stop do
+	{ if external then (lock <- [true] ) ; (move <- [true])
+	  else (unlock <- [true]) ; (stop <- [true]) fi}  
+    >
+--- the startup stuff does not really do anything ...
+
+
+    < train : Reactor | 
+        inports : < move : Port | value : [false] >
+	          < stop : Port | value : [false] >,
+        outports : none,
+        state : (moving |-> [false]), 
+        timers : none,
+        actions : none,
+        reactions : (reaction when move do { moving := [true] })
+		    reaction when stop do {  moving := [false] } 
+    >
+    
+    < door : Reactor | 
+        inports : < lock : Port | value : [false] >
+	          < unlock : Port | value : [false] >,
+        outports : none,
+        state : (locked |-> [false]),
+        timers : none,
+        actions : none,
+        reactions : (reaction when lock do { locked := [true] })
+		    reaction when unlock do { locked := [false] } 
+    >
+
+    (controller : lock --> door : lock)
+    (controller : unlock -- 100 --> door : unlock)
+    (controller : move -- 100 --> train : move)
+    (controller : stop --> train : stop) .
+   
+endom

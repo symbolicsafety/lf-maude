@@ -1,0 +1,83 @@
+in lf-representation.maude
+
+*** Try to model event queues ...
+--- Event: input port + "tag" + value
+---     Note: we like to count "down" so the tag
+---       is not absolute time, but remaining time.
+--- Note also: we need super-dense time, although we use
+---       natural numbers as time domain.
+
+
+--- Note: also actions need to be scheduled and put into event queue.
+---   we guess
+
+omod EVENTS is
+  including LF-REPR .
+
+  --- At the moment, we do NOT deal with hierarchical
+  --- models, so that an input port is uniquely identified by
+  --- reactorId . portId
+
+  var NZT : NzTime .
+  vars T T1 T2 : Time .
+  vars MS1 MS2 : Nat .
+  vars EVENTS EVENTS1 EVENTS2 : Events .
+  vars TAG TAG1 TAG2 : Tag .
+  var QUEUE : EQueue .
+
+
+  --- Single events:
+  sort Event .
+
+  op event : ReactorId ActionTrigger Value -> Event [ctor] .
+ 
+  sort Tag .    --- Superdense time
+  op tag : Time Nat -> Tag [ctor] .
+
+  op _<_ : Tag Tag -> Bool .
+  eq tag(T1, MS1) < tag(T2, MS2) = T1 < T2 or ((T1 == T2) and MS1 < MS2) .
+
+  sort TimedEvent .   --- ???
+  op _inTime_ : Event Time -> TimedEvent [ctor] .   ---  needed?
+
+  sort Events . 
+  subsort Event < Events .
+  op noEvent : -> Events [ctor] .
+  op __ : Events Events -> Events [assoc comm id: noEvent ctor] .
+
+  sort TaggedEvents .
+  op _at_ : Events Tag -> TaggedEvents [ctor] .
+
+
+  class EventQueue | queue : EQueue .  --- class according to majority vote
+
+  sort EQueue .
+  subsort TaggedEvents < EQueue .
+  op empty : -> EQueue [ctor] .
+  op _::_ : EQueue EQueue -> EQueue [ctor assoc id: empty] .
+
+  
+  op insert : TaggedEvents EQueue -> EQueue .
+  --- insert an already correctly tagged set of events!
+
+  eq insert(EVENTS at TAG, empty) = EVENTS at TAG . 
+  eq insert(EVENTS1 at TAG1, (EVENTS2 at TAG2) :: QUEUE) =
+      if TAG1 < TAG2 then ((EVENTS1 at TAG1) :: (EVENTS2 at TAG2) :: QUEUE)
+      else (if TAG1 == TAG2 then
+            (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
+	    else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
+
+  op schedule : Events Time EQueue -> EQueue .
+  --- note events could also be 'actions'
+  --- NOTE: these are our educated guesses ....
+  eq schedule(EVENTS, NZT, QUEUE) =
+       insert(EVENTS at tag(NZT, 0), QUEUE) .
+
+  eq schedule(EVENTS, 0, QUEUE) = insert(EVENTS at tag(0,1), QUEUE) .
+endom
+
+
+
+
+
+
