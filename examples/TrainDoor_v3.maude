@@ -4,7 +4,7 @@
 
 omod TRAINDOOR-V3 is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
 
   op counter1 : -> RVarId [ctor] .
   ops isOpen locked : -> BVarId [ctor] .

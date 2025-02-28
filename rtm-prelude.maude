@@ -1,4 +1,4 @@
----Kyungmin: sort ZTime (for zero) is added
+---Kyungmin: sort ZTime (for zero) is added, and == is removed from Time
 
 fmod TIME is 
    sorts Time ZTime NzTime .
@@ -7,13 +7,14 @@ fmod TIME is
    op zero : -> ZTime .
    op _plus_ : Time Time -> Time [assoc comm prec 33 gather (E e)] .
    op _monus_ : Time Time -> Time [prec 33 gather (E e)] .
+   op _equals_ : Time Time -> Bool [comm prec 51] .
    op _le_ : Time Time -> Bool [prec 37] .
    op _lt_ : Time Time -> Bool [prec 37] .
    op _ge_ : Time Time -> Bool [prec 37] .
    op _gt_ : Time Time -> Bool [prec 37] .
 
    eq zero plus R:Time = R:Time .
-   eq R:Time le R':Time = (R:Time lt R':Time) or (R:Time == R':Time) .
+   eq R:Time le R':Time = (R:Time lt R':Time) or (R:Time equals R':Time) .
    eq R:Time ge R':Time = R':Time le R:Time .
    eq R:Time gt R':Time = R':Time lt R:Time .
 endfm
@@ -39,6 +40,7 @@ fmod TIME-INF is
   op INF : -> TimeInf .
   op _plus_ : TimeInf TimeInf -> TimeInf [ditto] .
   op _monus_ : TimeInf Time -> TimeInf [ditto] .
+  op _equals_ : TimeInf TimeInf -> Bool [ditto] .
   op _le_ : TimeInf TimeInf -> Bool [prec 37] .
   op _lt_ : TimeInf TimeInf -> Bool [prec 37] .
   op _ge_ : TimeInf TimeInf -> Bool [prec 37] .
@@ -49,6 +51,8 @@ fmod TIME-INF is
 
   eq INF plus TI = INF .
   eq INF monus R = INF .
+  eq INF equals INF = true .
+  eq INF equals R = false .
   eq TI le INF = true .
   eq INF le R = false .
   eq INF lt TI = false .
@@ -100,6 +104,7 @@ fmod NAT-TIME-DOMAIN is
   eq zero = 0 .
   eq N plus N' = N + N' .
   eq N monus N' = if N > N' then sd(N, N') else 0 fi .
+  eq N equals N' = N == N' .
   eq N lt N' = N < N' .
 endfm
 
@@ -109,6 +114,10 @@ fmod NAT-TIME-DOMAIN-WITH-INF is
   protecting NAT-TIME-DOMAIN .
   including LTIME-INF .
 
+  --- Kyungmin: the following is removed to keep the consistency
+  ---   w.r.t. the symbolic semantics
+
+---(
   --- should for simplicity extend <, >=, etc to infinity:
 
   op _<_ : TimeInf TimeInf -> Bool [ditto] .
@@ -131,13 +140,11 @@ fmod NAT-TIME-DOMAIN-WITH-INF is
 
   eq INF + TI = INF .
 
-  ---Kyungmin: must use minimum and maximum in LTIME-INF
----(
   --- NEW: must also extend the built-in 'min' and'max' to TimeInf:
   ops min max : TimeInf TimeInf -> TimeInf [ditto] .
   eq max(INF, TI:TimeInf) = INF .
   eq min(INF, TI:TimeInf) = TI:TimeInf .
-)---
+)---)
 endfm
 
 
@@ -165,6 +172,7 @@ fmod POSRAT-TIME-DOMAIN is
   eq zero = 0 .
   eq R plus R' = R + R' .
   eq R monus R' = if R > R' then R - R' else 0 fi .
+  eq R equals R' = R == R' .
   eq R lt R' = R < R' .
 endfm
 
@@ -174,6 +182,10 @@ fmod POSRAT-TIME-DOMAIN-WITH-INF is
   protecting POSRAT-TIME-DOMAIN .
   including LTIME-INF .
 
+  --- Kyungmin: the following is removed to keep the consistency
+  ---   w.r.t. the symbolic semantics
+
+---(
   --- again, we should extend the comparison operators to infinity:
   op _<_ : TimeInf TimeInf -> Bool [ditto] .
   op _<=_ : TimeInf TimeInf -> Bool [ditto] .
@@ -208,5 +220,6 @@ fmod POSRAT-TIME-DOMAIN-WITH-INF is
   op max : Zero NzNat -> NzNat [ditto] .
   op max : Rat TimeInf -> TimeInf [ditto] .
   op max : Rat NNegRat -> NNegRat [ditto] .
+)---)
 endfm
 

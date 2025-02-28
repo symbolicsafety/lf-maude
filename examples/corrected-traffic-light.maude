@@ -12,7 +12,7 @@
 
 omod TRAFFIC-LIGHT is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
   protecting RUNTIME-APG .
 
   ops count mode : -> RVarId [ctor] .

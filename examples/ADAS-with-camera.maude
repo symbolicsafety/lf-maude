@@ -5,7 +5,7 @@
 
 omod ADAS-WITH-CAMERA is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
   protecting RUNTIME-APG .
   
   ops frame received brakesApplied requestStop : -> RVarId [ctor] .

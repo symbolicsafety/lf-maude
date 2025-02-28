@@ -1,7 +1,7 @@
 
 omod COOP-SCHEDULE is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
 
   op counter : -> RVarId [ctor] .
   ops trigger task1 task2 task3 task4 task5 : -> ReactorId [ctor] .

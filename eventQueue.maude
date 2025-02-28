@@ -13,7 +13,7 @@
 fmod EVENT is
   protecting REACTOR-ID .
   protecting ACTION-TRIGGER .
-  protecting LF-VALUE .
+  protecting LF-ABS-VALUE-TIME .
 
   --- Single events:
   sort Event .
@@ -42,7 +42,7 @@ fmod TAG is
   op tag : Time Nat -> Tag [ctor] .
 
   op _<_ : Tag Tag -> Bool .
-  eq tag(T1, MS1) < tag(T2, MS2) = T1 lt T2 or ((T1 == T2) and MS1 < MS2) .
+  eq tag(T1, MS1) < tag(T2, MS2) = T1 lt T2 or ((T1 equals T2) and MS1 < MS2) .
 endfm
 
 

@@ -18,8 +18,6 @@ omod EVEL-EXP is
   vars BEXP1 BEXP2 : BoolExpr .
   vars REXP1 REXP2 : RatExpr .
 
-  vars B1 B2 : Bool .
-  vars R1 R2 : Rat .
   vars VAL VAL1 VAL2 : Value .
   var PORTID : PortId .
   var ACTIONID : ActionId .
@@ -45,8 +43,8 @@ omod EVEL-EXP is
      eval(REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) .
   
   eq eval(EXP1 === EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
-   = [eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) ==
-      eval(EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS)] .
+   = eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) equals
+     eval(EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) .
 
   eq eval(REXP1 < REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
    = eval(REXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) <
@@ -65,16 +63,16 @@ omod EVEL-EXP is
      eval(REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) .
   
   *** NEW GUY:
-  eq eval(isPresent(TRIGGER), VALUATION,  INPORTSANDACTIONS, ((TRIGGER |-> present) ; TSTATUS))
-   = [true] .
+  eq eval(isPresent(TRIGGER), VALUATION, INPORTSANDACTIONS, ((TRIGGER |-> present) ; TSTATUS))
+   = trueVal .
   
-  eq eval(isPresent(TRIGGER), VALUATION,  INPORTSANDACTIONS, TSTATUS) = [false] [owise] .
+  eq eval(isPresent(TRIGGER), VALUATION, INPORTSANDACTIONS, TSTATUS) = falseVal [owise] .
   
   *** MORE TBILISI NEW GUYS:
   
   eq eval(EXP1 ==/= EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
-   = [eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) =/=
-      eval(EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS)] .
+   = neg (eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) equals
+          eval(EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS)) .
   
   eq eval(BEXP1 && BEXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
    = eval(BEXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) &&
@@ -86,21 +84,6 @@ omod EVEL-EXP is
   
   eq eval(! BEXP1, VALUATION, INPORTSANDACTIONS, TSTATUS)
    = ! eval(BEXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) .
-
-
-  --- value operations
-  eq [R1] +  [R2] = [R1 +  R2] .
-  eq [R1] *  [R2] = [R1 *  R2] .
-  eq [R1] <  [R2] = [R1 <  R2] .
-  eq [R1] <= [R2] = [R1 <= R2] .
-  eq [R1] >  [R2] = [R1 >  R2] .
-  eq [R1] >= [R2] = [R1 >= R2] .
-
-  eq [B1] && [B2] = [B1 and B2] .
-  eq [B1] || [B2] = [B1 or  B2] .
-
-  eq ! [B1] = [not B1] .
-
 endom
 
 
@@ -109,7 +92,6 @@ omod EXECUTE-REACTION is
   protecting EVEL-EXP .
   protecting EVENT-QUEUE .
   protecting TIMER .
-  protecting LF-TIME .
 
   *** Execute a single reaction.
   *** Effects: change the state of the reactor;
@@ -134,8 +116,6 @@ omod EXECUTE-REACTION is
   var VAR : VarId .    
   vars VAL VAL' : Value .
   var N : Nat .
-  var B : Bool .
-  var R : Rat .
   var T : Time .
   var TI : TimeInf .
 
@@ -166,7 +146,7 @@ omod EXECUTE-REACTION is
    = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
        TSTATUS,
        if TI gt zero and TI lt INF 
-       then schedule(event(REACTOR, TIMERID, [0]), TI, QUEUE)
+       then schedule(event(REACTOR, TIMERID, zeroVal), TI, QUEUE)
        else QUEUE fi) .
   
   eq scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE) = QUEUE [owise] .
@@ -191,6 +171,9 @@ omod EXECUTE-REACTION is
             eval(EXP, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TSTATUS)) ; VALUATION) >,
         RB, OUTPUTS, QUEUE, TSTATUS) .
 
+  ---Note: the following three equations (which include ==) must be changed 
+  ---   for symbolic semantics.
+
   eq executeReactionBody(
         < REACTOR : Reactor | state :  VALUATION,
                               inports : INPORTS, actions : ACTIONS >,
@@ -198,7 +181,8 @@ omod EXECUTE-REACTION is
     =                                         
      executeReactionBody(
         < REACTOR : Reactor | >,
-        if valueToBool(eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS)) then (RB1 ; RB) else RB fi, 
+        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal
+        then (RB1 ; RB) else RB fi, 
         OUTPUTS, QUEUE, TSTATUS) .
 
   eq executeReactionBody(
@@ -207,7 +191,8 @@ omod EXECUTE-REACTION is
         (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS)
    =                                         
       executeReactionBody(< REACTOR : Reactor | >,
-        if valueToBool(eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS)) then (RB1 ; RB) else (RB2 ; RB) fi,  
+        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
+        then (RB1 ; RB) else (RB2 ; RB) fi,  
         OUTPUTS, QUEUE, TSTATUS) .
 
   eq executeReactionBody(
@@ -217,7 +202,7 @@ omod EXECUTE-REACTION is
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | >,
-        if valueToBool(eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS)) 
+        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
         then (RB1 ; (while BEXP do RB1 done) ; RB) else RB fi,  
         OUTPUTS, QUEUE, TSTATUS) .
 
@@ -247,9 +232,8 @@ omod EXECUTE-REACTION is
             event(REACTOR, ACTIONID, 
                 eval(EXP, VALUATION, 
                      INPORTS CONF < ACTIONID : Action | minDelay : T >, TSTATUS)), 
-            toTime(valueToRat(
-                eval([toRat(T)] + REXP, VALUATION, 
-                     INPORTS CONF < ACTIONID : Action | minDelay : T >, TSTATUS))), 
+            valueToTime(eval(timeToValue(T) + REXP, VALUATION, 
+                     INPORTS CONF < ACTIONID : Action | minDelay : T >, TSTATUS)), 
             QUEUE), TSTATUS) .
 
 endom

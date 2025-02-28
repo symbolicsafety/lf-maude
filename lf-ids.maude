@@ -1,5 +1,5 @@
 
---- Ids and basic types
+--- Identifiers
 
 fmod TIMER-ID is
   sorts TimerId .
@@ -64,25 +64,3 @@ fmod PHYSICAL-ACTION-ID is
   subsort PhysActId < ReactionId .
   op _._ : ReactorId ActionId -> PhysActId [ctor] .
 endfm
-
-
-fmod LF-TIME is
-  protecting RAT .
-  protecting TIME .
-
-  --- Time casting operators. 
-  --- MUST BE DEFINED for each time domain.
-  op toRat : Time ~> Rat .
-  op toTime : Rat ~> Time .
-endfm
-
-
---- NAT time domain for LF
-fmod NAT-LF-TIME is
-  including LF-TIME .
-  protecting NAT-TIME-DOMAIN-WITH-INF .
-
-  eq toRat(N:Nat) = N:Nat .
-  eq toTime(N:Nat) = N:Nat .
-endfm
-

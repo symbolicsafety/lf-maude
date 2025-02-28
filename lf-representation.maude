@@ -10,29 +10,29 @@
 ---  3) Int types are changed to Rat types, for symbolic times
 
 
-
-fmod LF-VALUE is
-  protecting RAT .
+fmod LF-ABS-VALUE-TIME is
   protecting TIME .
+
+  --- Kyungmin: Now, value sorts are declared empty, along with 
+  ---   some additional operators. These sorts and operators 
+  ---   must be instantiated later.
 
   sorts RatValue BoolValue Value .
   subsort RatValue BoolValue < Value .
 
-  op [_] : Rat -> RatValue [ctor] .
-  op [_] : Bool -> BoolValue [ctor] .
+  ops trueVal falseVal : -> BoolValue .
+  op zeroVal : -> RatValue .
 
+  op neg_ : BoolValue -> BoolValue .       --- negation
+  op _equals_ : Value Value -> BoolValue . 
 
-  --- some casting operators 
-  op valueToBool : BoolValue -> Bool .
-  eq valueToBool([B:Bool]) = B:Bool .
-
-  op valueToRat : RatValue -> Rat .
-  eq valueToRat([R:Rat]) = R:Rat .
+  op timeToValue : Time ~> RatValue .
+  op valueToTime : RatValue ~> Time .
 endfm
 
 
 fmod LF-EXPR is
-  protecting LF-VALUE .
+  protecting LF-ABS-VALUE-TIME .
   protecting VAR-ID .
   protecting ACTION-TRIGGER .
 
@@ -86,7 +86,7 @@ endfm
 
 omod PORT is
   protecting PORT-ID .
-  protecting LF-VALUE .
+  protecting LF-ABS-VALUE-TIME .
 
   class Port | value : Value .
 
@@ -95,7 +95,7 @@ endom
 
 
 omod ACTION is
-  protecting LF-VALUE .
+  protecting LF-ABS-VALUE-TIME .
 
   class Action | minDelay : Time, 
                  minSpacing : Time, 
@@ -161,7 +161,7 @@ endom
 
 omod REACTOR is
   protecting VAR-ID .
-  protecting LF-VALUE .
+  protecting LF-ABS-VALUE-TIME .
   protecting REACTION .
   
   class Reactor | inports : Configuration,

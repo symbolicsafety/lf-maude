@@ -5,7 +5,7 @@
 
 omod EDWARD-LEE-EXAMPLE-PETER is
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
   protecting RUNTIME-APG .
  
  

@@ -10,7 +10,7 @@
 
 omod ADAS-WITHOUT-CAMERA is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
  
   ops frame received brakesApplied requestStop counter1 counter2 counter3 : -> RVarId [ctor] .
   ops lidar adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .

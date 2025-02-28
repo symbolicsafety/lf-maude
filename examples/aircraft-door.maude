@@ -2,7 +2,7 @@
 
 omod AIRCRAFT-DOOR is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
 
   ops ramp doorOpen : -> RVarId [ctor] .
   ops controller vision door : -> ReactorId [ctor] .

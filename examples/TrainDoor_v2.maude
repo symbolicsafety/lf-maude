@@ -4,7 +4,7 @@
 
 omod TRAINDOOR-V2 is 
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
  
   ops moving locked : -> BVarId [ctor] .
   ops controller train door : -> ReactorId [ctor] .

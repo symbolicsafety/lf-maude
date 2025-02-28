@@ -4,7 +4,7 @@
 
 omod FIG7 is
   including LF-REPR .
-  protecting NAT-LF-TIME .
+  protecting LF-VALUE-TIME .
 
   op s : -> RVarId [ctor] .
   ops relay x y : -> ReactorId [ctor] .
