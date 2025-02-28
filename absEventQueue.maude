@@ -60,7 +60,7 @@ fmod TAGGED-EVENTS is
 endfm
 
 
-omod EVENT-QUEUE is
+omod ABS-EVENT-QUEUE is
   protecting TAGGED-EVENTS .
 
   --- At the moment, we do NOT deal with hierarchical
@@ -69,34 +69,25 @@ omod EVENT-QUEUE is
 
   class EventQueue | queue : EQueue .  --- class according to majority vote
 
+  --- the cons constructor for EQueue is not defined here!
   sort EQueue .
   subsort TaggedEvents < EQueue .
   op empty : -> EQueue [ctor] .
-  op _::_ : EQueue EQueue -> EQueue [ctor assoc id: empty] .
 
   var ZERO : ZTime .
   var NZT : NzTime .
-  vars EVENTS EVENTS1 EVENTS2 : Events .
-  vars TAG TAG1 TAG2 : Tag .
+  var EVENTS : Events .
   var QUEUE : EQueue .
 
-  --- insert an already correctly tagged set of events!
+  ---NOTE: not declared here!
   op insert : TaggedEvents EQueue -> EQueue .
-  eq insert(EVENTS at TAG, empty) = EVENTS at TAG . 
-  eq insert(EVENTS1 at TAG1, (EVENTS2 at TAG2) :: QUEUE) 
-   = if TAG1 < TAG2 
-     then ((EVENTS1 at TAG1) :: (EVENTS2 at TAG2) :: QUEUE)
-     else (if TAG1 == TAG2 
-           then (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
-	   else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
 
-  op schedule : Events Time EQueue -> EQueue .
   --- note events could also be 'actions'
   --- NOTE: these are our educated guesses ....
+  op schedule : Events Time EQueue -> EQueue .
   eq schedule(EVENTS, NZT, QUEUE)  = insert(EVENTS at tag(NZT, 0), QUEUE) .
   eq schedule(EVENTS, ZERO, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) .
 endom
-
 
 
 

@@ -1,0 +1,22 @@
+
+omod EVENT-QUEUE is
+  including ABS-EVENT-QUEUE .
+
+  --- event queue is a list in the concrete setting
+  op _::_ : EQueue EQueue -> EQueue [ctor assoc id: empty] .
+
+  vars EVENTS1 EVENTS2 : Events .
+  vars TAG1 TAG2 : Tag .
+  var QUEUE : EQueue .
+
+  --- insert an already correctly tagged set of events
+  --- in the concrete setting
+  eq insert(EVENTS1 at TAG1, empty) = EVENTS1 at TAG1 . 
+  eq insert(EVENTS1 at TAG1, (EVENTS2 at TAG2) :: QUEUE) 
+   = if TAG1 < TAG2 
+     then ((EVENTS1 at TAG1) :: (EVENTS2 at TAG2) :: QUEUE)
+     else (if TAG1 == TAG2 
+           then (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
+	   else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
+endom
+

@@ -1,0 +1,59 @@
+--- First attempt at the overall dynamics of our interpreter.
+
+omod INVOKED is
+  protecting REACTION .
+
+  *** NEW Feb'25:
+  --- We add a new object keeping track of the reactions that were performed
+  --- in the last step.
+
+  class Invoked | reactions : ReactionIdSet .
+endom
+
+
+omod ABS-DYNAMICS-WITHOUT-TICK is
+  protecting ABS-EXECUTE-STEP .
+  protecting ABS-EVENT-QUEUE .
+  protecting INVOKED .
+  protecting TIMED-PRELUDE .
+  protecting LTIME-INF .
+
+  subsort Configuration < System .
+
+  vars REACTORS-AND-CONNECTIONS CONF TIMERS : Configuration .
+  var REACTORID : ReactorId .
+  var TIMERID : TimerId .
+  var ACTIONID : ActionId .
+  var QUEUE : EQueue .
+  var VAL : Value .
+  var T : Time .
+
+  --- here, we define common operations for both concrete and symbolic semantics.
+  --- the actual semantics are declared in each file.
+
+
+  --- add initial timer values to event queue:
+  op addInitialTimers : Configuration EQueue -> EQueue .
+  eq addInitialTimers(< REACTORID : Reactor | timers : TIMERS
+                                                       < TIMERID : Timer | offset : T > >
+                      REACTORS-AND-CONNECTIONS, QUEUE)
+   = addInitialTimers(< REACTORID : Reactor | timers : TIMERS >
+                      REACTORS-AND-CONNECTIONS,
+                      schedule(event(REACTORID, TIMERID, zeroVal), T, QUEUE)) .
+  eq addInitialTimers(REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
+
+
+  --- addStartup(startup, init, empty)
+  op addStartup : ActionId Configuration EQueue -> EQueue .
+  eq addStartup(ACTIONID, 
+                < REACTORID : Reactor | 
+                    actions : < ACTIONID : LogicalAction | payload : VAL > CONF >
+                REACTORS-AND-CONNECTIONS, QUEUE)
+   = addStartup(ACTIONID, 
+                < REACTORID : Reactor | actions : CONF >
+                REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), zero, QUEUE)) .
+  eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
+endom
+
+
+

@@ -1,45 +1,23 @@
---- First attempt at the overall dynamics of our interpreter.
-
-omod INVOKED is
-  protecting REACTION .
-
-  *** NEW Feb'25:
-  --- We add a new object keeping track of the reactions that were performed
-  --- in the last step.
-
-  class Invoked | reactions : ReactionIdSet .
-endom
-
 
 omod DYNAMICS-WITHOUT-TICK is
-  protecting EXECUTE-STEP .
-  protecting ENVIRONMENTS .
-  protecting INVOKED .
-  protecting TIMED-PRELUDE .
-  protecting LTIME-INF .
-
-  subsort Configuration < System .
+  including ABS-DYNAMICS-WITHOUT-TICK .
+  including EXECUTE-STEP .
+  including EVENT-QUEUE .
+  including PHYSICAL-ACTIONS .
 
   --- At the moment, the global state is
   --- < env : Environment | physicalActions : ... >
   --- REACTORS and CONNECTIONS in some state
   --- < q : EventQueue | queue : ... >
 
-  var REACTORID : ReactorId .
-  var TIMERID : TimerId .
-  var ACTIONID : ActionId .
-  var INVOKED : ReactionIdSet .
-  vars E Q PA RXNS : Oid .
-
-  vars REACTORS-AND-CONNECTIONS CONF1 CONF
-       PHYSICAL-ACTIONS NEW-NETWORK TIMERS : Configuration .
-  var EVENTS : Events .
+  vars REACTORS-AND-CONNECTIONS PHYSICAL-ACTIONS NEW-NETWORK CONF1 : Configuration .
   vars QUEUE NEW-QUEUE : EQueue .
-  var VAL : Value .
-
+  vars E Q PA RXNS : Oid .
+  var INVOKED : ReactionIdSet .
+  var EVENTS : Events .
   var TI : TimeInf .
   var ZERO : ZTime .
-  vars T1 T T2 : Time .
+  vars T T1 T2 : Time .
   var N : Nat .
 
   *** We need some initialization, obviously.  DONE
@@ -117,6 +95,10 @@ omod DYNAMICS-WITHOUT-TICK is
   ***    physical actions, since T cannot have the value INF.
   ***    So the last conjunct in condition not really needed.
    
+  op decreaseTags : EQueue Time -> EQueue .
+  eq decreaseTags(empty, T) = empty .
+  eq decreaseTags((EVENTS at tag(T2, N)) :: QUEUE, T) =
+     (EVENTS at tag(T2 monus T, N)) :: decreaseTags(QUEUE, T) .
 
   *** decrease timers in out physical action objects:
   op decreaseTimers : Configuration Time -> Configuration .
@@ -124,41 +106,10 @@ omod DYNAMICS-WITHOUT-TICK is
   eq decreaseTimers(< PA : PhysAct | leftOfPeriod : TI >   PHYSICAL-ACTIONS, T)
   = < PA : PhysAct | leftOfPeriod : TI monus T >   decreaseTimers(PHYSICAL-ACTIONS, T) .
 
-  op decreaseTags : EQueue Time -> EQueue .
-  eq decreaseTags(empty, T) = empty .
-  eq decreaseTags((EVENTS at tag(T2, N)) :: QUEUE, T) =
-     (EVENTS at tag(T2 monus T, N)) :: decreaseTags(QUEUE, T) .
-
   op smallestTimer : Configuration -> TimeInf .
   eq smallestTimer(none) = INF .
   eq smallestTimer(< PA : PhysAct | leftOfPeriod : TI >   PHYSICAL-ACTIONS)
    = minimum(TI, smallestTimer(PHYSICAL-ACTIONS)) .
-
-
-  --- add initial timer values to event queue:
-  op addInitialTimers : Configuration EQueue -> EQueue .
-
-  eq addInitialTimers(< REACTORID : Reactor | timers : TIMERS
-                                                       < TIMERID : Timer | offset : T > >
-                      REACTORS-AND-CONNECTIONS, QUEUE)
-   = addInitialTimers(< REACTORID : Reactor | timers : TIMERS >
-                      REACTORS-AND-CONNECTIONS,
-                      schedule(event(REACTORID, TIMERID, zeroVal), T, QUEUE)) .
-
-  eq addInitialTimers(REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
-
-
-  --- addStartup(startup, init, empty)
-  op addStartup : ActionId Configuration EQueue -> EQueue .
-
-  eq addStartup(ACTIONID, < REACTORID : Reactor | actions : CONF
-                                                  < ACTIONID : LogicalAction |
-                                                       payload : VAL > >
-                REACTORS-AND-CONNECTIONS, QUEUE)
-   = addStartup(ACTIONID, < REACTORID : Reactor | actions : CONF >
-            REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), zero, QUEUE)) .
-
-  eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 endom
 
 

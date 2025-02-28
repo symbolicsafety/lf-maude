@@ -17,9 +17,7 @@
 
 
 omod PHYSICAL-ACTIONS is
-  protecting TIME-INF .
-  protecting EVENT-QUEUE .
-  protecting PHYSICAL-ACTION-ID .
+  protecting ENVIRONMENTS .
   extending PERIODIC-OBJ .
 
   --- Dynamically, each physical action has:
@@ -42,29 +40,14 @@ omod PHYSICAL-ACTIONS is
   subsort Value < ValueSet .
   op noValue : -> ValueSet [ctor] .
   op _:_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
-endom
 
-
-omod ENVIRONMENTS is
-  protecting PHYSICAL-ACTIONS .
-
-  --- The ENVIRONMENT represents all external actions,
-  ---   namely, the physical actions:
-
-  class Environment | physicalActions : Configuration .
-
-  vars O O2 : Oid .
+  var O : Oid .
   var AI : ActionId .
   var RI : ReactorId .
   var ZERO : ZTime .
   var P : TimeInf .
   var V : Value .
   var VS : ValueSet .
-  var QUEUE : EQueue .
-  var CONF : Configuration .
-  var EVENT : Event .
-
-  msg scheduleAction : Event -> Msg .
 
 ---  commented out for testing:
   rl [noAction] :
@@ -78,11 +61,5 @@ omod ENVIRONMENTS is
    =>
      < (RI . AI) : PhysAct | leftOfPeriod : P >
      scheduleAction(event(RI, AI, V)) .
-
-  eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
-     < O2 : EventQueue | queue : QUEUE >
-   =
-     < O : Environment | physicalActions : CONF >
-     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) > .
 endom
 

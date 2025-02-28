@@ -88,9 +88,9 @@ endom
 
 
 
-omod EXECUTE-REACTION is
+omod ABS-EXECUTE-REACTION is
   protecting EVEL-EXP .
-  protecting EVENT-QUEUE .
+  protecting ABS-EVENT-QUEUE .
   protecting TIMER .
 
   *** Execute a single reaction.
@@ -139,72 +139,37 @@ omod EXECUTE-REACTION is
        TSTATUS) .
 
 
+  --- NOTE: this function is not declared here! 
   op scheduleTriggeringTimers : ReactorId Configuration TriggerStatus EQueue -> EQueue .
-  
-  eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
-       ((TIMERID |-> present) ; TSTATUS), QUEUE)
-   = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
-       TSTATUS,
-       if TI gt zero and TI lt INF 
-       then schedule(event(REACTOR, TIMERID, zeroVal), TI, QUEUE)
-       else QUEUE fi) .
-  
-  eq scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE) = QUEUE [owise] .
 
 
   ---
   op executeReactionBody : Object ReactionBody Events EQueue TriggerStatus -> ReactorOutputsFutureevents .
 
-  eq executeReactionBody(
-       < REACTOR : Reactor | >, 
-       skip, OUTPUTS, QUEUE, TSTATUS) 
-   =
-     result(< REACTOR : Reactor | >, OUTPUTS, QUEUE) .
+  eq executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, TSTATUS) 
+   = result(< REACTOR : Reactor | >, OUTPUTS, QUEUE) .
 
   eq executeReactionBody(
-        < REACTOR : Reactor | state : ((VAR |-> VAL) ; VALUATION),
+        < REACTOR : Reactor | state : (VALUATION ; (VAR |-> VAL)),
                               inports : INPORTS, actions : ACTIONS >,
         (VAR := EXP) ; RB, OUTPUTS, QUEUE, TSTATUS)
     =                                         
       executeReactionBody(
-        < REACTOR : Reactor | state : ((VAR |-> 
-            eval(EXP, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TSTATUS)) ; VALUATION) >,
+        < REACTOR : Reactor | state : (VALUATION ; (VAR |-> 
+            eval(EXP, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TSTATUS))) >,
         RB, OUTPUTS, QUEUE, TSTATUS) .
 
-  ---Note: the following three equations (which include ==) must be changed 
-  ---   for symbolic semantics.
-
-  eq executeReactionBody(
-        < REACTOR : Reactor | state :  VALUATION,
-                              inports : INPORTS, actions : ACTIONS >,
+  eq executeReactionBody(< REACTOR : Reactor | >,
         (if BEXP then RB1 fi) ; RB, OUTPUTS, QUEUE, TSTATUS)
     =                                         
-     executeReactionBody(
-        < REACTOR : Reactor | >,
-        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal
-        then (RB1 ; RB) else RB fi, 
-        OUTPUTS, QUEUE, TSTATUS) .
+     executeReactionBody(< REACTOR : Reactor | >,
+        (if BEXP then RB1 else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS) .
 
-  eq executeReactionBody(
-        < REACTOR : Reactor | state :  VALUATION,
-                              inports : INPORTS, actions : ACTIONS >,
-        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS)
-   =                                         
-      executeReactionBody(< REACTOR : Reactor | >,
-        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
-        then (RB1 ; RB) else (RB2 ; RB) fi,  
-        OUTPUTS, QUEUE, TSTATUS) .
-
-  eq executeReactionBody(
-        < REACTOR : Reactor | state :  VALUATION,
-                              inports : INPORTS, actions : ACTIONS >,
+  eq executeReactionBody(< REACTOR : Reactor | >,
         (while BEXP do RB1 done) ; RB, OUTPUTS, QUEUE, TSTATUS)
     =                                         
-      executeReactionBody(
-        < REACTOR : Reactor | >,
-        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
-        then (RB1 ; (while BEXP do RB1 done) ; RB) else RB fi,  
-        OUTPUTS, QUEUE, TSTATUS) .
+     executeReactionBody(< REACTOR : Reactor | >,
+        (if BEXP then RB1 ; (while BEXP do RB1 done) else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS) .
 
   eq executeReactionBody(
         < REACTOR : Reactor | state : VALUATION,
@@ -231,39 +196,34 @@ omod EXECUTE-REACTION is
         schedule(
             event(REACTOR, ACTIONID, 
                 eval(EXP, VALUATION, 
-                     INPORTS CONF < ACTIONID : Action | minDelay : T >, TSTATUS)), 
+                     INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
             valueToTime(eval(timeToValue(T) + REXP, VALUATION, 
-                     INPORTS CONF < ACTIONID : Action | minDelay : T >, TSTATUS)), 
+                             INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
             QUEUE), TSTATUS) .
 
+  ---NOTE: if-then-else-fi is not defined here!
 endom
 
 
-
-omod EXECUTE-STEP is
-  protecting EXECUTE-REACTION .
+omod ABS-EXECUTE-STEP is
+  protecting ABS-EXECUTE-REACTION .
   protecting RUNTIME-APG .
 
   vars PORTID PORTID1 PORTID2 PORTID3 OUTPORTID : PortId .
-  var REACTIONID : ReactionId .
   vars REACTORID REACTORID1 REACTORID2 REACTORID3 : ReactorId .
-  vars ACTIONID : ActionId .
+  var REACTIONID : ReactionId .
+  var ACTIONID : ActionId .
   var TIMERID : TimerId .
+  var REACTIONIDSET : ReactionIdSet .
+  vars OS OS1 OS2 : OidSet .
 
-  vars PRE REACTIONIDSET INVOKED : ReactionIdSet .
-  vars OS OS1 OS2 TRIGGERIDS : OidSet .
-
-  vars NETWORK GRAPH PORTS ACTIONS INPORTS CONF TIMERS : Configuration .
-  var OBJECT : Object .
-
-  vars TRIGGER : ActionTrigger .
+  vars NETWORK GRAPH PORTS ACTIONS INPORTS TIMERS : Configuration .
   var TSTATUS : TriggerStatus .
-  vars REACTIONS1 REACTIONS2 RL1 RL2 : ReactionList .
-  vars EVENTS OUTPUTS : Events .
-  vars QUEUE RESULT-QUEUE : EQueue .
+  vars RL1 RL2 : ReactionList .
+  var EVENTS : Events .
+  var QUEUE : EQueue .
   var RB : ReactionBody .
   var STATUS : ExecutionStatus .
-
   vars VAL OLD-VAL : Value .
   var T : Time .
   vars N N2 N3 : Nat .
@@ -286,32 +246,8 @@ omod EXECUTE-STEP is
 
   --- executeStep(APGgraph, network, event queue)
   op executeStep : Configuration Configuration EQueue ReactionIdSet -> Network+Queue+Reactions .
-  ceq executeStep(
-        < (REACTORID . N) : APGNode | 
-            triggers : TSTATUS, status : present, pre : PRE > 
-        GRAPH,
-        NETWORK
-        < REACTORID : Reactor | 
-            reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB}) REACTIONS2 >,
-        QUEUE,
-        INVOKED)
-   =
-      executeStep(
-        < (REACTORID . N) : APGNode | status : executed >
-        updateGraph(GRAPH, REACTORID, OS, NETWORK < REACTORID : Reactor | >, OUTPUTS),
-        propagateImmediateOutputs(OUTPUTS, NETWORK OBJECT),    --- updated reactor
-        scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE),
-        INVOKED ; (REACTORID . N))
-   if presetOK(PRE, GRAPH)   
-   /\ allTriggersDecided(TSTATUS)  
-   /\ result(OBJECT, OUTPUTS, RESULT-QUEUE) := 
-         executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
-                                                 reaction N when TRIGGERIDS --> OS do {RB}
-                                                 REACTIONS2 >, N, TSTATUS, QUEUE) .
 
- *** Comment out for debugging with APG graph:
- eq executeStep(GRAPH, NETWORK, QUEUE, INVOKED) 
-  = networkQueueRxns(NETWORK, QUEUE, INVOKED) [owise] .
+  ---NOTE: executeStep is not defined here!
 
 
 
@@ -343,7 +279,7 @@ omod EXECUTE-STEP is
    =
      addEventsToPorts(EVENTS, 
                       NETWORK < REACTORID : Reactor |
-                                          timers : TIMERS < TIMERID : Timer | > >) .
+                                 timers : TIMERS < TIMERID : Timer | > >) .
 
  
   ---
@@ -376,13 +312,14 @@ omod EXECUTE-STEP is
   
   ceq propagateImmediateOutputs(event(REACTORID, PORTID, VAL) EVENTS,
          NETWORK
-         < REACTORID2 : Reactor | inports : INPORTS
-                                            < PORTID2 : Port | value : OLD-VAL > >
+         < REACTORID2 : Reactor | 
+             inports : INPORTS < PORTID2 : Port | value : OLD-VAL > >
          (REACTORID : PORTID --> REACTORID2 : PORTID2))
    =
      propagateImmediateOutputs(event(REACTORID, PORTID, VAL) EVENTS,
-         NETWORK        < REACTORID2 : Reactor | inports : INPORTS
-                                            < PORTID2 : Port | value : VAL > >
+         NETWORK        
+         < REACTORID2 : Reactor | 
+             inports : INPORTS < PORTID2 : Port | value : VAL > >
          (REACTORID : PORTID --> REACTORID2 : PORTID2))
      if OLD-VAL =/= VAL .    
   
@@ -395,52 +332,53 @@ omod EXECUTE-STEP is
   --- new complex version
   --- positive case: some unknown input becomes present at a downstream guy:
   eq updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TSTATUS) > GRAPH,
-                 REACTORID1, OS, NETWORK
-                 (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
+                 REACTORID1, OS, 
+                 NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
                  event(REACTORID1, PORTID1, VAL) EVENTS)
    =
-   updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> present) ; TSTATUS),
-                                            status : present > GRAPH,
+     updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> present) ; TSTATUS),
+                                                status : present > GRAPH,
                  REACTORID1, OS, 
                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
                  event(REACTORID1, PORTID1, VAL) EVENTS) .
   
   --- negative case 1; updated complex setting:
-  ceq updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TSTATUS),
-                                               status : STATUS > GRAPH,
-                 REACTORID1, (PORTID1 ; OS), 
-                 NETWORK
-                 (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
-                 EVENTS)
-   =
-   updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> absent) ; TSTATUS),
-                                            status : (if STATUS == unknown and
-                                                       allTriggersDecided((PORTID2 |-> absent) ; TSTATUS)
-                                                      then absent else STATUS fi) >
-               GRAPH,
-                 REACTORID1, (PORTID1 ; OS),
-                 NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
-                 EVENTS)
-     if not (REACTORID1 . PORTID1)        presentIn EVENTS .
+  ceq updateGraph(< (REACTORID2 . N) : APGNode | 
+                      triggers : ((PORTID2 |-> unknown) ; TSTATUS),
+                      status : STATUS > GRAPH,
+                  REACTORID1, (PORTID1 ; OS), 
+                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
+                  EVENTS)
+    =
+      updateGraph(< (REACTORID2 . N) : APGNode | 
+                      triggers : ((PORTID2 |-> absent) ; TSTATUS),
+                      status : (if STATUS == unknown and
+                                   allTriggersDecided((PORTID2 |-> absent) ; TSTATUS)
+                                then absent else STATUS fi) > GRAPH,
+                  REACTORID1, (PORTID1 ; OS),
+                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
+                  EVENTS)
+     if not (REACTORID1 . PORTID1) presentIn EVENTS .
   
   --- NEW version!
   --- transitive negative case
-  eq updateGraph(< (REACTORID2 . N2) : APGNode | triggers : ((PORTID2 |-> unknown) ; TSTATUS),
-                                               status : STATUS > GRAPH
-                  < (REACTORID3 . N3) : APGNode | status : absent >,
+  eq updateGraph(< (REACTORID2 . N2) : APGNode | 
+                     triggers : ((PORTID2 |-> unknown) ; TSTATUS),
+                     status : STATUS > 
+                 < (REACTORID3 . N3) : APGNode | status : absent > GRAPH,
                  REACTORID1, OS, 
                  NETWORK
-                 < REACTORID3 : Reactor | reactions : (RL1
-                                                    (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB})
-                                                    RL2) > 
+                 < REACTORID3 : Reactor | 
+                     reactions : (RL1 (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB}) RL2) > 
                  (REACTORID3 : PORTID3 --> REACTORID2 : PORTID2),
                  EVENTS)
    =
-   updateGraph(< (REACTORID2 . N2) : APGNode | triggers : ((PORTID2 |-> absent) ; TSTATUS),
-                                             status : (if STATUS == unknown and
-                                                      allTriggersDecided((PORTID2 |-> absent) ; TSTATUS)
-                                                       then absent else STATUS fi) >
-               < (REACTORID3 . PORTID3) : APGNode | > GRAPH,
+     updateGraph(< (REACTORID2 . N2) : APGNode | 
+                     triggers : ((PORTID2 |-> absent) ; TSTATUS),
+                     status : (if STATUS == unknown and
+                                  allTriggersDecided((PORTID2 |-> absent) ; TSTATUS)
+                               then absent else STATUS fi) >
+                 < (REACTORID3 . PORTID3) : APGNode | > GRAPH,
                  REACTORID1, OS, 
                  NETWORK
                  < REACTORID3 : Reactor | >
@@ -455,3 +393,5 @@ omod EXECUTE-STEP is
   eq (REACTORID . OUTPORTID) presentIn event(REACTORID, OUTPORTID, VAL) EVENTS = true .
   eq (REACTORID . OUTPORTID) presentIn EVENTS = false [owise] .
 endom
+
+

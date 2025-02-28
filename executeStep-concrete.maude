@@ -1,0 +1,82 @@
+
+omod EXECUTE-REACTION is
+  including ABS-EXECUTE-REACTION .
+
+  var TIMERID : TimerId .
+  var REACTOR : ReactorId .
+  var TSTATUS : TriggerStatus .
+  vars RB RB1 RB2 : ReactionBody .
+  var OUTPUTS : Events .
+  var QUEUE : EQueue .
+  var VALUATION : ReactorState .
+  vars ACTIONS INPORTS TIMERS : Configuration .
+  var BEXP : BoolExpr .
+  var TI : TimeInf .
+  
+  --- the definition for concrete case
+  eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
+       ((TIMERID |-> present) ; TSTATUS), QUEUE)
+   = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | > TIMERS,
+       TSTATUS,
+       if TI gt zero and TI lt INF 
+       then schedule(event(REACTOR, TIMERID, zeroVal), TI, QUEUE)
+       else QUEUE fi) .
+  
+  eq scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE) = QUEUE [owise] .
+
+  --- the semantics of if-then-else-fi for the concrete case
+  eq executeReactionBody(
+        < REACTOR : Reactor | state :  VALUATION,
+                              inports : INPORTS, actions : ACTIONS >,
+        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS)
+   =                                         
+      executeReactionBody(< REACTOR : Reactor | >,
+        if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
+        then (RB1 ; RB) else (RB2 ; RB) fi,  
+        OUTPUTS, QUEUE, TSTATUS) .
+endom
+
+
+omod EXECUTE-STEP is
+  including EXECUTE-REACTION .
+  including ABS-EXECUTE-STEP .
+
+  vars REACTORID : ReactorId .
+  vars PRE INVOKED : ReactionIdSet .
+  vars OS TRIGGERIDS : OidSet .
+  vars NETWORK GRAPH : Configuration .
+  var OBJECT : Object .
+  var TSTATUS : TriggerStatus .
+  vars REACTIONS1 REACTIONS2 : ReactionList .
+  var OUTPUTS : Events .
+  vars QUEUE RESULT-QUEUE : EQueue .
+  var RB : ReactionBody .
+  var N : Nat .
+
+  ceq executeStep(
+        < (REACTORID . N) : APGNode | 
+            triggers : TSTATUS, status : present, pre : PRE > 
+        GRAPH,
+        NETWORK
+        < REACTORID : Reactor | 
+            reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB}) REACTIONS2 >,
+        QUEUE,
+        INVOKED)
+   =
+      executeStep(
+        < (REACTORID . N) : APGNode | status : executed >
+        updateGraph(GRAPH, REACTORID, OS, NETWORK < REACTORID : Reactor | >, OUTPUTS),
+        propagateImmediateOutputs(OUTPUTS, NETWORK OBJECT),    --- updated reactor
+        scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE),
+        INVOKED ; (REACTORID . N))
+   if presetOK(PRE, GRAPH)   
+   /\ allTriggersDecided(TSTATUS)  
+   /\ result(OBJECT, OUTPUTS, RESULT-QUEUE) := 
+         executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
+                                                 reaction N when TRIGGERIDS --> OS do {RB}
+                                                 REACTIONS2 >, N, TSTATUS, QUEUE) .
+
+ *** Comment out for debugging with APG graph:
+ eq executeStep(GRAPH, NETWORK, QUEUE, INVOKED) 
+  = networkQueueRxns(NETWORK, QUEUE, INVOKED) [owise] .
+endom
