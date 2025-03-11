@@ -1,0 +1,100 @@
+
+omod FACTORIAL is 
+  including LF-REPR .
+  protecting NAT-LF-TIME .
+
+  ops n result lastResult : -> RVarId [ctor] .
+  ops factorial printer : -> ReactorId [ctor] .
+  ops in out : -> RPortId [ctor] .
+  ops prepForNext : -> RActionId [ctor] .
+  op t  : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < factorial : Reactor |
+          inports : none,
+          outports : < out : Port | value : [0] >,
+          state : (n |-> [0]) ; (result |-> [0]) ; (lastResult |-> [0]),
+          timers : < t : Timer | offset : 0, period : 1 >,
+          actions : < prepForNext : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >,
+          reactions :
+            (reaction when t --> (out ; prepForNext) do { 
+                if (n < [2]) then (result := [1]) else (result := n * lastResult) fi ; 
+                (out <- result) ; 
+                schedule(prepForNext, [0], [0])  
+             })
+            reaction when prepForNext  do {(n := n + [1]) ; (lastResult := result) }  >
+
+    < printer : Reactor |
+             inports : < in : Port | value : [0] >,
+             outports : none,
+	     state : (result |-> [0]),
+	     timers : none,
+	     actions : none,
+	     reactions :
+	        (reaction when in do {result := in}) >
+
+   (factorial : out --> printer : in) .
+
+endom
+
+omod TEST-FACTORIAL is
+  including FACTORIAL .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+omod TIME-BOUNDED-FACTORIAL is
+  including TEST-FACTORIAL .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 10 .
+endom  
+
+
+rew initSystem in time 0 .
+
+
+search initSystem in time 0 =>* {none} in time T:Time .
+
+
+***(  Property given in LF benchmarks repository:
+
+spec="G[10 nsec](Factorial_printer_reaction_0 ==> Factorial_printer_result == 3628800)", expect=true
+
+)***
+
+--- Notice G[10], and not G[0,10]!  We can of course use Real-Time Maude's Timed CTL model
+--- checker, but an easy solution here is to do an invariant check when the system clock shows 10:
+
+--- search for breach of invariant when system clock is 10:
+search initSystem in time 0 =>*
+         {REST:Configuration
+	  < printer : Reactor | AS:AttributeSet,
+	                        state : (result |-> [N:Nat]) >
+          < rxns : Invoked | reactions : (printer . 1) ; RIDS:ReactionIdSet >} in time 10
+       such that N:Nat =/= 3628800  .
+
+***(    Result:
+search in TIME-BOUNDED-FACTORIAL : initSystem in time 0 =>* {REST:Configuration
+    < printer : Reactor | AS:AttributeSet, state : result |-> [N:Nat] > < rxns
+    : Invoked | reactions : (RIDS:ReactionIdSet ; (printer . 1)) >}  in time 10
+    such that N:Nat =/= 3628800 = true .
+
+No solution.
+states: 33  rewrites: 2059 in 1ms cpu (1ms real) (2059000 rewrites/second)
+)***
+
+

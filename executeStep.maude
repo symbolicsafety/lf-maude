@@ -44,6 +44,10 @@ omod EVEL-EXP is
    = eval(REXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) *
      eval(REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) .
   
+  eq eval(REXP1 - REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
+   = eval(REXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) - 
+     eval(REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) .
+     
   eq eval(EXP1 === EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
    = [eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) ==
       eval(EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS)] .
@@ -91,6 +95,7 @@ omod EVEL-EXP is
   --- value operations
   eq [R1] +  [R2] = [R1 +  R2] .
   eq [R1] *  [R2] = [R1 *  R2] .
+  eq [R1] -  [R2] = [R1 -  R2] .
   eq [R1] <  [R2] = [R1 <  R2] .
   eq [R1] <= [R2] = [R1 <= R2] .
   eq [R1] >  [R2] = [R1 >  R2] .
