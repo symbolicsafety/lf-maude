@@ -65,7 +65,6 @@ omod SIMULATE-PINGPONG is
   including SIMULATION-DYNAMICS .
 endom  
 
-rew initSystem .
 
 search initSystem =>! GS:GlobalSystem .    --- obvious trivial result
 
@@ -74,13 +73,50 @@ omod CHECK-PINGPONG is
   including UNBOUNDED-ANALYSIS-DYNAMICS .
 endom  
 
-search initSystem =>* {none} .
+
+rew [5] initSystem .
+
 
 ***( the main property in the LF repository is
 
 spec="G[0, 4 nsec](PingPong_ping_reaction_1 ==> X(!PingPong_ping_reaction_1))", expect=false
 
-How do we express X?
-should be done in rtm???
 )***
 
+omod TIME-BOUNDED-PINGPONG is
+  including TEST-PINGPONG .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 4 .
+endom  
+
+in model-checker.maude
+
+omod MODEL-CHECK-PINGPONG is
+  including MODEL-CHECKER .
+  including CHECK-PINGPONG .
+  subsort ClockedSystem < State .
+
+  var REST : Configuration .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
+  var T : Time .
+  var O : Oid .
+
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >
+     } in time T
+      |=  reaction RID invoked = true .
+      
+    eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) > }
+      |=  reaction RID invoked = true .    
+endom
+
+red modelCheck(initSystem, [] ((reaction (ping . 2) invoked) => O(~ (reaction (ping . 2) invoked)))) .
+
+***(    Result:
+reduce in MODEL-CHECK-PINGPONG : modelCheck(initSystem, [](reaction ping . 2 invoked => O ~ reaction ping . 2 invoked)) .
+rewrites: 1821 in 2ms cpu (1ms real) (910500 rewrites/second)
+result ModelCheckResult: counterexample( ... ) 
+)***

@@ -76,7 +76,7 @@ omod RSU is
 	            if (currentTime > availableTime) then
 	                ((if (isPresent(request1)) then schedule(issueGrant1,[0],[0])
 	                else schedule(issueGrant2,[0],[0]) fi) ; 
-	                (availableTime := availableTime + currentTime + constWait))
+	                (availableTime := (availableTime + currentTime) + constWait))
 	            fi
 	        })
 	        (reaction when issueGrant1 --> grant1 do { grant1 <- [1] })

@@ -93,5 +93,14 @@ search initSystem =>* {none} .
 spec="G[0, 20 sec](((Thermostat_t_temperature <= 18) ==> F[0](Thermostat_t__mode == 1))  &&  ((Thermostat_t_temperature >= 22) ==> F[0](Thermostat_t__mode == 0)))", expect=true
 
 should be done in rtm!
+
+We could also assume at each tick step, the formula "ticked" holds.
+Then <>_0 BLA should be equivalent to (no tick) U BLA. (i.e. F[0] is equivalent to U)
+But, for this to work, we need to modify the tick rule and instead
+reactionsInvoked = none.
+should have something like
+reactionsInvoked = "ticked"
 )***
+
+
 
