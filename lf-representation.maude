@@ -133,6 +133,7 @@ in rtm-tctl.maude
   subsorts IPortId IVarId IActionId < IntExpr .
   subsorts BPortId BVarId BActionId < BoolExpr .
   op _+_ : IntExpr IntExpr -> IntExpr .
+  op _-_ : IntExpr IntExpr -> IntExpr .
   op _*_ : IntExpr IntExpr -> IntExpr .
 
   
