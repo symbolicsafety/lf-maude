@@ -59,6 +59,7 @@ fmod LF-EXPR is
   subsorts BPortId BVarId BActionId < BoolExpr .
   op _+_ : RatExpr RatExpr -> RatExpr .
   op _*_ : RatExpr RatExpr -> RatExpr .
+  op _-_ : RatExpr RatExpr -> RatExpr . *** Added for PingPong example to countdown pingsLeft
 
   *** NEW IN TBILISI:
   op isPresent : ActionTrigger -> BoolExpr [ctor] .  

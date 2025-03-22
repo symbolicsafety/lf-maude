@@ -1,0 +1,122 @@
+
+omod PINGPONG is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+
+  ops pingsLeft count expected : -> RVarId [ctor] .
+  ops ping pong : -> ReactorId [ctor] .
+  ops receive send : -> RPortId [ctor] .
+  ops startup serve : -> RActionId [ctor] .
+  op init : -> Configuration .
+
+  eq init
+   = < ping : Reactor |
+          inports : < receive : Port | value : [0] >,
+	      outports : < send : Port | value : [0] >,
+	      state : (pingsLeft |-> [10]),
+	      timers : none,
+	      actions : < serve : LogicalAction | minDelay : 1, 
+                                                   minSpacing : 0, 
+                                                   policy : defer, 
+                                                   payload : [0] >
+	                < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        (reaction when startup --> serve do { schedule(serve,[0],[0]) })
+	        (reaction when serve --> send do { (send <- pingsLeft) ; (pingsLeft := pingsLeft - [1]) })
+             reaction when receive --> serve do {if (pingsLeft > [0]) then schedule(serve,[0],[0]) fi} 
+      >
+            
+      < pong : Reactor |
+          inports : < receive : Port | value : [0] >,
+	      outports : < send : Port | value : [0] >,
+	      state : (count |-> [0]) ; (expected |-> [10]),
+	      timers : none,
+	      actions : < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        reaction when receive --> send do { (count := count + [1]); (send <- receive) } 
+      > 
+      
+      (ping : send --> pong : receive)
+       pong : send --> ping : receive .
+endom
+
+omod TEST-PINGPONG is
+  including PINGPONG .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+omod SIMULATE-PINGPONG is
+  including TEST-PINGPONG .
+  including SIMULATION-DYNAMICS .
+endom  
+
+
+search initSystem =>! GS:GlobalSystem .    --- obvious trivial result
+
+omod CHECK-PINGPONG is
+  including TEST-PINGPONG .
+  including UNBOUNDED-ANALYSIS-DYNAMICS .
+endom  
+
+
+rew [5] initSystem .
+
+
+***( the main property in the LF repository is
+
+spec="G[0, 4 nsec](PingPong_ping_reaction_1 ==> X(!PingPong_ping_reaction_1))", expect=false
+
+)***
+
+omod TIME-BOUNDED-PINGPONG is
+  including TEST-PINGPONG .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 4 .
+endom  
+
+in model-checker.maude
+
+omod MODEL-CHECK-PINGPONG is
+  including MODEL-CHECKER .
+  including CHECK-PINGPONG .
+  subsort ClockedSystem < State .
+
+  var REST : Configuration .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
+  var T : Time .
+  var O : Oid .
+
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >
+     } in time T
+      |=  reaction RID invoked = true .
+      
+    eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) > }
+      |=  reaction RID invoked = true .    
+endom
+
+red modelCheck(initSystem, [] ((reaction (ping . 2) invoked) => O(~ (reaction (ping . 2) invoked)))) .
+
+***(    Result:
+reduce in MODEL-CHECK-PINGPONG : modelCheck(initSystem, [](reaction ping . 2 invoked => O ~ reaction ping . 2 invoked)) .
+rewrites: 1821 in 2ms cpu (1ms real) (910500 rewrites/second)
+result ModelCheckResult: counterexample( ... ) 
+)***
