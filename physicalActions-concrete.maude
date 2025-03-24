@@ -60,6 +60,6 @@ omod PHYSICAL-ACTIONS is
                              possibleValues : (V : VS) >
    =>
      < (RI . AI) : PhysAct | leftOfPeriod : P >
-     scheduleAction(event(RI, AI, V)) .
+     scheduleAction(event(RI, AI, V, trueVal)) .  --- the const is true
 endom
 

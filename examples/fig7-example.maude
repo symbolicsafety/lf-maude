@@ -66,4 +66,4 @@ endom
 
 --- red initializeAPG(event(y, startup, [0]), init) .
 
-red executeStep(event(y, startup, [7]),  addReactionIndices(init), empty) .
+red executeStep(event(y, startup, [7]),  addReactionIndices(init), empty, trueVal) .

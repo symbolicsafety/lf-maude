@@ -32,18 +32,18 @@ omod ABS-DYNAMICS-WITHOUT-TICK is
   --- the actual semantics are declared in each file.
 
 
-  --- add initial timer values to event queue:
+  --- add initial timer values to event queue (the const is true):
   op addInitialTimers : Configuration EQueue -> EQueue .
   eq addInitialTimers(< REACTORID : Reactor | timers : TIMERS
                                                        < TIMERID : Timer | offset : T > >
                       REACTORS-AND-CONNECTIONS, QUEUE)
    = addInitialTimers(< REACTORID : Reactor | timers : TIMERS >
                       REACTORS-AND-CONNECTIONS,
-                      schedule(event(REACTORID, TIMERID, zeroVal), T, QUEUE)) .
+                      schedule(event(REACTORID, TIMERID, zeroVal, trueVal), T, QUEUE)) .
   eq addInitialTimers(REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 
 
-  --- addStartup(startup, init, empty)
+  --- addStartup(startup, init, empty). The const is true
   op addStartup : ActionId Configuration EQueue -> EQueue .
   eq addStartup(ACTIONID, 
                 < REACTORID : Reactor | 
@@ -51,7 +51,7 @@ omod ABS-DYNAMICS-WITHOUT-TICK is
                 REACTORS-AND-CONNECTIONS, QUEUE)
    = addStartup(ACTIONID, 
                 < REACTORID : Reactor | actions : CONF >
-                REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), zero, QUEUE)) .
+                REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL, trueVal), zero, QUEUE)) .
   eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 endom
 

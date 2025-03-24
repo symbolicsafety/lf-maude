@@ -24,7 +24,7 @@ omod EVEL-EXP is
   var VAR : VarId .
 
   --- eval(expr, valuation, input ports AND actions, triggerStatus)
-  op eval : Expr ReactorState Configuration TriggerStatus -> RatValue .
+  op eval : Expr ReactorState Configuration TriggerStatus -> Value .
   
   eq eval(VAL, VALUATION, INPORTSANDACTIONS, TSTATUS) = VAL .
   
@@ -118,6 +118,7 @@ omod ABS-EXECUTE-REACTION is
   var BEXP : BoolExpr .
   var REXP : RatExpr .
   var VAR : VarId .    
+  var CONST : BoolValue .
   vars VAL VAL' : Value .
   var N : Nat .
   var T : Time .
@@ -126,8 +127,9 @@ omod ABS-EXECUTE-REACTION is
   --- executeReaction(reactor to be executed, reaction to be exe, its triggerstatus, queue)
   op executeReaction : Object Nat TriggerStatus EQueue -> ReactorOutputsFutureevents .
 
+  --- the last item: accumulated consts (always true for the concrete case)
   sort ReactorOutputsFutureevents .
-  op result : Object Events EQueue -> ReactorOutputsFutureevents [ctor] .
+  op result : Object Events EQueue BoolValue -> ReactorOutputsFutureevents [ctor] .
 
 
   eq executeReaction(
@@ -140,59 +142,81 @@ omod ABS-EXECUTE-REACTION is
      executeReactionBody(
        < REACTOR : Reactor | >, RB, noEvent,
        scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE), 
-       TSTATUS) .
+       TSTATUS, trueVal) .
 
 
-  --- NOTE: this function is not declared here! 
+  --- NOTE: this function is slightly adapted for supporting both concrete and symbolic
   op scheduleTriggeringTimers : ReactorId Configuration TriggerStatus EQueue -> EQueue .
 
+  eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
+       ((TIMERID |-> present) ; TSTATUS), QUEUE)
+   = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | > TIMERS,
+       TSTATUS,
+       schedule(event(REACTOR, TIMERID, zeroVal, boolToValue(TI gt zero and TI lt INF)), TI, QUEUE)) .
 
-  ---
-  op executeReactionBody : Object ReactionBody Events EQueue TriggerStatus -> ReactorOutputsFutureevents .
+--- the original definition
+---(
+  eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
+       ((TIMERID |-> present) ; TSTATUS), QUEUE)
+   = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | > TIMERS,
+       TSTATUS,
+       if TI gt zero and TI lt INF 
+       then schedule(event(REACTOR, TIMERID, zeroVal), TI, QUEUE)
+       else QUEUE fi) .
+)---)
 
-  eq executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, TSTATUS) 
-   = result(< REACTOR : Reactor | >, OUTPUTS, QUEUE) .
+  eq scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE) = QUEUE [owise] .
+
+
+  --- the last item: accumulated consts (always true for the concrete case)
+  op executeReactionBody : Object ReactionBody Events EQueue TriggerStatus BoolValue -> ReactorOutputsFutureevents .
+
+  eq executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, TSTATUS, CONST) 
+   = result(< REACTOR : Reactor | >, OUTPUTS, QUEUE, CONST) .
 
   eq executeReactionBody(
         < REACTOR : Reactor | state : (VALUATION ; (VAR |-> VAL)),
                               inports : INPORTS, actions : ACTIONS >,
-        (VAR := EXP) ; RB, OUTPUTS, QUEUE, TSTATUS)
+        (VAR := EXP) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | state : (VALUATION ; (VAR |-> 
             eval(EXP, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TSTATUS))) >,
-        RB, OUTPUTS, QUEUE, TSTATUS) .
+        RB, OUTPUTS, QUEUE, TSTATUS, CONST) .
 
   eq executeReactionBody(< REACTOR : Reactor | >,
-        (if BEXP then RB1 fi) ; RB, OUTPUTS, QUEUE, TSTATUS)
+        (if BEXP then RB1 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST)
     =                                         
      executeReactionBody(< REACTOR : Reactor | >,
-        (if BEXP then RB1 else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS) .
+        (if BEXP then RB1 else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST) .
 
+  --- Note: this may not terminate for the symbolic case without bound
   eq executeReactionBody(< REACTOR : Reactor | >,
-        (while BEXP do RB1 done) ; RB, OUTPUTS, QUEUE, TSTATUS)
+        (while BEXP do RB1 done) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST)
     =                                         
      executeReactionBody(< REACTOR : Reactor | >,
-        (if BEXP then RB1 ; (while BEXP do RB1 done) else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS) .
+        (if BEXP then RB1 ; (while BEXP do RB1 done) else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST) .
 
+  --- The constraint for the event is true
   eq executeReactionBody(
         < REACTOR : Reactor | state : VALUATION,
                               outports : CONF < PORTID : Port | >,
                               inports : INPORTS, actions : ACTIONS >,
-        (PORTID <- EXP) ; RB, OUTPUTS, QUEUE, TSTATUS)
+        (PORTID <- EXP) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | outports : CONF < PORTID : Port | value : 
             eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS) > >,
-        RB, event(REACTOR, PORTID, eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS)) OUTPUTS, 
-        QUEUE, TSTATUS) .
+        RB, event(REACTOR, PORTID, eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS), trueVal) OUTPUTS, 
+        QUEUE, TSTATUS, CONST) .
 
+  --- The constraint for the event is true
   eq executeReactionBody(
         < REACTOR : Reactor | state : VALUATION,
                               inports : INPORTS,
                               actions : CONF < ACTIONID : Action | minDelay : T > >,
         schedule(ACTIONID, REXP, EXP) ; RB, 
-        OUTPUTS, QUEUE, TSTATUS)
+        OUTPUTS, QUEUE, TSTATUS, CONST)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | actions : CONF < ACTIONID : Action | > >,
@@ -200,10 +224,10 @@ omod ABS-EXECUTE-REACTION is
         schedule(
             event(REACTOR, ACTIONID, 
                 eval(EXP, VALUATION, 
-                     INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
+                     INPORTS CONF < ACTIONID : Action | >, TSTATUS), trueVal), 
             valueToTime(eval(timeToValue(T) + REXP, VALUATION, 
                              INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
-            QUEUE), TSTATUS) .
+            QUEUE), TSTATUS, CONST) .
 
   ---NOTE: if-then-else-fi is not defined here!
 endom
@@ -229,6 +253,7 @@ omod ABS-EXECUTE-STEP is
   var RB : ReactionBody .
   var STATUS : ExecutionStatus .
   vars VAL OLD-VAL : Value .
+  var CONST : BoolValue .
   var T : Time .
   vars N N2 N3 : Nat .
 
@@ -241,15 +266,17 @@ omod ABS-EXECUTE-STEP is
 
   sort Network+Queue+Reactions .
   --- return new state of system plus updated event queue plus reations invoked in this step
-  op networkQueueRxns : Configuration EQueue ReactionIdSet -> Network+Queue+Reactions [ctor] .
+  --- the last item: accumulated consts (always true for the concrete case)
+  op networkQueueRxns : Configuration EQueue ReactionIdSet BoolValue -> Network+Queue+Reactions [ctor] .
 
 
-  op executeStep : Events Configuration EQueue -> Network+Queue+Reactions .
-  eq executeStep(EVENTS, NETWORK, QUEUE)
-  =  executeStep(generateAPG(EVENTS, NETWORK), addEventsToPorts(EVENTS, NETWORK), QUEUE, none) .
+  --- the last item: accumulated consts (always true for the concrete case)
+  op executeStep : Events Configuration EQueue BoolValue -> Network+Queue+Reactions .
+  eq executeStep(EVENTS, NETWORK, QUEUE, CONST)
+  =  executeStep(generateAPG(EVENTS, NETWORK), addEventsToPorts(EVENTS, NETWORK), QUEUE, none, CONST) .
 
   --- executeStep(APGgraph, network, event queue)
-  op executeStep : Configuration Configuration EQueue ReactionIdSet -> Network+Queue+Reactions .
+  op executeStep : Configuration Configuration EQueue ReactionIdSet BoolValue -> Network+Queue+Reactions .
 
   ---NOTE: executeStep is not defined here!
 
@@ -257,11 +284,11 @@ omod ABS-EXECUTE-STEP is
 
 --- At the moment, we assume that the reactions in NETWORK have already been given indices
 
-  --- quick auxiliary function
+  --- quick auxiliary function. Assume that the event constraint is always sat.
   op addEventsToPorts : Events Configuration -> Configuration .
 
   eq addEventsToPorts(noEvent, NETWORK) = NETWORK .
-  eq addEventsToPorts(event(REACTORID, PORTID, VAL) EVENTS,
+  eq addEventsToPorts(event(REACTORID, PORTID, VAL, CONST) EVENTS,
                       NETWORK < REACTORID : Reactor |
                                  inports : PORTS < PORTID : Port | > >)
    =
@@ -269,7 +296,7 @@ omod ABS-EXECUTE-STEP is
                       NETWORK < REACTORID : Reactor |
                                  inports : PORTS < PORTID : Port | value : VAL > >) .
 
-  eq addEventsToPorts(event(REACTORID, ACTIONID, VAL) EVENTS,
+  eq addEventsToPorts(event(REACTORID, ACTIONID, VAL, CONST) EVENTS,
                       NETWORK < REACTORID : Reactor |
                                  actions : ACTIONS < ACTIONID : Action | > >)
    =
@@ -277,7 +304,7 @@ omod ABS-EXECUTE-STEP is
                       NETWORK < REACTORID : Reactor |
                                  actions : ACTIONS < ACTIONID : Action | payload : VAL > >) .
 
-  eq addEventsToPorts(event(REACTORID, TIMERID, VAL) EVENTS,
+  eq addEventsToPorts(event(REACTORID, TIMERID, VAL, CONST) EVENTS,
                       NETWORK < REACTORID : Reactor |
                                  timers : TIMERS < TIMERID : Timer | > >)
    =
@@ -299,14 +326,14 @@ omod ABS-EXECUTE-STEP is
   ---
   op scheduleDelayedInputs : Events Configuration EQueue -> EQueue .
   
-  eq scheduleDelayedInputs(event(REACTORID, PORTID, VAL) EVENTS,
+  eq scheduleDelayedInputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
          NETWORK
          (REACTORID : PORTID -- T --> REACTORID2 : PORTID2),
          QUEUE)
    =
-     scheduleDelayedInputs(event(REACTORID, PORTID, VAL) EVENTS,
+     scheduleDelayedInputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
          NETWORK,
-         schedule(event(REACTORID2, PORTID2, VAL), T, QUEUE)) .
+         schedule(event(REACTORID2, PORTID2, VAL, CONST), T, QUEUE)) .
   
   eq scheduleDelayedInputs(EVENTS, NETWORK, QUEUE) = QUEUE [owise] .
   
@@ -314,13 +341,13 @@ omod ABS-EXECUTE-STEP is
   ---
   op propagateImmediateOutputs : Events Configuration -> Configuration .
   
-  ceq propagateImmediateOutputs(event(REACTORID, PORTID, VAL) EVENTS,
+  ceq propagateImmediateOutputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
          NETWORK
          < REACTORID2 : Reactor | 
              inports : INPORTS < PORTID2 : Port | value : OLD-VAL > >
          (REACTORID : PORTID --> REACTORID2 : PORTID2))
    =
-     propagateImmediateOutputs(event(REACTORID, PORTID, VAL) EVENTS,
+     propagateImmediateOutputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
          NETWORK        
          < REACTORID2 : Reactor | 
              inports : INPORTS < PORTID2 : Port | value : VAL > >
@@ -338,13 +365,13 @@ omod ABS-EXECUTE-STEP is
   eq updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TSTATUS) > GRAPH,
                  REACTORID1, OS, 
                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
-                 event(REACTORID1, PORTID1, VAL) EVENTS)
+                 event(REACTORID1, PORTID1, VAL, CONST) EVENTS)
    =
      updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> present) ; TSTATUS),
                                                 status : present > GRAPH,
                  REACTORID1, OS, 
                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
-                 event(REACTORID1, PORTID1, VAL) EVENTS) .
+                 event(REACTORID1, PORTID1, VAL, CONST) EVENTS) .
   
   --- negative case 1; updated complex setting:
   ceq updateGraph(< (REACTORID2 . N) : APGNode | 
@@ -394,7 +421,7 @@ omod ABS-EXECUTE-STEP is
   
   op _presentIn_ : ReactionId Events -> Bool .
   
-  eq (REACTORID . OUTPORTID) presentIn event(REACTORID, OUTPORTID, VAL) EVENTS = true .
+  eq (REACTORID . OUTPORTID) presentIn event(REACTORID, OUTPORTID, VAL, CONST) EVENTS = true .
   eq (REACTORID . OUTPORTID) presentIn EVENTS = false [owise] .
 endom
 

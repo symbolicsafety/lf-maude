@@ -10,14 +10,23 @@
 --- Note: also actions need to be scheduled and put into event queue.
 ---   we guess
 
+--- Note: an event may has an addition constraint (always true for the
+---   concrete case). 
+
 fmod EVENT is
   protecting REACTOR-ID .
   protecting ACTION-TRIGGER .
   protecting LF-ABS-VALUE-TIME .
 
-  --- Single events:
+  --- Single events.  It may also have a constraint. 
   sort Event .
-  op event : ReactorId ActionTrigger Value -> Event [ctor] .
+  op event : ReactorId ActionTrigger Value BoolValue -> Event [ctor] .
+
+
+  --- for shorthand
+  op event : ReactorId ActionTrigger Value ~> Event .
+  eq event(R:ReactorId, A:ActionTrigger, V:Value)
+   = event(R:ReactorId, A:ActionTrigger, V:Value, trueVal) .
 endfm
 
 
@@ -57,6 +66,10 @@ fmod TAGGED-EVENTS is
   subsort Event < Events .
   op noEvent : -> Events [ctor] .
   op __ : Events Events -> Events [assoc comm id: noEvent ctor] .
+
+  --- remove an event with a false constraint
+  ceq event(R:ReactorId, A:ActionTrigger, V:Value, CONST:BoolValue)
+    = noEvent if CONST:BoolValue == falseVal .
 endfm
 
 

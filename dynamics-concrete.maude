@@ -15,6 +15,7 @@ omod DYNAMICS-WITHOUT-TICK is
   vars E Q PA RXNS : Oid .
   var INVOKED : ReactionIdSet .
   var EVENTS : Events .
+  var CONST : BoolValue .
   var TI : TimeInf .
   var ZERO : ZTime .
   vars T T1 T2 : Time .
@@ -63,8 +64,8 @@ omod DYNAMICS-WITHOUT-TICK is
        < Q : EventQueue | queue : NEW-QUEUE >
        < RXNS : Invoked | reactions : INVOKED >} 
    if smallestTimer(CONF1) gt zero
-   /\ networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED) :=
-            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE) .
+   /\ networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST) :=
+            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal) .
 
   *** Note: condition ensures that physical actions are generated
   ***       before events are processed.
