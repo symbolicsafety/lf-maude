@@ -75,7 +75,7 @@ omod EVEL-EXP is
   *** MORE TBILISI NEW GUYS:
   
   eq eval(EXP1 ==/= EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
-   = neg (eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) equals
+   = ! (eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) equals
           eval(EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS)) .
   
   eq eval(BEXP1 && BEXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
@@ -285,6 +285,7 @@ omod ABS-EXECUTE-STEP is
 --- At the moment, we assume that the reactions in NETWORK have already been given indices
 
   --- quick auxiliary function. Assume that the event constraint is always sat.
+  --- ????? the constraint must be considered....
   op addEventsToPorts : Events Configuration -> Configuration .
 
   eq addEventsToPorts(noEvent, NETWORK) = NETWORK .
