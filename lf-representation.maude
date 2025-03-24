@@ -28,6 +28,8 @@ fmod LF-ABS-VALUE-TIME is
 
   op timeToValue : Time ~> RatValue .
   op valueToTime : RatValue ~> Time .
+
+  op boolToValue : Bool ~> BoolValue .
 endfm
 
 
