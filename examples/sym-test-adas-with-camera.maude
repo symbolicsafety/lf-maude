@@ -1,0 +1,85 @@
+*** New, Feb 25, we add an object of the "Invoked" class which stores the reactions performed in each step.
+
+
+in ADAS-with-camera.maude
+
+
+omod TEST-ADAS is
+  including ADAS-WITH-CAMERA .
+  including DYNAMICS-WITHOUT-TICK .
+  including LF-SMT-INTERFACE-IMPL .
+
+  ops env queue rxns sym : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (pedal . a) : PhysAct |
+                                   possibleValues : rat([65],[75]),
+				   counter : 0 > 
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >
+       < sym : SymInfra | constraint : [true], counter : 0 >} .
+endom
+
+
+--- red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .
+
+
+rew  initSystem .
+
+
+omod SYM-TIME-ADAS is
+  including TEST-ADAS .
+  including SYM-REACH-DYNAMICS .
+
+  vars CONST BV : BoolValue .
+  var RV : RatValue .
+  var T : Time .
+
+  var RS : ReactorState .
+  var RIDS : ReactionIdSet .
+
+  var EQ : EQueue .
+  var EVENTS : Events .
+  var TAG : Tag .
+
+  vars AS AS' : AttributeSet .
+  var REST : Configuration .
+endom
+
+
+
+search [1] 
+    initSystem in time 0 
+=>* 
+    {< brakes : Reactor | state : (brakesApplied |-> [1]) ; RS, AS >
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T
+such that smtCheck(CONST) .
+
+
+search [1] 
+    initSystem in time 0 
+=>* 
+    {< queue : EventQueue | queue : ((event(pedal, a, RV, BV) EVENTS) at TAG) ;; EQ >
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T
+such that smtCheck(CONST) .
+
+
+--- Another inttesting property is that after the pedal has been pressed, the brakles are
+--- applied immediately.
+
+
+search [1,15] 
+    initSystem in time 0 
+=>*
+    {< brakes : Reactor | state : (brakesApplied |-> RV) ; RS, AS >
+     < rxns : Invoked | reactions : ((pedal . 1) ; RIDS) >
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T 
+such that smtCheck(CONST && ! (RV === [1])) .  --- bad state; brakesApplied must be 1 when pedal pressed
+
