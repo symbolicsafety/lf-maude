@@ -23,6 +23,8 @@ fmod LF-VALUE-TIME is
   eq timeToValue(N)   = [N] .
   eq valueToTime([N]) = N .
 
+  eq boolToValue(B1) = [B1] .
+
   --- value operations
   eq [R1] +  [R2] = [R1 +  R2] .
   eq [R1] *  [R2] = [R1 *  R2] .

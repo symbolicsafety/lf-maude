@@ -87,8 +87,7 @@ omod ABS-EVENT-QUEUE is
   subsort TaggedEvents < EQueue .
   op empty : -> EQueue [ctor] .
 
-  var ZERO : ZTime .
-  var NZT : NzTime .
+  var T : Time .
   var EVENTS : Events .
   var QUEUE : EQueue .
 
@@ -97,9 +96,13 @@ omod ABS-EVENT-QUEUE is
 
   --- note events could also be 'actions'
   --- NOTE: these are our educated guesses ....
+  --- NOTE: assume that the second argument is always a concrete value!
   op schedule : Events Time EQueue -> EQueue .
-  eq schedule(EVENTS, NZT, QUEUE)  = insert(EVENTS at tag(NZT, 0), QUEUE) .
-  eq schedule(EVENTS, ZERO, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) .
+  ceq schedule(EVENTS, T, QUEUE)  = insert(EVENTS at tag(T, 0), QUEUE) 
+   if T gt zero .
+  
+  ceq schedule(EVENTS, T, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) 
+   if T equals zero .
 endom
 
 

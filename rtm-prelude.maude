@@ -1,10 +1,11 @@
 ---Kyungmin: sort ZTime (for zero) is added, and == is removed from Time
+---Kyungmin: sort ZTime is removed, as it is not compatible with symbolic
 
 fmod TIME is 
-   sorts Time ZTime NzTime .
-   subsort ZTime NzTime < Time .
+   sorts Time NzTime .
+   subsort NzTime < Time .
    
-   op zero : -> ZTime .
+   op zero : -> Time .
    op _plus_ : Time Time -> Time [assoc comm prec 33 gather (E e)] .
    op _monus_ : Time Time -> Time [prec 33 gather (E e)] .
    op _equals_ : Time Time -> Bool [comm prec 51] .
@@ -96,7 +97,6 @@ fmod NAT-TIME-DOMAIN is
   protecting NAT .
  
   subsort Nat < Time .
-  subsort Zero < ZTime .
   subsort NzNat < NzTime .
 
   vars N N' : Nat .
@@ -164,7 +164,6 @@ fmod POSRAT-TIME-DOMAIN is
   protecting POSITIVE-RAT .
 
   subsort NNegRat < Time .
-  subsort Zero < ZTime .
   subsort PosRat < NzTime .
 
   vars R R' : NNegRat .

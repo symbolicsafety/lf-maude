@@ -145,7 +145,6 @@ omod ABS-EXECUTE-REACTION is
        TSTATUS, trueVal) .
 
 
-  --- NOTE: this function is slightly adapted for supporting both concrete and symbolic
   op scheduleTriggeringTimers : ReactorId Configuration TriggerStatus EQueue -> EQueue .
 
   eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
@@ -243,10 +242,10 @@ omod ABS-EXECUTE-STEP is
   var REACTIONID : ReactionId .
   var ACTIONID : ActionId .
   var TIMERID : TimerId .
-  var REACTIONIDSET : ReactionIdSet .
+  var PRE REACTIONIDSET : ReactionIdSet .
   vars OS OS1 OS2 : OidSet .
 
-  vars NETWORK NETWORK' GRAPH PORTS ACTIONS INPORTS TIMERS : Configuration .
+  vars NETWORK NETWORK' GRAPH GRAPH' PORTS ACTIONS INPORTS TIMERS : Configuration .
   var TSTATUS : TriggerStatus .
   vars RL1 RL2 : ReactionList .
   var EVENTS : Events .
@@ -417,7 +416,8 @@ omod ABS-EXECUTE-STEP is
                      status : (if STATUS == unknown and
                                   allTriggersDecided((PORTID2 |-> absent) ; TSTATUS)
                                then absent else STATUS fi) >
-                 < (REACTORID3 . PORTID3) : APGNode | > GRAPH,
+                --- Kyungmin: Potential bug fixed: PORTID3 ==> N3
+                 < (REACTORID3 . N3) : APGNode | > GRAPH, 
                  REACTORID1, OS, 
                  NETWORK
                  < REACTORID3 : Reactor | >
@@ -431,6 +431,18 @@ omod ABS-EXECUTE-STEP is
   
   eq (REACTORID . OUTPORTID) presentIn event(REACTORID, OUTPORTID, VAL, CONST) EVENTS = true .
   eq (REACTORID . OUTPORTID) presentIn EVENTS = false [owise] .
+
+  ---Kyungmin: termination condition without owise
+  op noMoreReaction : Configuration Configuration ~> Bool .
+ ceq noMoreReaction(< REACTIONID : APGNode | status : STATUS > GRAPH, GRAPH')
+   = noMoreReaction(GRAPH, < REACTIONID : APGNode | > GRAPH')  if STATUS =/= present .
+  eq noMoreReaction(< REACTIONID : APGNode | 
+                        triggers : TSTATUS, 
+                        status : present, 
+                        pre : PRE > GRAPH, GRAPH')
+   = if presetOK(PRE, GRAPH GRAPH') and allTriggersDecided(TSTATUS) then false
+     else noMoreReaction(GRAPH, < REACTIONID : APGNode | > GRAPH') fi .
+  eq noMoreReaction(none, GRAPH') = true .
 endom
 
 

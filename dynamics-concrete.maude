@@ -17,7 +17,6 @@ omod DYNAMICS-WITHOUT-TICK is
   var EVENTS : Events .
   var CONST : BoolValue .
   var TI : TimeInf .
-  var ZERO : ZTime .
   vars T T1 T2 : Time .
   var N : Nat .
 
@@ -56,14 +55,15 @@ omod DYNAMICS-WITHOUT-TICK is
   crl [step] :
       {< E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(ZERO, N)) :: QUEUE >
+       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
        < RXNS : Invoked | >} 
     =>
       {< E : Environment | physicalActions : CONF1 >
        NEW-NETWORK
        < Q : EventQueue | queue : NEW-QUEUE >
        < RXNS : Invoked | reactions : INVOKED >} 
-   if smallestTimer(CONF1) gt zero
+   if T equals zero
+   /\ smallestTimer(CONF1) gt zero
    /\ networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST) :=
             executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal) .
 

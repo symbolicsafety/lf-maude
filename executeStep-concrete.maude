@@ -69,4 +69,12 @@ omod EXECUTE-STEP is
  ceq executeStep(GRAPH, NETWORK, QUEUE, INVOKED, CONST) 
    = networkQueueRxns(NETWORK, QUEUE, INVOKED, CONST) 
   if CONST == trueVal [owise] . --- for the concrete case, CONST must be true
+
+ --- non-owise version
+---(
+ ceq executeStep(GRAPH, NETWORK, QUEUE, INVOKED, CONST) 
+   = networkQueueRxns(NETWORK, QUEUE, INVOKED, CONST) 
+  if noMoreReaction(GRAPH, none)
+  /\ CONST == trueVal . --- for the concrete case, CONST must be true
+)---
 endom
