@@ -14,6 +14,8 @@ omod TEST-ADAS is
      { < env : Environment |
            physicalActions : < (pedal . a) : PhysAct |
                                    possibleValues : rat([65],[75]),
+                                   minSep : 0,
+                                   clock : INF,
 				   counter : 0 > 
        >
        addReactionIndices(init)

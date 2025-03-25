@@ -19,9 +19,9 @@ omod DYNAMICS-WITHOUT-TICK is
                    counter : Nat .
 
 
-  vars REACTORS-AND-CONNECTIONS PHYSICAL-ACTIONS NEW-NETWORK CONF1 : Configuration .
+  vars REACTORS-AND-CONNECTIONS NEW-NETWORK : Configuration .
   vars QUEUE NEW-QUEUE : EQueue .
-  vars E Q PA RXNS SYM : Oid .
+  vars E Q RXNS SYM : Oid .
   var INVOKED : ReactionIdSet .
   var EVENTS : Events .
   vars CONST CONST' CONST'' : BoolValue .
@@ -67,7 +67,8 @@ omod SYM-REACH-DYNAMICS is
   vars REACTORS-AND-CONNECTIONS CONF : Configuration .
   vars CONST CONST' : BoolValue .
   vars T T' : Time .
-  vars E Q SYM RXNS : Oid .
+  var TI : TimeInf .
+  vars E Q PA SYM RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
   vars QUEUE NEW-QUEUE : EQueue .
@@ -79,13 +80,13 @@ omod SYM-REACH-DYNAMICS is
   --- until the first queue item is ready to execute.  Note that time 
   --- values in the event queue may be symbolic
    crl [tick] :
-       {< E : Environment | >
+       {< E : Environment | physicalActions : CONF >
         REACTORS-AND-CONNECTIONS
         < Q : EventQueue | queue : (EVENTS at tag(T,N)) ;; QUEUE >
         < RXNS : Invoked | >
         < SYM : SymInfra | constraint : CONST >} 
     =>
-       {< E : Environment | >
+       {< E : Environment | physicalActions : increaseClock(CONF, T) >
         REACTORS-AND-CONNECTIONS
         < Q : EventQueue | queue : (EVENTS at tag(zero,N)) ;; 
                                    decreaseTags(QUEUE,T) >
@@ -101,13 +102,14 @@ omod SYM-REACH-DYNAMICS is
     --- A tick rule for physical events. This rule advances time
     --- and ``fires'' a single physical event. 
     crl [extraTickRuleForPhysActs] :
-       {< E : Environment | >
+       {< E : Environment | physicalActions : CONF >
         REACTORS-AND-CONNECTIONS
         < Q : EventQueue | queue : QUEUE >
         < RXNS : Invoked | >
         < SYM : SymInfra | constraint : CONST, counter : N >} 
      =>
-       {envFire(< E : Environment | >)
+       {envFire(< E : Environment | 
+                    physicalActions : increaseClock(CONF, T) >)
         REACTORS-AND-CONNECTIONS
         < Q : EventQueue | queue : decreaseTags(QUEUE,T) >
         < RXNS : Invoked | reactions : none >
@@ -124,5 +126,10 @@ omod SYM-REACH-DYNAMICS is
   eq decreaseTags((EVENTS at tag(T', N)) ;; QUEUE, T) =
      (EVENTS at tag(T' monus T, N)) ;; decreaseTags(QUEUE, T) .
 
+  --- increase clocks in physical action objects
+  op increaseClock : Configuration Time ~> Configuration .
+  eq increaseClock(none, T) = none .
+  eq increaseClock(< PA : PhysAct | clock : TI > CONF, T)
+   = < PA : PhysAct | clock : TI plus T >  increaseClock(CONF, T) .
 endom
 

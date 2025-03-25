@@ -13,9 +13,13 @@ omod TEST-TRAIN is
      { < env : Environment |
            physicalActions : < (controller . external) : PhysAct |
 				   possibleValues : bool,
+                                   minSep : 10,
+                                   clock : INF,
 				   counter : 0 >
                              < (door . extOpen) : PhysAct |
  				   possibleValues : bool,
+                                   minSep : 11,
+                                   clock : INF,
 				   counter : 0 > 
        >
        addReactionIndices(init)

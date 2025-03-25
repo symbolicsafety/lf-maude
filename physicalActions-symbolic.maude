@@ -13,9 +13,13 @@ omod PHYSICAL-ACTIONS is
   --- Dynamically, each physical action has:
   ---    * home address
   ---    * description of a possible value
+  ---    * minimum separation time
+  ---    * a clock to measure a separation time
   ---    * a counter to generate a new variable
 
   class PhysAct | possibleValues : PossibleValue,
+                  minSep : Time,
+                  clock : TimeInf,
                   counter : Nat .
 
   --- a possible value to be generated is either a boolean value or 
@@ -37,6 +41,8 @@ omod PHYSICAL-ACTIONS is
   var CONST : BoolValue .
   var PENV : Object .
   var CONF : Configuration .
+  var T : Time .
+  var TI : TimeInf .
   var N : Nat .
 
   --- An operation to "fire" a single physical action. This will be
@@ -50,10 +56,17 @@ omod PHYSICAL-ACTIONS is
      < O : Environment | physicalActions : envFire(PENV) CONF > .
 
   --- generate a symbolic value (a fresh variable with const)
-  ceq envFire(< (RI . AI) : PhysAct | possibleValues : PV, counter : N >)
-    = < (RI . AI) : PhysAct | counter : s N > 
-      scheduleAction(event(RI, AI, VAL, CONST))
+  ceq envFire(
+      < (RI . AI) : PhysAct | possibleValues : PV, 
+                              minSep : T,
+                              clock : TI,
+                              counter : N >)
+    = < (RI . AI) : PhysAct | clock : zero,
+                              counter : s N > 
+      scheduleAction(event(RI, AI, VAL, CONST && boolToValue(TI ge T)))
    if {VAL,CONST} := genSymVal(PV, (RI . AI), N) .
+
+   ---TODO: currently, TI ge T may generate redundant const..
 
   sort ValueWithConst .
   op {_,_} : Value BoolValue -> ValueWithConst [ctor] .
