@@ -1,5 +1,3 @@
-*** New, Feb 25, we add an object of the "Invoked" class which stores the reactions performed in each step.
-
 
 in ADAS-with-camera.maude
 
@@ -31,7 +29,7 @@ endom
 rew  initSystem .
 
 
-omod SYM-TIME-ADAS is
+omod SYM-REACH-ADAS is
   including TEST-ADAS .
   including SYM-REACH-DYNAMICS .
 

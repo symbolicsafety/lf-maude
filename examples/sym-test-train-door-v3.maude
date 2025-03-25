@@ -1,0 +1,59 @@
+
+in TrainDoor_v3.maude
+
+omod TEST-TRAIN is
+  including TRAINDOOR-V3 .
+  including DYNAMICS-WITHOUT-TICK .
+  including LF-SMT-INTERFACE-IMPL .
+
+  ops env queue rxns sym : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (controller . external) : PhysAct |
+				   possibleValues : bool,
+				   counter : 0 >
+                             < (door . extOpen) : PhysAct |
+ 				   possibleValues : bool,
+				   counter : 0 > 
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : empty >
+       < rxns : Invoked | reactions : none >
+       < sym : SymInfra | constraint : [true], counter : 0 >} .
+endom
+
+rew initSystem .
+
+
+omod SYM-REACH-TRAIN is
+  including TEST-TRAIN .
+  including SYM-REACH-DYNAMICS .
+
+  var CONST : BoolValue .
+  var T : Time .
+
+  var RS : ReactorState .
+
+  vars AS AS' : AttributeSet .
+  var REST : Configuration .
+endom  
+
+
+
+rew [100] initSystem .
+
+
+--- finds a good state
+search [1] 
+    initSystem 
+=>*
+    {< door : Reactor | state : (locked |-> [true]) ; RS, AS > 
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T 
+such that smtCheck(CONST) .
+
+
+--- More interesting analysis??
+

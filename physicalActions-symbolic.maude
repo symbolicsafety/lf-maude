@@ -32,6 +32,7 @@ omod PHYSICAL-ACTIONS is
   var AI : ActionId .
   var RI : ReactorId .
   var PV : PossibleValue .
+  var VAL : Value .
   vars RV RV' RV'' : RatValue .
   var CONST : BoolValue .
   var PENV : Object .
@@ -51,8 +52,8 @@ omod PHYSICAL-ACTIONS is
   --- generate a symbolic value (a fresh variable with const)
   ceq envFire(< (RI . AI) : PhysAct | possibleValues : PV, counter : N >)
     = < (RI . AI) : PhysAct | counter : s N > 
-      scheduleAction(event(RI, AI, RV, CONST))
-   if {RV,CONST} := genSymVal(PV, (RI . AI), N) .
+      scheduleAction(event(RI, AI, VAL, CONST))
+   if {VAL,CONST} := genSymVal(PV, (RI . AI), N) .
 
   sort ValueWithConst .
   op {_,_} : Value BoolValue -> ValueWithConst [ctor] .
