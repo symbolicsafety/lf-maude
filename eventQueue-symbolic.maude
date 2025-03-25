@@ -6,11 +6,13 @@ omod EVENT-QUEUE is
   --- the order cannot be fully determined with symbolic times
   op _;;_ : EQueue EQueue -> EQueue [ctor comm assoc id: empty] .
 
-  var EVENTS : Events .
+  vars EVENTS EVENTS' : Events .
   var TAG : Tag .
   var QUEUE : EQueue .
 
   --- this function just adds a tagged event to the set
   eq insert(EVENTS at TAG, QUEUE) = (EVENTS at TAG) ;; QUEUE . 
+
+  eq (EVENTS at TAG) ;; (EVENTS' at TAG) = (EVENTS EVENTS') at TAG .
 endom
 

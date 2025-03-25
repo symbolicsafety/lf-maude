@@ -2,8 +2,8 @@
  Extending BOOL, RAT and INT with SMT variables  of the form b(x), i(x)
  and r(x)
  
- BoolExpr (Bool extended with SMT variables) expressions can be checked for
- satisfiability using smtCheck that transforms a BoolExpr into a BoolExpression 
+ BoolExp (Bool extended with SMT variables) expressions can be checked for
+ satisfiability using smtCheck that transforms a BoolExp into a BoolExpression 
 
 )---)
 
@@ -11,7 +11,6 @@
 --- Identifiers for variables
 fmod SMT-VAR-ID is
     sort SMTVarId .
-    op errorID : -> SMTVarId . --- For meta-level operations 
 endfm
 
 
@@ -26,6 +25,9 @@ fmod LF-SMT-INTERFACE is
   --- smt variables
   op bb : SMTVarId -> BoolValue [ctor] .
   op rr : SMTVarId -> RatValue [ctor] .
+
+  --- not defined here!
+  op smtCheck : BoolValue ~> Bool .
 endfm
 
 
@@ -33,24 +35,24 @@ fmod ALT-BOOLEAN-EXPR is
   including SMT-VAR-ID .
   including BOOL .
 
-  sort BoolExpr .
-  subsort Bool < BoolExpr .
+  sort BoolExp .
+  subsort Bool < BoolExp .
   
   sort BoolVar .
-  subsort BoolVar < BoolExpr .
+  subsort BoolVar < BoolExp .
   op b : SMTVarId -> BoolVar [ctor] .
 
-  op not_ : BoolExpr -> BoolExpr [ditto] .
-  op _and_ : BoolExpr BoolExpr -> BoolExpr [ditto] .
-  op _xor_ : BoolExpr BoolExpr -> BoolExpr [ditto] .
-  op _or_ : BoolExpr BoolExpr -> BoolExpr [ditto] .
-  op _implies_ : BoolExpr BoolExpr -> BoolExpr [ditto] .
+  op not_ : BoolExp -> BoolExp [ditto] .
+  op _and_ : BoolExp BoolExp -> BoolExp [ditto] .
+  op _xor_ : BoolExp BoolExp -> BoolExp [ditto] .
+  op _or_ : BoolExp BoolExp -> BoolExp [ditto] .
+  op _implies_ : BoolExp BoolExp -> BoolExp [ditto] .
 
-  op _===_ : BoolExpr BoolExpr -> BoolExpr [comm prec 51] .
-  op _=/==_ : BoolExpr BoolExpr -> BoolExpr [comm prec 51] .
-  op _?_:_ : BoolExpr BoolExpr BoolExpr -> BoolExpr [gather (e e e) prec 71] .
+  op _===_ : BoolExp BoolExp -> BoolExp [comm prec 51] .
+  op _=/==_ : BoolExp BoolExp -> BoolExp [comm prec 51] .
+  op _?_:_ : BoolExp BoolExp BoolExp -> BoolExp [gather (e e e) prec 71] .
 
-  vars A B C : BoolExpr .
+  vars A B C : BoolExp .
 
 --- from BOOL-OPS
   eq true and A = A .
@@ -70,6 +72,8 @@ fmod ALT-BOOLEAN-EXPR is
   eq false implies A = true .
   eq A implies true  = true .
 
+  eq false or A = A .
+
 --- some basic equations
   eq A === A = true .
 
@@ -86,35 +90,35 @@ fmod ALT-INTEGER-EXPR is
   protecting ALT-BOOLEAN-EXPR .
   including INT .
 
-  sort IntExpr .
-  subsort Int < IntExpr .
+  sort IntExp .
+  subsort Int < IntExp .
 
   sort IntVar .
-  subsort IntVar < IntExpr .
+  subsort IntVar < IntExp .
   op i : SMTVarId -> IntVar [ctor] .
 
-  op -_ : IntExpr -> IntExpr [ditto] .
-  op _+_ : IntExpr IntExpr -> IntExpr [ditto] .
-  op _*_ : IntExpr IntExpr -> IntExpr [ditto] .
-  op _-_ : IntExpr IntExpr -> IntExpr [ditto] .
+  op -_ : IntExp -> IntExp [ditto] .
+  op _+_ : IntExp IntExp -> IntExp [ditto] .
+  op _*_ : IntExp IntExp -> IntExp [ditto] .
+  op _-_ : IntExp IntExp -> IntExp [ditto] .
 
-  op _<_ : IntExpr IntExpr -> BoolExpr [ditto] .
-  op _<=_ : IntExpr IntExpr -> BoolExpr [ditto] .
-  op _>_ : IntExpr IntExpr -> BoolExpr [ditto].
-  op _>=_ : IntExpr IntExpr -> BoolExpr [ditto] .
+  op _<_ : IntExp IntExp -> BoolExp [ditto] .
+  op _<=_ : IntExp IntExp -> BoolExp [ditto] .
+  op _>_ : IntExp IntExp -> BoolExp [ditto].
+  op _>=_ : IntExp IntExp -> BoolExp [ditto] .
 
-  op _===_ : IntExpr IntExpr -> BoolExpr [comm prec 51] .
-  op _=/==_ : IntExpr IntExpr -> BoolExpr [comm prec 51] .
-  op _?_:_ : BoolExpr IntExpr IntExpr -> IntExpr [gather (e e e) prec 71] .
+  op _===_ : IntExp IntExp -> BoolExp [comm prec 51] .
+  op _=/==_ : IntExp IntExp -> BoolExp [comm prec 51] .
+  op _?_:_ : BoolExp IntExp IntExp -> IntExp [gather (e e e) prec 71] .
 
 --- The following operators are currently not supported.
 ---( 
-  op _div_ : IntExpr IntExpr -> IntExpr [gather (E e) prec 31] . 
-  op _mod_ : IntExpr IntExpr -> IntExpr [gather (E e) prec 31] .
-  op _divisible_ : IntExpr IntExpr -> BoolExpr [prec 51] .
+  op _div_ : IntExp IntExp -> IntExp [gather (E e) prec 31] . 
+  op _mod_ : IntExp IntExp -> IntExp [gather (E e) prec 31] .
+  op _divisible_ : IntExp IntExp -> BoolExp [prec 51] .
 )---)
 
-  vars A B : IntExpr .
+  vars A B : IntExp .
   vars I J : Int .
 
 --- some basic equations
@@ -135,44 +139,44 @@ fmod ALT-REAL-INTEGER-EXPR is
   protecting ALT-INTEGER-EXPR .
   including RAT .
 
-  sort RExpr .
-  subsort Rat < RExpr .
-  subsort IntExpr < RExpr .
+  sort RExp .
+  subsort Rat < RExp .
+  subsort IntExp < RExp .
 
-  sort RVar StRExpr .
-  subsort RVar < StRExpr < RExpr .
+  sort RVar StRExp .
+  subsort RVar < StRExp < RExp .
   op r : SMTVarId -> RVar [ctor] .
 
-  op -_ : RExpr -> RExpr [ditto] .
-  op _+_ : RExpr RExpr -> RExpr [ditto] .
-  op _*_ : RExpr RExpr -> RExpr [ditto] .
-  op _-_ : RExpr RExpr -> RExpr [ditto] .
-  op _/_ : RExpr RExpr -> RExpr [ditto] .
+  op -_ : RExp -> RExp [ditto] .
+  op _+_ : RExp RExp -> RExp [ditto] .
+  op _*_ : RExp RExp -> RExp [ditto] .
+  op _-_ : RExp RExp -> RExp [ditto] .
+  op _/_ : RExp RExp -> RExp [ditto] .
 
-  op -_ : StRExpr -> StRExpr [ditto] .
-  op _+_ : StRExpr RExpr -> StRExpr [ditto] .
-  op _*_ : StRExpr RExpr -> StRExpr [ditto] .
+  op -_ : StRExp -> StRExp [ditto] .
+  op _+_ : StRExp RExp -> StRExp [ditto] .
+  op _*_ : StRExp RExp -> StRExp [ditto] .
 
-  op _-_ : StRExpr RExpr -> StRExpr [ditto] .
-  op _-_ : RExpr StRExpr -> StRExpr [ditto] .
-  op _/_ : StRExpr RExpr -> StRExpr [ditto] .
-  op _/_ : RExpr StRExpr -> StRExpr [ditto] .
+  op _-_ : StRExp RExp -> StRExp [ditto] .
+  op _-_ : RExp StRExp -> StRExp [ditto] .
+  op _/_ : StRExp RExp -> StRExp [ditto] .
+  op _/_ : RExp StRExp -> StRExp [ditto] .
 
-  op _<_ : RExpr RExpr -> BoolExpr [ditto] .
-  op _<=_ : RExpr RExpr -> BoolExpr [ditto] .
-  op _>_ : RExpr RExpr -> BoolExpr [ditto] .
-  op _>=_ : RExpr RExpr -> BoolExpr [ditto] .
+  op _<_ : RExp RExp -> BoolExp [ditto] .
+  op _<=_ : RExp RExp -> BoolExp [ditto] .
+  op _>_ : RExp RExp -> BoolExp [ditto] .
+  op _>=_ : RExp RExp -> BoolExp [ditto] .
 
-  op _===_ : RExpr RExpr -> BoolExpr [comm prec 51] .
-  op _=/==_ : RExpr RExpr -> BoolExpr [comm prec 51] .
-  op _?_:_ : BoolExpr RExpr RExpr -> RExpr [gather (e e e) prec 71] .
-  --- op _?_:_ : BoolExpr Int Int -> Int [ditto] .
+  op _===_ : RExp RExp -> BoolExp [comm prec 51] .
+  op _=/==_ : RExp RExp -> BoolExp [comm prec 51] .
+  op _?_:_ : BoolExp RExp RExp -> RExp [gather (e e e) prec 71] .
+  --- op _?_:_ : BoolExp Int Int -> Int [ditto] .
 
-  op toReal : IntExpr -> RExpr .
-  op toInteger : RExpr -> IntExpr .
-  op isInteger : RExpr -> BoolExpr .
+  op toReal : IntExp -> RExp .
+  op toInteger : RExp -> IntExp .
+  op isInteger : RExp -> BoolExp .
 
-  vars A B : RExpr .
+  vars A B : RExp .
   var I : Int .
   vars R S : Rat .
 
@@ -180,13 +184,14 @@ fmod ALT-REAL-INTEGER-EXPR is
   --- eq A === A = true .
   --- eq A <= A = true .
   --- eq A >= A = true .
-   eq (A ===  B) = A <= B and A >= B .
-   eq (A =/== B) = A <  B  or A >  B .
-
-  eq true  ? A : B = A .
-  eq false ? A : B = B .
+  eq (A ===  B) = A <= B and A >= B .
+  eq (A =/== B) = A <  B  or A >  B .
 
   eq 0 + A = A .
+  eq A - B = A + (- B) .
+  eq A + (- A) = 0 .
+  eq - (A + B) = (- A) + (- B) .
+  eq - (- A) = A .
 
   eq toReal(I) = I .
   eq toInteger(R) = floor(R) .
@@ -218,54 +223,117 @@ fmod META-SMT-CONSTANT-TRANS is
 endfm
 
 
-fmod ALT-SMT-CHECK is
+--- translate ALT-SMT exps to SMT exps
+fmod SMT-EXP-TRANS is
   protecting REAL-INTEGER .
   protecting ALT-REAL-INTEGER-EXPR .
   protecting META-SMT-CONSTANT-TRANS * (op __ : NatList NatList -> NatList to _#_) . 
 
-   var B           : Bool .
-   var BE          : BoolExpr .
-   var M           : Module .
-   var C           : Constant .
-   var V           : Variable .
-   var Q           : Qid .
-   vars T T'       : Term .
-   var TY          : Type .
-   var TL TAL TAL' : TermList .
-   var NTL         : NeTermList .
-   var ID          : SMTVarId .
+  op trBool : BoolExp ~> Boolean .
+  op trInt  : IntExp ~> Integer .
+  op trReal : RExp ~> Real .
 
-   --- Satisfiability check 
-   op smtCheck : BoolExpr -> Bool .
-   eq smtCheck(BE) = metaCheck(['ALT-SMT-CHECK], replace-vars(upTerm(BE))) .
+  var B : Bool .
+  var I : Int .
+  var R : Rat .
+  var ID : SMTVarId .
+  vars BE BE1 BE2 : BoolExp .
+  vars IE IE1 IE2 : IntExp .
+  vars RE RE1 RE2 : RExp .
 
-  --- Validity check 
-  op validity : BoolExpr -> Bool .
-  eq validity(BE) = smtCheck(not BE) == false .
+  var C  : Constant .
+  var Q  : Qid .
+  var T : Term .
+  var TL : TermList .
 
-   --- replacing b(id) to id:Boolean 
-   op replace-vars : Term -> Term .
-   op replace-vars-list : TermList -> Term .
+  --- error terms for downTerm
+  op error : ~> Boolean [ctor] .
+  op error : ~> Integer [ctor] .
+  op error : ~> Real [ctor] .
 
-   eq replace-vars(C) = C .
-   eq replace-vars(V) = V .
+  --- translation for atoms
+  op trRealAtom : Rat ~> Real [memo].
+  eq trRealAtom(R) = downTerm(metaTrRatC(upTerm(R)),error) .
 
-   eq replace-vars('b[T]) = qid(varid2str(downTerm(T ,errorID))   + ":Boolean") .
-   eq replace-vars('i[T]) = qid(varid2str(downTerm(T ,errorID))   + ":Integer") .
-   eq replace-vars('r[T]) = qid(varid2str(downTerm(T ,errorID))   + ":Real") .
+  op trIntAtom  : Int ~> Integer [memo] .
+  eq trIntAtom(I) = downTerm(metaTrIntC(upTerm(I)),error) .
 
-   eq replace-vars(Q[TL]) = Q[ replace-vars-list(TL) ] [owise] .
+--- Boolean
+  eq trBool(true)  = true .
+  eq trBool(false) = false .
+  eq trBool(b(ID)) = downTerm(qid($varid2str(upTerm(ID)) + ":Boolean"), error) .
 
-   eq replace-vars-list(empty) = empty .
-   eq replace-vars-list( (T, TL) ) = replace-vars(T) , replace-vars-list(TL) .
+  eq trBool(not BE) = not trBool(BE) .
+  eq trBool(BE1 and BE2) = trBool(BE1) and trBool(BE2) .
+  eq trBool(BE1 xor BE2) = trBool(BE1) xor trBool(BE2) .
+  eq trBool(BE1 or  BE2) = trBool(BE1) or  trBool(BE2) .
+  eq trBool(BE1 implies BE2) = trBool(BE1) implies trBool(BE2) .
 
-  op varid2str : SMTVarId ~> String .
-  eq varid2str(ID) = $varid2str(upTerm(ID)) .
+  eq trBool(BE1 ===  BE2) = trBool(BE1) ===  trBool(BE2) .
+  eq trBool(BE1 =/== BE2) = trBool(BE1) =/== trBool(BE2) .
 
+  eq trBool(BE ? BE1 : BE2) = trBool(BE) ? trBool(BE1) : trBool(BE2) .
+
+--- Integer
+  eq trInt(I) = trIntAtom(I) .
+  eq trInt(i(ID)) = downTerm(qid($varid2str(upTerm(ID)) + ":Integer"), error) .
+
+  eq trInt(- IE) = - trInt(IE) .
+  eq trInt(IE1 + IE2) = trInt(IE1) + trInt(IE2) .
+  eq trInt(IE1 * IE2) = trInt(IE1) * trInt(IE2) .
+  eq trInt(IE1 - IE2) = trInt(IE1) - trInt(IE2) .
+
+  eq trBool(IE1 <  IE2) = trInt(IE1) <  trInt(IE2) .
+  eq trBool(IE1 <= IE2) = trInt(IE1) <= trInt(IE2) .
+  eq trBool(IE1 >  IE2) = trInt(IE1) >  trInt(IE2) .
+  eq trBool(IE1 >= IE2) = trInt(IE1) >= trInt(IE2) .
+
+  eq trBool(IE1 ===  IE2) = trInt(IE1) ===  trInt(IE2) .
+  eq trBool(IE1 =/== IE2) = trInt(IE1) =/== trInt(IE2) .
+
+  eq trInt(BE ? IE1 : IE2) = trBool(BE) ? trInt(IE1) : trInt(IE2) .
+
+--- Real
+  eq trReal(R) = trRealAtom(R) . 
+  eq trReal(r(ID)) = downTerm(qid($varid2str(upTerm(ID)) + ":Real"), error) .
+
+  eq trReal(- RE) = - trReal(RE) .
+  eq trReal(RE1 + RE2) = trReal(RE1) + trReal(RE2) .
+  eq trReal(RE1 * RE2) = trReal(RE1) * trReal(RE2) .
+  eq trReal(RE1 - RE2) = trReal(RE1) - trReal(RE2) .
+  eq trReal(RE1 / RE2) = trReal(RE1) / trReal(RE2) .
+
+  eq trBool(RE1 <  RE2) = trReal(RE1) <  trReal(RE2) .
+  eq trBool(RE1 <= RE2) = trReal(RE1) <= trReal(RE2) .
+  eq trBool(RE1 >  RE2) = trReal(RE1) >  trReal(RE2) .
+  eq trBool(RE1 >= RE2) = trReal(RE1) >= trReal(RE2) .
+
+  eq trBool(RE1 ===  RE2) = trReal(RE1) ===  trReal(RE2) .
+  eq trBool(RE1 =/== RE2) = trReal(RE1) =/== trReal(RE2) .
+
+  eq trReal(BE ? RE1 : RE2) = trBool(BE) ? trReal(RE1) : trReal(RE2) .
+
+  eq trReal(toReal(IE)) = toReal(trInt(IE)) .
+  eq trInt(toInteger(RE)) = toInteger(trReal(RE)) .
+  eq trBool(isInteger(RE)) = isInteger(trReal(RE)) . 
+
+--- SMTVarId
   op $varid2str : Term ~> String .
   op $varid2str-L : TermList ~> String .
   eq $varid2str(C) = string(getName(C)) . 
   eq $varid2str(Q[TL]) = string(Q) + "_" + $varid2str-L(TL) . 
   eq $varid2str-L(empty) = "" .
   eq $varid2str-L( (T, TL)) = $varid2str(T) + "_" + $varid2str-L(TL) .
+endfm
+
+
+
+fmod ALT-SMT-CHECK is
+  protecting SMT-EXP-TRANS .
+
+   var BE          : BoolExp .
+
+   --- Satisfiability check 
+   op smtCheck : BoolExp -> Bool .
+   eq smtCheck(BE) = metaCheck(['ALT-SMT-CHECK], upTerm(trBool(BE))) .
 endfm

@@ -1,0 +1,67 @@
+
+*** In this version, each physical action specifies a possible value 
+*** to be generated (either a boolean value or a rational number in 
+*** an interval). The envFire operation, declared at the kind level, 
+*** generates a single physical action and a symbolic value.
+
+
+omod PHYSICAL-ACTIONS is
+  protecting ENVIRONMENTS .
+  protecting LF-EXPR .
+  including LF-SMT-INTERFACE .
+
+  --- Dynamically, each physical action has:
+  ---    * home address
+  ---    * description of a possible value
+  ---    * a counter to generate a new variable
+
+  class PhysAct | possibleValues : PossibleValue,
+                  counter : Nat .
+
+  --- a possible value to be generated is either a boolean value or 
+  --- a rational value in an interval
+  sort PossibleValue .
+  op bool : -> PossibleValue [ctor] .
+  op rat : RatValue RatValue -> PossibleValue [ctor] .
+
+  subsort PhysActId < Oid .
+
+  op pv : PhysActId Nat -> SMTVarId .  --- SMT variable ids
+
+  var O : Oid .
+  var AI : ActionId .
+  var RI : ReactorId .
+  var PV : PossibleValue .
+  vars RV RV' RV'' : RatValue .
+  var CONST : BoolValue .
+  var PENV : Object .
+  var CONF : Configuration .
+  var N : Nat .
+
+  --- An operation to "fire" a single physical action. This will be
+  --- triggered by another rule
+  op envFire : Object ~> Object .
+
+  --- fire ONE of its physical actions
+  rl [envFire] : 
+     envFire(< O : Environment | physicalActions : PENV CONF >)
+     =>
+     < O : Environment | physicalActions : envFire(PENV) CONF > .
+
+  --- generate a symbolic value (a fresh variable with const)
+  ceq envFire(< (RI . AI) : PhysAct | possibleValues : PV, counter : N >)
+    = < (RI . AI) : PhysAct | counter : s N > 
+      scheduleAction(event(RI, AI, RV, CONST))
+   if {RV,CONST} := genSymVal(PV, (RI . AI), N) .
+
+  sort ValueWithConst .
+  op {_,_} : Value BoolValue -> ValueWithConst [ctor] .
+
+  op genSymVal : PossibleValue PhysActId Nat -> ValueWithConst .
+  eq genSymVal(bool, (RI . AI), N) 
+   = {bb(pv(RI . AI, N)), trueVal} .
+  ceq genSymVal(rat(RV, RV'), (RI . AI), N)
+    = {RV'', (RV <= RV'') && (RV'' <= RV')}
+   if RV'' := rr(pv(RI . AI, N)) .
+endom
+
