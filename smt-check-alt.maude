@@ -14,23 +14,6 @@ fmod SMT-VAR-ID is
 endfm
 
 
-fmod LF-SMT-INTERFACE is
-  protecting LF-ABS-VALUE-TIME .
-  protecting SMT-VAR-ID .
-
-  --- to quickly check for obvious unsat for the symbolic case
-  op checkNotFalse : BoolValue ~> Bool .
-  eq checkNotFalse(BV:BoolValue) = not (BV:BoolValue == falseVal) .
-
-  --- smt variables
-  op bb : SMTVarId -> BoolValue [ctor] .
-  op rr : SMTVarId -> RatValue [ctor] .
-
-  --- not defined here!
-  op smtCheck : BoolValue ~> Bool .
-endfm
-
-
 fmod ALT-BOOLEAN-EXPR is
   including SMT-VAR-ID .
   including BOOL .
@@ -258,10 +241,23 @@ fmod SMT-EXP-TRANS is
   op trIntAtom  : Int ~> Integer [memo] .
   eq trIntAtom(I) = downTerm(metaTrIntC(upTerm(I)),error) .
 
+  --- translation for variables
+  op trRealVar : RVar ~> Real [memo] .
+  eq trRealVar(r(ID)) 
+   = downTerm(qid($varid2str(upTerm(ID)) + ":Real"), error) .
+
+  op trIntVar : IntVar ~> Integer [memo] .
+  eq trIntVar(i(ID)) 
+   = downTerm(qid($varid2str(upTerm(ID)) + ":Integer"), error) .
+
+  op trBoolVar : BoolVar ~> Boolean [memo] .
+  eq trBoolVar(b(ID)) 
+   = downTerm(qid($varid2str(upTerm(ID)) + ":Boolean"), error) .
+
 --- Boolean
   eq trBool(true)  = true .
   eq trBool(false) = false .
-  eq trBool(b(ID)) = downTerm(qid($varid2str(upTerm(ID)) + ":Boolean"), error) .
+  eq trBool(b(ID)) = trBoolVar(b(ID)) .
 
   eq trBool(not BE) = not trBool(BE) .
   eq trBool(BE1 and BE2) = trBool(BE1) and trBool(BE2) .
@@ -276,7 +272,7 @@ fmod SMT-EXP-TRANS is
 
 --- Integer
   eq trInt(I) = trIntAtom(I) .
-  eq trInt(i(ID)) = downTerm(qid($varid2str(upTerm(ID)) + ":Integer"), error) .
+  eq trInt(i(ID)) = trIntVar(i(ID)) .
 
   eq trInt(- IE) = - trInt(IE) .
   eq trInt(IE1 + IE2) = trInt(IE1) + trInt(IE2) .
@@ -295,7 +291,7 @@ fmod SMT-EXP-TRANS is
 
 --- Real
   eq trReal(R) = trRealAtom(R) . 
-  eq trReal(r(ID)) = downTerm(qid($varid2str(upTerm(ID)) + ":Real"), error) .
+  eq trReal(r(ID)) = trRealVar(r(ID)) .
 
   eq trReal(- RE) = - trReal(RE) .
   eq trReal(RE1 + RE2) = trReal(RE1) + trReal(RE2) .
@@ -331,9 +327,12 @@ endfm
 fmod ALT-SMT-CHECK is
   protecting SMT-EXP-TRANS .
 
-   var BE          : BoolExp .
+   var BE : BoolExp .
 
    --- Satisfiability check 
    op smtCheck : BoolExp -> Bool .
-   eq smtCheck(BE) = metaCheck(['ALT-SMT-CHECK], upTerm(trBool(BE))) .
+   eq smtCheck(true) = true .
+   eq smtCheck(false) = false .
+   eq smtCheck(BE) = metaCheck(['ALT-SMT-CHECK], upTerm(trBool(BE))) [owise] .
 endfm
+

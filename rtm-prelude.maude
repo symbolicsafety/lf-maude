@@ -14,10 +14,13 @@ fmod TIME is
    op _ge_ : Time Time -> Bool [prec 37] .
    op _gt_ : Time Time -> Bool [prec 37] .
 
+---Kyungmin: Removed to avoid unnecessary expansion for symbolic
+---(
    eq zero plus R:Time = R:Time .
    eq R:Time le R':Time = (R:Time lt R':Time) or (R:Time equals R':Time) .
    eq R:Time ge R':Time = R':Time le R:Time .
    eq R:Time gt R':Time = R':Time lt R:Time .
+)---
 endfm
 
 
@@ -105,7 +108,11 @@ fmod NAT-TIME-DOMAIN is
   eq N plus N' = N + N' .
   eq N monus N' = if N > N' then sd(N, N') else 0 fi .
   eq N equals N' = N == N' .
-  eq N lt N' = N < N' .
+
+  eq N le N' = N <= N' .
+  eq N lt N' = N <  N' .
+  eq N ge N' = N >= N' .
+  eq N gt N' = N >  N' .
 endfm
 
 
@@ -172,7 +179,11 @@ fmod POSRAT-TIME-DOMAIN is
   eq R plus R' = R + R' .
   eq R monus R' = if R > R' then R - R' else 0 fi .
   eq R equals R' = R == R' .
-  eq R lt R' = R < R' .
+
+  eq R le R' = R <= R' .
+  eq R lt R' = R <  R' .
+  eq R ge R' = R >= R' .
+  eq R gt R' = R >  R' .
 endfm
 
 

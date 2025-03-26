@@ -1,0 +1,17 @@
+
+  
+fmod LF-SMT-INTERFACE is
+  protecting LF-VALUE-TIME .
+  protecting ALT-SMT-CHECK .
+
+  --- to quickly check for obvious unsat for the symbolic case
+  op checkNotFalse : BoolValue ~> Bool .
+  eq checkNotFalse(BV:BoolValue) = not (BV:BoolValue == falseVal) .
+
+  --- 
+  op smtCheck : BoolValue ~> Bool .
+  eq smtCheck([B:BoolExp]) = smtCheck(B:BoolExp) .
+endfm
+
+
+

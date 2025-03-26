@@ -45,8 +45,7 @@ omod DYNAMICS-WITHOUT-TICK is
        < Q : EventQueue | queue : NEW-QUEUE >
        < RXNS : Invoked | reactions : INVOKED > 
        < SYM : SymInfra | constraint : CONST' && CONST'' >} 
-   if CONST' := CONST && 
-                boolToValue(minConst(tag(T,N),QUEUE) and T equals zero)
+   if CONST' := CONST && [minConst(tag(T,N),QUEUE) and T equals zero]
    /\ smtCheck(CONST')
    /\ executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal)
       => networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST'') 
@@ -93,8 +92,7 @@ omod SYM-REACH-DYNAMICS is
         < RXNS : Invoked | reactions : none >
         < SYM : SymInfra | constraint : CONST' >} 
        in time T
-    if CONST' := CONST &&
-                 boolToValue(minConst(tag(T,N),QUEUE) and T gt zero) 
+    if CONST' := CONST && [minConst(tag(T,N),QUEUE) and T gt zero] 
     /\ smtCheck(CONST') .
 
     op tv : Nat -> SMTVarId . --- SMT variable ids for time
@@ -115,9 +113,8 @@ omod SYM-REACH-DYNAMICS is
         < RXNS : Invoked | reactions : none >
         < SYM : SymInfra | constraint : CONST', counter : s N >} 
      in time T
-     if T := valueToTime(rr(tv(N)))    --- a fresh variable
-     /\ CONST' := CONST &&  
-                  boolToValue(minConst(tag(T,0),QUEUE) and T gt zero)
+     if T := r(tv(N))    --- a fresh variable
+     /\ CONST' := CONST && [minConst(tag(T,0),QUEUE) and T gt zero]
      /\ smtCheck(CONST') .
 
   --- Assume that T <= T' for any T'.

@@ -4,7 +4,6 @@ in TrainDoor_v3.maude
 omod TEST-TRAIN is
   including TRAINDOOR-V3 .
   including DYNAMICS-WITHOUT-TICK .
-  including LF-SMT-INTERFACE-IMPL .
 
   ops env queue rxns sym : -> Oid [ctor] .
 

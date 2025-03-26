@@ -25,10 +25,11 @@ fmod LF-ABS-VALUE-TIME is
 
   op _equals_ : Value Value -> BoolValue . 
 
-  op timeToValue : Time ~> RatValue .
-  op valueToTime : RatValue ~> Time .
+  --- type conversion
+  op [_] : Time ~> RatValue .
+  op [_] : Bool ~> BoolValue .
 
-  op boolToValue : Bool ~> BoolValue .
+  op toTime : RatValue ~> Time .
 endfm
 
 
@@ -230,7 +231,3 @@ omod LF-REPR is
   protecting REACTOR .
   protecting CONNECTION .
 endom
-  
-  
-  
-  

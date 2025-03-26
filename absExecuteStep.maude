@@ -225,8 +225,8 @@ omod ABS-EXECUTE-REACTION is
             event(REACTOR, ACTIONID, 
                 eval(EXP, VALUATION, 
                      INPORTS CONF < ACTIONID : Action | >, TSTATUS), trueVal), 
-            valueToTime(eval(timeToValue(T) + REXP, VALUATION, 
-                             INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
+            toTime(eval([T] + REXP, VALUATION, 
+                        INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
             QUEUE), TSTATUS, CONST) .
 
   ---NOTE: if-then-else-fi is not defined here!
