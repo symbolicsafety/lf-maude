@@ -103,6 +103,10 @@ endtom)
 
 (mc-tctl initSystem |= AG[<= than 1] ((reaction (controller . 1) invoked) implies (AF[<= than 1] (reaction (controller . 2) invoked))) .)
 ***(
+Introduced timed module: TCTL-CHECK-ALARM
+
+rewrites: 27055 in 29ms cpu (30ms real) (906183 rewrites/second)
+
 Check
 mc-tctl_|=_. initSystem |= AG[<= than 1] (reaction controller . 1 invoked implies AF[<= than 1] reaction controller . 2 invoked) .
 in TCTL-CHECK-ALARM with mode deterministic time increase
