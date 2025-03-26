@@ -148,6 +148,33 @@ should be done in rtm!
 
 (mc-tctl initSystem |= AG[<= than 20] ((lessThan 18 ) implies (AF[<= than 0] (modeIs 1 ))) .)
 
+***(Introduced timed module: TCTL-CHECK-THERMOSTAT
+
+rewrites: 18577 in 28ms cpu (29ms real) (642869 rewrites/second)
+Check
+mc-tctl_|=_. initSystem |= AG[<= than 20] (lessThan 18 implies AF[<= than 0] modeIs 1) .
+in TCTL-CHECK-THERMOSTAT with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,20 c] lessThan 18 and (E not modeIs 1 U[o 0,INF o] tt)) .
+
+Property satisfied
+)***
+
 
 (mc-tctl initSystem |= AG[<= than 20] ((greaterThan 22 ) implies (AF[<= than 0] (modeIs 0 ))) .)
 
+***(
+rewrites: 18350 in 7ms cpu (8ms real) (2302095 rewrites/second)
+
+Check
+mc-tctl_|=_. initSystem |= AG[<= than 20] (greaterThan 22 implies AF[<= than 0] modeIs 0) .
+in TCTL-CHECK-THERMOSTAT with mode deterministic time increase
+
+
+Checking equivalent property:
+mc-tctl_|=_. initSystem |= not (E tt U[c 0,20 c] greaterThan 22 and (E not modeIs 0 U[o 0,INF o] tt)) .
+
+Property satisfied
+)***
