@@ -1,0 +1,108 @@
+
+omod TRAINDOOR is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  
+  ops received : -> RVarId [ctor] .
+  ops controller train door : -> ReactorId [ctor] .
+  ops in out1 out2 : -> RPortId [ctor] .
+  ops startup : -> RActionId .
+  op init : -> Configuration .
+  
+  eq init = 
+     < controller : Reactor | 
+       inports : none,
+       outports : < out1 : Port | value : [0] > 
+                  < out2 : Port | value : [0] >, 
+       state : empty,
+       timers : none,
+       actions : < startup : LogicalAction | minDelay : 0, 
+                                minSpacing : 0, 
+                                policy : defer, 
+                                payload : [0] >,
+       reactions : 
+         reaction when startup --> out1 ; out2 do { (out1 <- [1] ) ; (out2 <- [2])}   
+     >
+
+    < train : Reactor | 
+         inports : < in : Port | value : [0] >,
+         outports : none,
+         state : (received |-> [0]), 
+         timers : none,
+         actions : none,
+         reactions : reaction when in do { received := in }       
+     >
+     
+     < door : Reactor | 
+         inports : < in : Port | value : [0] >,
+         outports : none,
+         state : (received |-> [0]),
+         timers : none,
+         actions : none,
+         reactions : reaction when in do { received := in }       
+     >
+ 
+     (controller : out1 -- 1 --> train : in)
+     controller : out2 -- 1 --> door : in .
+endom
+
+omod TEST-TRAINDOOR is
+  including TRAINDOOR .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup,init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+omod CHECK-TRAINDOOR is
+  including TEST-TRAINDOOR .
+  including UNBOUNDED-ANALYSIS-DYNAMICS .
+endom  
+
+rew [5] initSystem .
+
+omod TIME-BOUNDED-TRAINDOOR is
+  including TEST-TRAINDOOR .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 1 .
+endom 
+
+in model-checker.maude
+
+omod MODEL-CHECK-TRAINDOOR is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-TRAINDOOR .
+  subsort ClockedSystem < State .
+ 
+  var REST : Configuration .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
+  var T : Time .
+  var O : Oid .
+
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >
+     } in time T
+      |=  reaction RID invoked = true .
+      
+    eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) > }
+      |=  reaction RID invoked = true .    
+endom
+
+
+***( the main property in the LF repository is "train_does_not_move_until_door_closes" 
+
+spec="(!TrainDoor_t_reaction_0)U[0, 1 sec](TrainDoor_d_reaction_0)", expect=false
+
+)***
+
+red modelCheck(initSystem, ~ (reaction (train . 1) invoked) U (reaction (door . 1) invoked)) .
+
