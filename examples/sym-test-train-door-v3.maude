@@ -4,12 +4,13 @@ in TrainDoor_v3.maude
 omod TEST-TRAIN is
   including TRAINDOOR-V3 .
   including DYNAMICS-WITHOUT-TICK .
+  including TIME-BOUNDED-EVENT-CHECK .
 
-  ops env queue rxns sym : -> Oid [ctor] .
+  ops env queue rxns sym em : -> Oid [ctor] .
 
-  op initSystem : -> GlobalSystem .
-  eq initSystem =
-     { < env : Environment |
+  op initConf : -> Configuration .
+  eq initConf =
+       < env : Environment |
            physicalActions : < (controller . external) : PhysAct |
 				   possibleValues : bool,
                                    minSep : 10,
@@ -17,17 +18,17 @@ omod TEST-TRAIN is
 				   counter : 0 >
                              < (door . extOpen) : PhysAct |
  				   possibleValues : bool,
-                                   minSep : 11,
+                                   minSep : 12,
                                    clock : INF,
 				   counter : 0 > 
        >
        addReactionIndices(init)
        < queue : EventQueue | queue : empty >
        < rxns : Invoked | reactions : none >
-       < sym : SymInfra | constraint : [true], counter : 0 >} .
+       < sym : SymInfra | constraint : [true], counter : 0 >  .
 endom
 
-rew initSystem .
+rew {initConf} .
 
 
 omod SYM-REACH-TRAIN is
@@ -35,22 +36,38 @@ omod SYM-REACH-TRAIN is
   including SYM-REACH-DYNAMICS .
 
   var CONST : BoolValue .
-  var T : Time .
-
+  var V : Value .
+  vars T T' : Time .
   var RS : ReactorState .
-
-  vars AS AS' : AttributeSet .
+  var EVENT : Event .
+  var TAG : Tag . 
+  var EQ : EQueue .
+  var O : Oid .
+  vars AS AS' AS'' : AttributeSet .
   var REST : Configuration .
+
+
+  eq timeBound = INF .
+
+  op monitorNothing : -> Object .
+  eq monitorNothing 
+   = < em : EventMonitor | clock : INF, event : none, 
+                           evalue : trueVal, econst : trueVal > .
+
+  op monitorExternal : -> Object .
+  eq monitorExternal 
+   = < em : EventMonitor | clock : INF, event : controller . external,
+                           evalue : trueVal, econst : trueVal > .
+
 endom  
 
 
-
-rew [100] initSystem .
+rew [15] {initConf monitorNothing} in time 0 .
 
 
 --- finds a good state
 search [1] 
-    initSystem 
+    {initConf monitorNothing} in time 0
 =>*
     {< door : Reactor | state : (locked |-> [true]) ; RS, AS > 
      < sym : SymInfra | constraint : CONST, AS' > REST}
@@ -58,5 +75,13 @@ search [1]
 such that smtCheck(CONST) .
 
 
---- More interesting analysis??
+search [1,15] 
+    {initConf monitorExternal} in time 0
+=>*
+    {< door : Reactor | state : (locked |-> [false]) ; RS, AS > 
+     < sym : SymInfra | constraint : CONST, AS' > 
+     < em : EventMonitor | clock : T', evalue : V, AS'' > REST}
+  in time T 
+such that smtCheck(CONST && (V === [true]) && [T' > 0] && [T < 15]) .
+
 
