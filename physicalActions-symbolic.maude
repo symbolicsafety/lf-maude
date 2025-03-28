@@ -4,10 +4,28 @@
 *** an interval). The envFire operation, declared at the kind level, 
 *** generates a single physical action and a symbolic value.
 
+omod CLOCK is
+  protecting TIME-INF .
+
+  class Clock | clock : TimeInf .
+
+  var O : Oid .
+  var TI : TimeInf .
+  var T : Time .
+  var CONF : Configuration .
+
+  --- increase clocks 
+  op increaseClock : Configuration Time ~> Configuration .
+  eq increaseClock(none, T) = none .
+  eq increaseClock(< O : Clock | clock : TI > CONF, T)
+   = < O : Clock | clock : TI plus T >  increaseClock(CONF, T) .
+endom
+
 
 omod PHYSICAL-ACTIONS is
   protecting ENVIRONMENTS .
   protecting LF-EXPR .
+  protecting CLOCK .
   including LF-SMT-INTERFACE .
 
   --- Dynamically, each physical action has:
@@ -19,8 +37,8 @@ omod PHYSICAL-ACTIONS is
 
   class PhysAct | possibleValues : PossibleValue,
                   minSep : Time,
-                  clock : TimeInf,
                   counter : Nat .
+  subclass PhysAct < Clock .
 
   --- a possible value to be generated is either a boolean value or 
   --- a rational value in an interval
