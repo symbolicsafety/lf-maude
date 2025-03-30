@@ -1,4 +1,3 @@
-
 in TrainDoor_v3.maude
 
 omod TEST-TRAIN is
@@ -24,8 +23,6 @@ omod TEST-TRAIN is
        addReactionIndices(init)
        < queue : EventQueue | queue : empty >
        < rxns : Invoked | reactions : none >} .
-                              
-     
 endom
 
 
@@ -36,7 +33,7 @@ endom
 
 
 
-rew [100] initSystem .
+rew [10] initSystem .
 
 
 
@@ -64,6 +61,34 @@ search [1] initSystem =>*
 	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState, ATTS2:AttributeSet >} .
 )---
 
+--- New for EMSOFT paper around deadline:
+---(
+search [1] initSystem =>*
+             {REST:Configuration
+	      < door : Reactor | state : (locked |-> [true]) ; (isOpen |-> [true]) ; RS2:ReactorState, ATTS2:AttributeSet >} .
+)---
+
+
+---( New, for EMSOFT deadline; time-bounded analysis is pointless
+      here, but we do it anyways, just to illustrate
+      that it is possible, and we use a mixed property:
+      can reaction 2 of door have been
+      invoked and yet the door is unlocked?
+
+omod TIME-BOUNDED-TRAIN is including TEST-TRAIN .
+including TIME-BOUNDED-DYNAMICS .
+ eq timeBound = 150 .
+endom 
+
+search [1] initSystem in time 0 =>*
+             {REST:Configuration
+	      < door : Reactor | state : (locked |-> [false]) ; RS:ReactorState, ATTS:AttributeSet >
+< rxns : Invoked | reactions : (door . 2) ; R:ReactionIdSet >
+} in time T:Time .
+
+--- oops finds such a state
+)---
+
 
 
 
@@ -78,12 +103,14 @@ omod MODEL-CHECK-TRAIN3 is
   --- generic atomic proposition:
 
   var REST : Configuration .
-  var REACTORID : ReactorId .
+  var REACTORID : ReactorId .  var RIDS : ReactionIdSet .
   var VAR : VarId .
   var VAL : Value .
   var RS : ReactorState .
   var T : Time .
   var O : Oid .
+  var REACTION : ReactionId .
+  var PROP : Prop .
 
   vars EQ1 EQ2 : EQueue .
   var EVENT : Event .
@@ -95,9 +122,9 @@ omod MODEL-CHECK-TRAIN3 is
       < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
      |= VAR in REACTORID is VAL = true . 
 
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >} in time T
-     |= VAR in REACTORID is VAL = true .
+---  eq {REST
+---      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >} in time T
+---     |= VAR in REACTORID is VAL = true .
 
 
   --- An event is in the event queue:
@@ -107,10 +134,17 @@ omod MODEL-CHECK-TRAIN3 is
       < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
      |=  EVENT isInQueue = true .
 
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
-     |=  EVENT isInQueue = true .
+---  eq {REST
+---      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
+---     |=  EVENT isInQueue = true .
 
+  op _invoked : ReactionId -> Prop [ctor] .
+
+  eq {REST < O : Invoked | reactions : (REACTION ; RIDS) >}
+      |=  REACTION invoked = true .
+
+  --- extend these to clocked states:
+  ceq {REST} in time T |= PROP = true if {REST} |= PROP .
 endom
 
 
@@ -134,7 +168,9 @@ red modelCheck(initSystem,
 	       /\ ([] <> (event(controller, external, [true]) isInQueue)))
 	       ->  <> (locked in door is [true])) .
 
-eof
+
+
+
 
 
 --- Holds when period of extOpen is 11 and external is NOT timeNonDet.
@@ -144,9 +180,19 @@ eof
 
 --- Note that the simpler property will not hold even with good
 --- parameters, since we may have many false external events:
-
+---(
 red modelCheck(initSystem,
                 ([] <> (event(controller, external, [true]) isInQueue))
 	       ->  <> (locked in door is [true])) .
+)---
 
 
+---(  EMSOFT DEADLINE STUFF:
+red modelCheck(initSystem, <> (locked in door is [false] /\ (door . 2) invoked)) .
+--- returns counterexample
+red modelCheck(initSystem, ~ <> (locked in door is [false] /\ (door . 2) invoked)) .
+
+--- Now I change extOpen nondet to false, and model check.
+--- Remember to reset this value back.
+red modelCheck(initSystem, <> [] (locked in door is [false])) .
+)---
