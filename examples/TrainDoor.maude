@@ -106,3 +106,20 @@ spec="(!TrainDoor_t_reaction_0)U[0, 1 sec](TrainDoor_d_reaction_0)", expect=fals
 
 red modelCheck(initSystem, ~ (reaction (train . 1) invoked) U (reaction (door . 1) invoked)) .
 
+
+***( Result:
+reduce in MODEL-CHECK-TRAINDOOR : modelCheck(initSystem, ~ reaction train . 1 invoked U reaction door . 1 invoked) .
+rewrites: 120 in 0ms cpu (0ms real) (~ rewrites/second)
+result ModelCheckResult: counterexample({{< controller : Reactor | inports : none, outports : (< out1 : Port | value : [0] > < out2 : Port | value : [0] >), state : empty, reactions :
+    reaction 1 when startup --> out1 ; out2 do{(out1 <- [1]) ; out2 <- [2]}, timers : none, actions : < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload
+    : [0] > > < train : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}, timers
+    : none, actions : none > < door : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received
+    := in}, timers : none, actions : none > < env : Environment | physicalActions : none > < queue : EventQueue | queue : event(controller, startup, [0], [true]) at tag(0, 1) > < rxns
+    : Invoked | reactions : (none).ReactionIdSet > (controller : out1 -- 1 --> train : in) controller : out2 -- 1 --> door : in} ,'step}, {{< controller : Reactor | inports : none,
+    outports : (< out1 : Port | value : [1] > < out2 : Port | value : [2] >), state : empty, reactions : reaction 1 when startup --> out1 ; out2 do{(out1 <- [1]) ; out2 <- [2]},
+    timers : none, actions : < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > > < train : Reactor | inports : < in : Port | value : [0] >,
+    outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}, timers : none, actions : none > < door : Reactor | inports : < in : Port |
+    value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}, timers : none, actions : none > < env : Environment |
+    physicalActions : none > < queue : EventQueue | queue : (event(train, in, [1], [true]) event(door, in, [2], [true])) at tag(1, 0) > < rxns : Invoked | reactions : (controller . 1)
+    > (controller : out1 -- 1 --> train : in) controller : out2 -- 1 --> door : in} ,deadlock})
+)***

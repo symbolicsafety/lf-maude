@@ -318,3 +318,14 @@ Maude>
 --- Our model checking is based on our current understand of the seamntics of LF property spec language,
 --- so that could explain the undesired result.  Or, the spec, which seems a little bit messy, could
 --- have a flaw ...
+
+eof
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < simulator : Reactor | state : (RS1:ReactorState ; (direction |-> [NZ:NzNat]) ),
+	                              AS1:AttributeSet >
+	      < control : Reactor | AS2:AttributeSet,
+                                    state : (RS2:ReactorState ; (stopPressed |-> [N3:Nat]) ; (doorIsOpen |-> [N2:Nat])) >
+	      < rxns : Invoked | reactions : (simulator . 4) ; RIDS:ReactionIdSet >}
+         such that N2:Nat =/= 0   or   N3:Nat =/= 0  .	    
