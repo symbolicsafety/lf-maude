@@ -10,19 +10,6 @@ omod ENVIRONMENTS is
   ---   namely, the physical actions:
 
   class Environment | physicalActions : Configuration .
-
-  vars O O2 : Oid .
-  var QUEUE : EQueue .
-  var CONF : Configuration .
-  var EVENT : Event .
-
-  msg scheduleAction : Event -> Msg .
-
-  eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
-     < O2 : EventQueue | queue : QUEUE >
-   =
-     < O : Environment | physicalActions : CONF >
-     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) > .
 endom
 
 
