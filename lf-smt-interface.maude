@@ -14,4 +14,18 @@ fmod LF-SMT-INTERFACE is
 endfm
 
 
+omod VAR-GEN is
+  protecting NAT .
 
+  class VarGen | counter : Nat .
+endom
+
+
+omod SYM-INFRA is
+  protecting LF-ABS-VALUE-TIME .
+  protecting VAR-GEN .
+
+
+  class SymInfra | constraint : BoolValue .
+  subclass SymInfra < VarGen .
+endom

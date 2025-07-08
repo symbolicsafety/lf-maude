@@ -26,6 +26,8 @@ omod PHYSICAL-ACTIONS is
   protecting ENVIRONMENTS .
   protecting LF-EXPR .
   protecting CLOCK .
+  protecting SYM-INFRA .
+  protecting ABS-EVENT-QUEUE .
   including LF-SMT-INTERFACE .
 
   --- Dynamically, each physical action has:
@@ -36,21 +38,21 @@ omod PHYSICAL-ACTIONS is
   ---    * a counter to generate a new variable
 
   class PhysAct | possibleValues : PossibleValue,
-                  minSep : Time,
-                  counter : Nat .
-  subclass PhysAct < Clock .
+                  minSep : Time .
+  subclass PhysAct < Clock VarGen .
 
   --- a possible value to be generated is either a boolean value or 
   --- a rational value in an interval
   sort PossibleValue .
   op bool : -> PossibleValue [ctor] .
   op rat : RatValue RatValue -> PossibleValue [ctor] .
+  ---TODO: also other options, such as any rat, some enumeration, etc.
 
   subsort PhysActId < Oid .
 
-  op pv : PhysActId Nat -> SMTVarId .  --- SMT variable ids
+  op pv : PhysActId Nat -> SMTVarId [ctor] .  --- SMT variable ids
 
-  var O : Oid .
+  vars O O2 SYM : Oid .
   var AI : ActionId .
   var RI : ReactorId .
   var PV : PossibleValue .
@@ -61,28 +63,36 @@ omod PHYSICAL-ACTIONS is
   var CONF : Configuration .
   var T : Time .
   var TI : TimeInf .
-  var N : Nat .
+  var NC : Nat .
+  var EVENT : Event .
+  var QUEUE : EQueue .
+
 
   --- An operation to "fire" a single physical action. This will be
   --- triggered by another rule
   op envFire : Object ~> Object .
 
-  --- fire ONE of its physical actions
-  rl [envFire] : 
-     envFire(< O : Environment | physicalActions : PENV CONF >)
-     =>
-     < O : Environment | physicalActions : envFire(PENV) CONF > .
+  --- fire ONE of its physical actions with a symbolic value 
+  crl [envFire] : 
+     < O : Environment | 
+        physicalActions : 
+          < (RI . AI) : PhysAct | possibleValues : PV, 
+                                  minSep : T,
+                                  clock : TI,
+                                  counter : NC > CONF >
+     < O2 : EventQueue | queue : QUEUE >
+     < SYM : SymInfra | constraint : CONST >
+   =>
+     < O : Environment | 
+        physicalActions : 
+          < (RI . AI) : PhysAct | clock : zero, counter : s NC > CONF > 
+     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) >
+     < SYM : SymInfra | constraint : CONST && [TI ge T] >
+   if {VAL,CONST} := genSymVal(PV, (RI . AI), NC) 
+   /\ EVENT := event(RI, AI, VAL, trueVal) 
+   /\ smtCheck(CONST && [TI ge T]) .
 
-  --- generate a symbolic value (a fresh variable with const)
-  ceq envFire(
-      < (RI . AI) : PhysAct | possibleValues : PV, 
-                              minSep : T,
-                              clock : TI,
-                              counter : N >)
-    = < (RI . AI) : PhysAct | clock : zero,
-                              counter : s N > 
-      scheduleAction(event(RI, AI, VAL, CONST && [TI ge T]))
-   if {VAL,CONST} := genSymVal(PV, (RI . AI), N) .
+
 
    ---TODO: currently, TI ge T may generate redundant const..
 
@@ -90,10 +100,10 @@ omod PHYSICAL-ACTIONS is
   op {_,_} : Value BoolValue -> ValueWithConst [ctor] .
 
   op genSymVal : PossibleValue PhysActId Nat -> ValueWithConst .
-  eq genSymVal(bool, (RI . AI), N) 
-   = {[b(pv(RI . AI, N))], trueVal} .
-  ceq genSymVal(rat(RV, RV'), (RI . AI), N)
+  eq genSymVal(bool, (RI . AI), NC) 
+   = {[b(pv(RI . AI, NC))], trueVal} .
+  ceq genSymVal(rat(RV, RV'), (RI . AI), NC)
     = {RV'', (RV <= RV'') && (RV'' <= RV')}
-   if RV'' := [r(pv(RI . AI, N))] .
+   if RV'' := [r(pv(RI . AI, NC))] .
 endom
 

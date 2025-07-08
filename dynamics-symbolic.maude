@@ -3,7 +3,7 @@
 ---  1) physicalActions do not have timers 
 ---  3) an extra object for (global) symbolic constraints
 
-
+---(
 omod TIME-BOUNDED-EVENT-CHECK is
   protecting EVENT-QUEUE .
   protecting REACTION .
@@ -31,6 +31,7 @@ omod TIME-BOUNDED-EVENT-CHECK is
    = < EM : EventMonitor | clock : zero , evalue : V, econst : BV > .
   eq check(< EM : EventMonitor | >, QUEUE) = < EM : EventMonitor | > [owise] .
 endom
+)---
 
 
 omod DYNAMICS-WITHOUT-TICK is
@@ -38,17 +39,15 @@ omod DYNAMICS-WITHOUT-TICK is
   including EXECUTE-STEP .
   including EVENT-QUEUE .
   including PHYSICAL-ACTIONS .
-  including TIME-BOUNDED-EVENT-CHECK .
+  including SYM-INFRA .
+---  including TIME-BOUNDED-EVENT-CHECK .
 
   --- At the moment, the global state is
   --- < env : Environment | physicalActions : ... >
   --- REACTORS and CONNECTIONS in some state
   --- < q : EventQueue | queue : ... >
   --- < sym : SymInfra | constraint : ..., counter : ... >
-  --- < em : EventMonitor | clock : ..., event : ... >
-
-  class SymInfra | constraint : BoolValue,
-                   counter : Nat .
+  --- < em : EventMonitor | clock : ..., event : ... >   <- removed 
 
 
   vars REACTORS-AND-CONNECTIONS NEW-NETWORK : Configuration .
@@ -63,25 +62,24 @@ omod DYNAMICS-WITHOUT-TICK is
   vars T T' : Time .
   var N N' : Nat .
 
-
   --- In the symbolic setting, physical envs have no timer. Also,
   --- executeStep is non-deterministic.
   crl [step] :
       {< E : Environment | >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(T,N)) ;; QUEUE >
+       < Q : EventQueue | queue : (EVENTS at tag(T, N)) ;; QUEUE >
        < SYM : SymInfra | constraint : CONST >
-       < RXNS : Invoked | >
-       < EM : EventMonitor | >} 
+       < RXNS : Invoked | >}
+---       < EM : EventMonitor | > 
     =>
       {< E : Environment | >
        NEW-NETWORK
        < Q : EventQueue | queue : NEW-QUEUE >
        < SYM : SymInfra | constraint : CONST' && CONST'' >
-       < RXNS : Invoked | reactions : INVOKED >
-       check(< EM : EventMonitor | >, NEW-QUEUE)} 
+       < RXNS : Invoked | reactions : INVOKED >}
+       ---check(< EM : EventMonitor | >, NEW-QUEUE) 
    if CONST' := CONST && [minConst(tag(T,N),QUEUE) and T equals zero]
-   /\ smtCheck(CONST')
+   /\ smtCheck(CONST') --- redundant?
    /\ executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal)
       => networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST'') 
    /\ smtCheck(CONST' && CONST'') .
@@ -90,7 +88,6 @@ omod DYNAMICS-WITHOUT-TICK is
   eq minConst(tag(T,N), (EVENTS at tag(T',N')) ;; QUEUE)
    = ((T lt T') or ((T equals T') and N <= N')) and minConst(tag(T,N), QUEUE) .
   eq minConst(tag(T,N), empty) = true .
-
   
 endom
 
@@ -102,10 +99,10 @@ omod SYM-REACH-DYNAMICS is
 
   vars REACTORS-AND-CONNECTIONS CONF : Configuration .
   vars CONST CONST' : BoolValue .
-  vars T T' T0 : Time .
+  vars T T' T0 T1 : Time .
   var TI : TimeInf .
   vars E Q PA SYM RXNS EM : Oid .
-  var N : Nat .
+  vars N NC : Nat .
   var EVENTS : Events .
   vars QUEUE NEW-QUEUE : EQueue .
   var NZN : NzNat .
@@ -114,6 +111,7 @@ omod SYM-REACH-DYNAMICS is
 
   op timeBound : -> Time .   *** initialized by user
 
+  op tv : Nat -> SMTVarId . --- SMT variable ids for time
 
   --- A tick rule for non-physical events. This rule advances time
   --- until the first queue item is ready to execute.  Note that time 
@@ -121,50 +119,27 @@ omod SYM-REACH-DYNAMICS is
    crl [tick] :
        {< E : Environment | physicalActions : CONF >
         REACTORS-AND-CONNECTIONS
-        < Q : EventQueue | queue : (EVENTS at tag(T,N)) ;; QUEUE >
-        < SYM : SymInfra | constraint : CONST >
-        < RXNS : Invoked | >
-        < EM : EventMonitor | >} 
+        < Q : EventQueue | queue : QUEUE >
+        < SYM : SymInfra | constraint : CONST, counter : NC >
+        < RXNS : Invoked | >}
+        ---< EM : EventMonitor | >
        in time T0
     =>
        {< E : Environment | physicalActions : increaseClock(CONF, T) >
         REACTORS-AND-CONNECTIONS
-        < Q : EventQueue | queue : (EVENTS at tag(zero,N)) ;; 
-                                   decreaseTags(QUEUE,T) >
-        < SYM : SymInfra | constraint : CONST' >
-        < RXNS : Invoked | reactions : none >
-        increaseClock(< EM : EventMonitor | >, T)} 
+        < Q : EventQueue | queue : decreaseTags(QUEUE, T) >
+        < SYM : SymInfra | constraint : CONST', counter : s NC >
+        < RXNS : Invoked | reactions : none >} 
+        ---increaseClock(< EM : EventMonitor | >, T)
        in time (T0 plus T)
-    if CONST' := CONST && [minConst(tag(T,N),QUEUE) and T ge zero and T0 plus T le timeBound] 
+    if T := r(tv(NC))    --- a fresh variable
+    /\ CONST' := CONST && [T gt zero and T0 plus T le timeBound 
+                           and T <=mte QUEUE] 
     /\ smtCheck(CONST') .
 
-    op tv : Nat -> SMTVarId . --- SMT variable ids for time
-
-    --- A tick rule for physical events. This rule advances time
-    --- and ``fires'' a single physical event. 
-    crl [extraTickRuleForPhysActs] :
-       {< E : Environment | physicalActions : CONF >
-        REACTORS-AND-CONNECTIONS
-        < Q : EventQueue | queue : QUEUE >
-        < SYM : SymInfra | constraint : CONST, counter : N >
-        < RXNS : Invoked | >
-        < EM : EventMonitor | >} 
-       in time T0
-     =>
-       {envFire(< E : Environment | 
-                    physicalActions : increaseClock(CONF, T) >)
-        REACTORS-AND-CONNECTIONS
-        < Q : EventQueue | queue : decreaseTags(QUEUE,T) >
-        < SYM : SymInfra | constraint : CONST', counter : s N >
-        < RXNS : Invoked | reactions : none >
-        increaseClock(< EM : EventMonitor | >, T)} 
-     in time (T0 plus T)
-     if T := r(tv(N))    --- a fresh variable
-     /\ CONST' := CONST && [minConst(tag(T,0),QUEUE) and T ge zero and T0 plus T le timeBound]
-     /\ smtCheck(CONST') .
-
-  --- TODO: the condition "T gt zero" may generate a deadlock state. 
-  ---   Need to check whether it is OK or a bug. This seems a bug...
+  op _<=mte_ : Time EQueue ~> Bool .
+  eq T <=mte ((EVENTS at tag(T',N)) ;; QUEUE) = (T le T') and T <=mte QUEUE .
+  eq T <=mte empty = true .
 
   --- Assume that T <= T' for any T'.
   op decreaseTags : EQueue Time -> EQueue .
