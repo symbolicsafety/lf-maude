@@ -42,10 +42,8 @@ search [1] initSystem in time 0 =>* {REST:Configuration
 
 search [1] initSystem in time 0 =>* {REST:Configuration
                 < queue : EventQueue |
-		        queue : (EQ1:EQueue :: ((event(pedal, a, [N:Nat]) EVENTS:Events) at TAG:Tag) :: EQ2:EQueue) >}
+		        queue : (EQ1:EQueue :: ((event(pedal, a, [N:Nat], [true] ) EVENTS:Events) at TAG:Tag) :: EQ2:EQueue) >}
                 in time T:Time .
-
-
 
 
 

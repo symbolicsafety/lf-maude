@@ -51,7 +51,7 @@ omod DYNAMICS-WITHOUT-TICK is
 
 
   vars REACTORS-AND-CONNECTIONS NEW-NETWORK : Configuration .
-  vars QUEUE NEW-QUEUE : EQueue .
+  vars QUEUE QUEUE' NEW-QUEUE : EQueue .
   vars E Q EM RXNS SYM : Oid .
   var INVOKED : ReactionIdSet .
   var EVENT : Event .
@@ -67,7 +67,7 @@ omod DYNAMICS-WITHOUT-TICK is
   crl [step] :
       {< E : Environment | >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(T, N)) ;; QUEUE >
+       < Q : EventQueue | queue : QUEUE >
        < SYM : SymInfra | constraint : CONST >
        < RXNS : Invoked | >}
 ---       < EM : EventMonitor | > 
@@ -75,19 +75,14 @@ omod DYNAMICS-WITHOUT-TICK is
       {< E : Environment | >
        NEW-NETWORK
        < Q : EventQueue | queue : NEW-QUEUE >
-       < SYM : SymInfra | constraint : CONST' && CONST'' >
+       < SYM : SymInfra | constraint : CONST && CONST' && CONST'', tickApplicable : true >
        < RXNS : Invoked | reactions : INVOKED >}
        ---check(< EM : EventMonitor | >, NEW-QUEUE) 
-   if CONST' := CONST && [minConst(tag(T,N),QUEUE) and T equals zero]
-   /\ smtCheck(CONST') --- redundant?
-   /\ executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal)
+   if QUEUE =/= empty
+   /\ getMaybeReadyEvents(QUEUE,CONST) => {EVENTS,tag(T,N),CONST',QUEUE'} 
+   /\ executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE', trueVal)
       => networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST'') 
-   /\ smtCheck(CONST' && CONST'') .
-
-  op minConst : Tag EQueue ~> Bool .
-  eq minConst(tag(T,N), (EVENTS at tag(T',N')) ;; QUEUE)
-   = ((T lt T') or ((T equals T') and N <= N')) and minConst(tag(T,N), QUEUE) .
-  eq minConst(tag(T,N), empty) = true .
+   /\ smtCheck(CONST && CONST' && CONST'') .
   
 endom
 
@@ -120,6 +115,27 @@ omod SYM-REACH-DYNAMICS is
        {< E : Environment | physicalActions : CONF >
         REACTORS-AND-CONNECTIONS
         < Q : EventQueue | queue : QUEUE >
+        < SYM : SymInfra | constraint : CONST, counter : NC, tickApplicable : true >
+        < RXNS : Invoked | >}
+        ---< EM : EventMonitor | >
+       in time T0
+    =>
+       {< E : Environment | physicalActions : increaseClock(CONF, T - T0) >
+        REACTORS-AND-CONNECTIONS
+        < Q : EventQueue | queue : decreaseTags(QUEUE, T - T0) >
+        < SYM : SymInfra | constraint : CONST', counter : s NC, tickApplicable : false >
+        < RXNS : Invoked | reactions : none >} 
+        ---increaseClock(< EM : EventMonitor | >, T - T0)
+       in time T
+    if T := r(tv(NC))    --- a fresh variable for the next global time
+    /\ CONST' := CONST && [T gt T0 and T le timeBound and (T - T0) <=mte QUEUE] 
+    /\ smtCheck(CONST') .
+
+---(
+   crl [tick] :
+       {< E : Environment | physicalActions : CONF >
+        REACTORS-AND-CONNECTIONS
+        < Q : EventQueue | queue : QUEUE >
         < SYM : SymInfra | constraint : CONST, counter : NC >
         < RXNS : Invoked | >}
         ---< EM : EventMonitor | >
@@ -132,10 +148,11 @@ omod SYM-REACH-DYNAMICS is
         < RXNS : Invoked | reactions : none >} 
         ---increaseClock(< EM : EventMonitor | >, T)
        in time (T0 plus T)
-    if T := r(tv(NC))    --- a fresh variable
+    if T := r(tv(NC))    --- a fresh variable for duration
     /\ CONST' := CONST && [T gt zero and T0 plus T le timeBound 
                            and T <=mte QUEUE] 
     /\ smtCheck(CONST') .
+)---
 
   op _<=mte_ : Time EQueue ~> Bool .
   eq T <=mte ((EVENTS at tag(T',N)) ;; QUEUE) = (T le T') and T <=mte QUEUE .

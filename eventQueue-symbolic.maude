@@ -1,6 +1,7 @@
 
 omod EVENT-QUEUE is
   including ABS-EVENT-QUEUE .
+  including LF-SMT-INTERFACE .
 
   --- in the symbolic setting, an event queue is a set, because
   --- the order cannot be fully determined with symbolic times
@@ -8,11 +9,38 @@ omod EVENT-QUEUE is
 
   vars EVENTS EVENTS' : Events .
   var TAG : Tag .
-  var QUEUE : EQueue .
+  vars CONST CONST' : BoolValue .
+  vars QUEUE QUEUE' : EQueue .
+  vars T T' : Time .
+  vars N N' : Nat .
 
   --- this function just adds a tagged event to the set
   eq insert(EVENTS at TAG, QUEUE) = (EVENTS at TAG) ;; QUEUE . 
 
   eq (EVENTS at TAG) ;; (EVENTS' at TAG) = (EVENTS EVENTS') at TAG .
+
+  sort Tuple{Events,Tag,BoolValue,EQueue} .
+  op {_,_,_,_} : Events Tag BoolValue EQueue -> Tuple{Events,Tag,BoolValue,EQueue} [ctor] .
+
+
+  op getMaybeReadyEvents : EQueue BoolValue ~> Tuple{Events,Tag,BoolValue,EQueue} .
+  crl getMaybeReadyEvents((EVENTS at tag(T,N)) ;; QUEUE ;; QUEUE', CONST)
+   => {EVENTS getEvents(QUEUE), tag(T,N), CONST', QUEUE'}
+   if CONST' := [sameTag(QUEUE, tag(T,N)) and minConst(tag(T,N),QUEUE') and T equals zero]
+   /\ smtCheck(CONST && CONST') .
+
+  op getEvents : EQueue ~> Events .
+  eq getEvents((EVENTS at TAG) ;; QUEUE) = EVENTS getEvents(QUEUE) .
+  eq getEvents(empty) = noEvent .
+
+  op sameTag : EQueue Tag ~> Bool .
+  eq sameTag((EVENTS at tag(T',N)) ;; QUEUE, tag(T,N))
+   = (T' === T) and sameTag(QUEUE, tag(T,N)) .
+  eq sameTag(empty, TAG) = true .
+
+  op minConst : Tag EQueue ~> Bool .
+  eq minConst(tag(T,N), (EVENTS at tag(T',N')) ;; QUEUE)
+   = ((T lt T') or ((T equals T') and N < N')) and minConst(tag(T,N), QUEUE) .
+  eq minConst(tag(T,N), empty) = true .
 endom
 

@@ -12,6 +12,8 @@ load absDynamics
 
 load smt 
 load smt-check-alt
+load fme
+
 load lf-value-time-symbolic
 load lf-smt-interface
 

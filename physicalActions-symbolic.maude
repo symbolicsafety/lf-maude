@@ -38,7 +38,7 @@ omod PHYSICAL-ACTIONS is
   ---    * a counter to generate a new variable
 
   class PhysAct | possibleValues : PossibleValue,
-                  minSep : Time .
+                  minSpace : Time .
   subclass PhysAct < Clock VarGen .
 
   --- a possible value to be generated is either a boolean value or 
@@ -58,7 +58,7 @@ omod PHYSICAL-ACTIONS is
   var PV : PossibleValue .
   var VAL : Value .
   vars RV RV' RV'' : RatValue .
-  var CONST : BoolValue .
+  vars CONST CONST' : BoolValue .
   var PENV : Object .
   var CONF : Configuration .
   var T : Time .
@@ -77,7 +77,7 @@ omod PHYSICAL-ACTIONS is
      < O : Environment | 
         physicalActions : 
           < (RI . AI) : PhysAct | possibleValues : PV, 
-                                  minSep : T,
+                                  minSpace : T,
                                   clock : TI,
                                   counter : NC > CONF >
      < O2 : EventQueue | queue : QUEUE >
@@ -87,10 +87,10 @@ omod PHYSICAL-ACTIONS is
         physicalActions : 
           < (RI . AI) : PhysAct | clock : zero, counter : s NC > CONF > 
      < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) >
-     < SYM : SymInfra | constraint : CONST && [TI ge T] >
-   if {VAL,CONST} := genSymVal(PV, (RI . AI), NC) 
+     < SYM : SymInfra | constraint : CONST && CONST' && [TI ge T], tickApplicable : true >
+   if {VAL,CONST'} := genSymVal(PV, (RI . AI), NC) 
    /\ EVENT := event(RI, AI, VAL, trueVal) 
-   /\ smtCheck(CONST && [TI ge T]) .
+   /\ smtCheck(CONST && CONST' && [TI ge T]) .
 
 
 

@@ -26,6 +26,7 @@ omod SYM-INFRA is
   protecting VAR-GEN .
 
 
-  class SymInfra | constraint : BoolValue .
+  class SymInfra | constraint : BoolValue, tickApplicable : Bool .
   subclass SymInfra < VarGen .
 endom
+

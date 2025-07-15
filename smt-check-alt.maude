@@ -159,9 +159,10 @@ fmod ALT-REAL-INTEGER-EXPR is
   op toInteger : RExp -> IntExp .
   op isInteger : RExp -> BoolExp .
 
-  vars A B : RExp .
+  vars A B C : RExp .
+  var RV : RVar .
   var I : Int .
-  vars R S : Rat .
+  vars R R' S : Rat .
 
 --- some basic equations
   --- eq A === A = true .
@@ -175,6 +176,32 @@ fmod ALT-REAL-INTEGER-EXPR is
   eq A + (- A) = 0 .
   eq - (A + B) = (- A) + (- B) .
   eq - (- A) = A .
+
+  eq (A + C <=  B + C) = (A <=  B) .
+  eq (A + C <   B + C) = (A <   B) .
+  eq (A + C >=  B + C) = (A >=  B) .
+  eq (A + C >   B + C) = (A >   B) .
+  eq (A + C === B + C) = (A === B) .
+
+---(
+--- some simplification for human readability
+  eq (0 <= R + - RV) = (RV <= R) .
+  eq (0 <  R + - RV) = (RV <  R) .
+  eq (0 >= R + - RV) = (RV >= R) .
+  eq (0 >  R + - RV) = (RV >  R) .
+
+  ceq (RV <= R) and (RV <= R') = RV <= R if R <= R' .
+  ceq (RV <  R) and (RV <  R') = RV <  R if R <= R' .
+  ceq (RV >= R) and (RV >= R') = RV <= R if R >= R' .
+  ceq (RV >  R) and (RV >  R') = RV <  R if R >= R' .
+
+  ceq (RV <= R + A) and (RV <= R' + A) = RV <= R + A if R <= R' .
+  ceq (RV <  R + A) and (RV <  R' + A) = RV <  R + A if R <= R' .
+  ceq (RV >= R + A) and (RV >= R' + A) = RV <= R + A if R >= R' .
+  ceq (RV >  R + A) and (RV >  R' + A) = RV <  R + A if R >= R' .
+
+  eq (A <= B) and (A >= B) = (A === B) .
+)---
 
   eq toReal(I) = I .
   eq toInteger(R) = floor(R) .
