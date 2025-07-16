@@ -23,8 +23,6 @@ fmod LF-ABS-VALUE-TIME is
   ops trueVal falseVal : -> BoolValue .
   op zeroVal : -> RatValue .
 
-  op _equals_ : Value Value -> BoolValue . 
-
   --- type conversion
   op [_] : Time ~> RatValue .
   op [_] : Bool ~> BoolValue .

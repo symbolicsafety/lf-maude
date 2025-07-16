@@ -106,8 +106,6 @@ omod SYM-REACH-DYNAMICS is
 
   op timeBound : -> Time .   *** initialized by user
 
-  op tv : Nat -> SMTVarId . --- SMT variable ids for time
-
   --- A tick rule for non-physical events. This rule advances time
   --- until the first queue item is ready to execute.  Note that time 
   --- values in the event queue may be symbolic

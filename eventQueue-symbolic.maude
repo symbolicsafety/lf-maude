@@ -14,6 +14,9 @@ omod EVENT-QUEUE is
   vars T T' : Time .
   vars N N' : Nat .
 
+ --- HACK: assume r(V:SMTVarId) > 0 is already given as a global constraint
+  eq schedule(EVENTS, r(V:SMTVarId), QUEUE) = insert(EVENTS at tag(r(V:SMTVarId),0), QUEUE) .
+
   --- this function just adds a tagged event to the set
   eq insert(EVENTS at TAG, QUEUE) = (EVENTS at TAG) ;; QUEUE . 
 

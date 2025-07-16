@@ -17,22 +17,26 @@ fmod LF-VALUE-TIME is
   eq falseVal = [false] .
   eq zeroVal  = [0] .
 
-  eq [B1] equals [B2] = [B1 == B2] .
-  eq [R1] equals [R2] = [R1 == R2] .
-
   eq toTime([N]) = N .
 
   --- value operations
   eq [R1] +  [R2] = [R1 +  R2] .
   eq [R1] *  [R2] = [R1 *  R2] .
   eq [R1] -  [R2] = [R1 -  R2] .
+
   eq [R1] <  [R2] = [R1 <  R2] .
   eq [R1] <= [R2] = [R1 <= R2] .
   eq [R1] >  [R2] = [R1 >  R2] .
   eq [R1] >= [R2] = [R1 >= R2] .
 
-  eq [B1] && [B2] = [B1 and B2] .
-  eq [B1] || [B2] = [B1 or  B2] .
+  eq [R1] === [R2] = [R1 == R2] .
+  eq [B1] === [B2] = [B1 == B2] .
+
+  eq [R1] ==/= [R2] = [R1 =/= R2] .
+  eq [B1] ==/= [B2] = [B1 =/= B2] .
 
   eq ! [B1] = [not B1] .
+
+  eq [B1] && [B2] = [B1 and B2] .
+  eq [B1] || [B2] = [B1 or  B2] .
 endfm
