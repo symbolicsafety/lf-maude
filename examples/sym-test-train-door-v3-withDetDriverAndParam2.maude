@@ -1,4 +1,4 @@
-in TrainDoor_v3-withDetDriverAndParam.maude
+in TrainDoor_v3-withDetDriverAndParam2.maude
 
 omod TEST-TRAIN-V3-DET-DRIVER is
   including TRAINDOOR-V3-DET-DRIVER .
@@ -14,14 +14,14 @@ omod TEST-TRAIN-V3-DET-DRIVER is
            physicalActions :
                              < (door . extOpen) : PhysAct |
  				   possibleValues : bool,
-                                   minSpace : r(p1), --- 1199/100,
+                                   minSpace : 10,
                                    clock : INF,
 	                           counter : 0 >
        >
        addReactionIndices(init)
        < queue : EventQueue | queue : addInitialTimers(init, empty) >
        < rxns : Invoked | reactions : none >
-       < sym : SymInfra | constraint : ([r(p1) > 4 and r(p2) > 0 and r(p2) <= 5]), counter : 0, tickApplicable : true >}  .
+       < sym : SymInfra | constraint : ([r(p3) > 2]), counter : 0, tickApplicable : true >}  .
 
 endom
 
@@ -56,7 +56,7 @@ omod SIMULATE-TRAIN is
   var TIMERID : TimerId .
   vars SCR SCR' : SetConjRelLinRExp .
 
-  eq timeBound = 27 .
+  eq timeBound = 43 .
 
 endom  
 
@@ -71,6 +71,6 @@ search  [1]
     {< door : Reactor | state : (hasBeenLocked |-> [false]) ; RS, AS > 
      < sym : SymInfra | constraint : CONST, AS' > REST}
   in time T 
-such that smtCheck(CONST && [T > 25]) 
-       /\ SCR := hrsim(qe(CONST && [T > 25])) .
+such that smtCheck(CONST && [T > 40]) 
+       /\ SCR := hrsim(qe(CONST && [T > 40])) .
 

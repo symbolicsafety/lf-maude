@@ -81,7 +81,7 @@ search [1]
     {< queue : EventQueue | queue : ((event(pedal, a, RV, BV) EVENTS) at TAG) ;; EQ >
      < sym : SymInfra | constraint : CONST, AS' > REST}
   in time T
-such that smtCheck(CONST && ([T] equals [13])) .
+such that smtCheck(CONST && ([T] === [13])) .
 
 
 --- Another inttesting property is that after the pedal has been pressed, the brakles are

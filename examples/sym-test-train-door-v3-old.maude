@@ -47,6 +47,22 @@ omod SYM-REACH-TRAIN is
   var O : Oid .
   vars AS AS' AS'' : AttributeSet .
   var REST : Configuration .
+
+
+  eq timeBound = INF .
+
+---(
+  op monitorNothing : -> Object .
+  eq monitorNothing 
+   = < em : EventMonitor | clock : INF, event : none, 
+                           evalue : trueVal, econst : trueVal > .
+
+  op monitorExternal : -> Object .
+  eq monitorExternal 
+   = < em : EventMonitor | clock : INF, event : controller . external,
+                           evalue : trueVal, econst : trueVal > .
+)---
+
   vars REACTORS-AND-CONNECTIONS CONF : Configuration .
   vars CONST' : BoolValue .
   vars T0 T1 : Time .
@@ -59,8 +75,6 @@ omod SYM-REACH-TRAIN is
   var REACTORID : ReactorId .
   var TIMERID : TimerId .
 
-
-  eq timeBound = INF .
 endom  
 
 ---search [,7] {initConf} in time 0 =>* {REST} in time T .
@@ -68,14 +82,28 @@ endom
 
 rew [30] {initConf} in time 0 .
 
+eof
+
+rew [15] {initConf monitorNothing} in time 0 .
 
 
 --- finds a good state
 search [1] 
-    {initConf} in time 0
+    {initConf monitorNothing} in time 0
 =>*
     {< door : Reactor | state : (locked |-> [true]) ; RS, AS > 
      < sym : SymInfra | constraint : CONST, AS' > REST}
   in time T 
 such that smtCheck(CONST) .
+
+
+search [1,10] 
+    {initConf monitorExternal} in time 0
+=>*
+    {< door : Reactor | state : (locked |-> [false]) ; RS, AS > 
+     < sym : SymInfra | constraint : CONST, AS' > 
+     < em : EventMonitor | clock : T', evalue : V, AS'' > REST}
+  in time T 
+such that smtCheck(CONST && (V === [true]) && [T' > 0] && [T < 15]) .
+
 

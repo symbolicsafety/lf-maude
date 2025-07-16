@@ -29,7 +29,7 @@ endom
 omod SIMULATE-TRAIN is
   including TEST-TRAIN-V3-DET-DRIVER .
   including SYM-REACH-DYNAMICS .
-  including FOURIER-MOTZKIN .
+  including LF-FME-INTERFACE .
 
   var CONST : BoolValue .
   var V : Value .
@@ -52,87 +52,9 @@ omod SIMULATE-TRAIN is
   var NZN : NzNat .
   var REACTORID : ReactorId .
   var TIMERID : TimerId .
-
-  eq timeBound = 27 .
-
-  sort SetVar .
-  subsort RVar < SetVar .
-  op empty : -> SetVar .
-  op _,_ : SetVar SetVar -> SetVar [ctor assoc comm id: empty] .
-  eq V1:RVar , V1:RVar = V1:RVar .
-
-  vars RE1 RE2 : RExp .
-  vars BE1 BE2 : BoolExp .
-  var VAR : RVar .
-  var SVAR : SetVar .
-
-  var CR : ConjRelLinRExp .
   vars SCR SCR' : SetConjRelLinRExp .
 
-  vars A B C : RExp .
-  var RV : RVar .
-  vars R R' S : Rat .
-
-  op tvars : BoolExp ~> SetVar .
-  op tvars : RExp    ~> SetVar [memo] .
-  
-  eq tvars(true)  = empty .
-  eq tvars(BE1 and BE2) = tvars(BE1), tvars(BE2) .
-  
-  eq tvars(r(tv(N))) = r(tv(N)) .
-  eq tvars(RE1 <= RE2)  = tvars(RE1), tvars(RE2).
-  eq tvars(RE1 < RE2)   = tvars(RE1), tvars(RE2).
-  eq tvars(RE1 >= RE2)  = tvars(RE1), tvars(RE2).
-  eq tvars(RE1 > RE2)   = tvars(RE1), tvars(RE2).
-  
-  eq tvars(RE1 + RE2) = tvars(RE1) , tvars(RE2) .
-  eq tvars(RE1 - RE2) = tvars(RE1) , tvars(RE2) .
-  eq tvars(RE1 * RE2) = tvars(RE1) , tvars(RE2) .
-  eq tvars(RE1 / RE2) = tvars(RE1) , tvars(RE2) .
-  
-  eq tvars(RE1) = empty [owise] .
-  eq tvars(BE1) =  empty [owise] .
-
-  sort SetConjRelLinRExp .
-  subsort ConjRelLinRExp < SetConjRelLinRExp .
-  op emptyRes : -> SetConjRelLinRExp [ctor] .
-  op _;;_ : SetConjRelLinRExp SetConjRelLinRExp -> SetConjRelLinRExp [ctor comm assoc id: emptyRes] .
-
-
-  op qe : BoolValue ~> SetConjRelLinRExp .
-  eq qe([BE1]) = qeAux(dnfset(BE1), emptyRes) .
-
-  op qeAux : SetConjRelLinRExp SetConjRelLinRExp ~> SetConjRelLinRExp .
-  eq qeAux(emptyRes, SCR) = SCR .
-  eq qeAux(CR ;; SCR, SCR') = qeAux(SCR, SCR' ;; fme-all(tvars(CR), CR)) .
-
-  op fme-all : SetVar ConjRelLinRExp ~> ConjRelLinRExp .
-  eq fme-all(empty, BE1) = BE1 .
-  eq fme-all((VAR, SVAR), BE1) = fme(VAR, fme-all(SVAR, BE1)) .
-
-
-  eq CR ;; CR = CR .
-  eq false ;; CR = CR .
-
-  op dnfset : BoolExp ~> SetConjRelLinRExp .
-  eq dnfset(emptyRes) = emptyRes .
-  eq dnfset(CR) = CR .
-  eq dnfset(CR and (BE1 or BE2)) = dnfset(CR and BE1) ;; dnfset(CR and BE2) .
-
-
-  op hrsim : SetConjRelLinRExp ~> SetConjRelLinRExp .
-  eq hrsim((0 <= R + - RV) and CR ; SCR) = hrsim((RV <= R) and CR ; SCR) .
-  eq hrsim((0 <  R + - RV) and CR ; SCR) = hrsim((RV <  R) and CR ; SCR) .
-  eq hrsim((0 >= R + - RV) and CR ; SCR) = hrsim((RV >= R) and CR ; SCR) .
-  eq hrsim((0 >  R + - RV) and CR ; SCR) = hrsim((RV >  R) and CR ; SCR) .
-
-  ceq hrsim((RV <= R) and (RV <= R') and CR ; SCR) = hrsim(RV <= R and CR ; SCR) if R <= R' .
-  ceq hrsim((RV <  R) and (RV <  R') and CR ; SCR) = hrsim(RV <  R and CR ; SCR) if R <= R' .
-  ceq hrsim((RV >= R) and (RV >= R') and CR ; SCR) = hrsim(RV <= R and CR ; SCR) if R >= R' .
-  ceq hrsim((RV >  R) and (RV >  R') and CR ; SCR) = hrsim(RV <  R and CR ; SCR) if R >= R' .
-
-  eq hrsim(SCR) = SCR [owise] .
-
+  eq timeBound = 27 .
 endom  
 
 

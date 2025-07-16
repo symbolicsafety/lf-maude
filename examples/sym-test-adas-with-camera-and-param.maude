@@ -1,0 +1,79 @@
+
+in ADAS-with-camera-and-param.maude
+
+
+omod TEST-ADAS is
+  including ADAS-WITH-CAMERA .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops p1 : -> SMTVarId [ctor] . 
+
+  ops env queue rxns sym : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : none 
+                             < (pedal . a) : PhysAct |
+                                   possibleValues : rat([65],[75]),
+                                   minSpace : r(p1),
+                                   clock : INF,
+				   counter : 0 > 
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >
+       < sym : SymInfra | constraint : ([r(p1) > 10] && [r(p2) > 0] && [r(p2) < 50]), counter : 0, tickApplicable : true >} .
+
+--- NOTE: initial constraint should be written in SymInfra
+
+endom
+
+
+--- red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .
+
+
+---rew  initSystem .
+
+omod SYM-REACH-ADAS-TB is
+  including TEST-ADAS .
+  including SYM-REACH-DYNAMICS .
+  including LF-FME-INTERFACE .
+
+  var CONST : BoolValue .
+  var RVAL : RatValue .
+  var V : Value .
+  vars T T' : Time .
+  var RS : ReactorState .
+  var EVENT : Event .
+  var TAG : Tag . 
+  var EQ : EQueue .
+  var O : Oid .
+  vars AS AS' AS'' : AttributeSet .
+  var REST : Configuration .
+  vars REACTORS-AND-CONNECTIONS CONF : Configuration .
+  vars CONST' : BoolValue .
+  vars T0 T1 : Time .
+  var TI : TimeInf .
+  vars E Q PA SYM RXNS EM : Oid .
+  vars N NC : Nat .
+  var EVENTS : Events .
+  vars QUEUE NEW-QUEUE : EQueue .
+  var NZN : NzNat .
+  var REACTORID : ReactorId .
+  var TIMERID : TimerId .
+  vars SCR SCR' : SetConjRelLinRExp .
+
+  eq timeBound = 60 .
+endom
+
+
+search [1] 
+    initSystem in time 0 
+=>*
+    {< brakes : Reactor | state : (brakesApplied |-> RVAL) ; RS, AS >
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T 
+such that smtCheck(CONST && [T >= 50] && (RVAL === [0])) 
+       /\ SCR := hrsim(qe(CONST && [T >= 50] && (RVAL === [0]))) .
+
