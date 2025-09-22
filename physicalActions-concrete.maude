@@ -18,6 +18,7 @@
 
 omod PHYSICAL-ACTIONS is
   protecting ENVIRONMENTS .
+  protecting LF-VALUE-TIME .
   extending PERIODIC-OBJ .
 
   --- Dynamically, each physical action has:
@@ -40,6 +41,12 @@ omod PHYSICAL-ACTIONS is
   subsort Value < ValueSet .
   op noValue : -> ValueSet [ctor] .
   op _:_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
+  --- generate possible values from range
+  op _.._ : Nat Nat -> ValueSet .
+  
+  vars I J : Nat . 
+  ceq I .. J = [I] : (I + 1 .. J) if I <= J .
+  ceq I .. J = noValue if I > J .
 
   vars O O2 : Oid .
   var AI : ActionId .

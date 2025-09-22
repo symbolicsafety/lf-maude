@@ -12,14 +12,24 @@ omod DYNAMICS-WITHOUT-TICK is
 
   vars REACTORS-AND-CONNECTIONS PHYSICAL-ACTIONS NEW-NETWORK CONF1 : Configuration .
   vars QUEUE NEW-QUEUE : EQueue .
-  vars E Q PA RXNS : Oid .
+  vars E Q PA RXNS O : Oid .
   var INVOKED : ReactionIdSet .
   var EVENTS : Events .
   var CONST : BoolValue .
   var TI : TimeInf .
   vars T T1 T2 : Time .
   var N : Nat .
-
+  var REST : Configuration .
+  var REACTORID : ReactorId .
+  var VAR : VarId .
+  var VAL : Value .
+  var RS : ReactorState .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
+  vars EQ1 EQ2 : EQueue .
+  var EVENT : Event .
+  var TAG : Tag .
+  
   *** We need some initialization, obviously.  DONE
 
   *** We have some freedom here; IF an event can happen
@@ -111,6 +121,22 @@ omod DYNAMICS-WITHOUT-TICK is
   eq smallestTimer(none) = INF .
   eq smallestTimer(< PA : PhysAct | leftOfPeriod : TI >   PHYSICAL-ACTIONS)
    = minimum(TI, smallestTimer(PHYSICAL-ACTIONS)) .
+   
+  *** Here starts helper functions for analysis
+  op _._in_ : ReactorId VarId Configuration -> Value .
+  op _inEQueue_ : Event Configuration -> Bool .
+  op _invoked_ : ReactionId Configuration -> Bool .
+   
+  eq REACTORID . VAR in REST
+      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS > = VAL .
+      
+  eq EVENT inEQueue REST
+      < O : EventQueue | queue : (EQ1 :: ((EVENT EVENTS) at TAG) :: EQ2) > = true .
+  eq EVENT inEQueue REST = false [owise] .    
+      
+  eq RID invoked REST
+      < O : Invoked | reactions : (RID ; RIDS) > = true .
+  eq RID invoked REST = false [owise] .
 endom
 
 
@@ -180,7 +206,7 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T1 T : Time .
+  vars T T1 : Time .
   vars E Q RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
@@ -202,7 +228,6 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
    /\ T gt zero .
 
 
-
   crl [extraTickRuleForPhysActs] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
@@ -216,6 +241,7 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
    if T := smallestTimer(CONF1)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T
+
 endom
 
 
@@ -271,6 +297,56 @@ omod TIME-BOUNDED-DYNAMICS is
    /\ T3 plus T le timeBound .
 endom
 
+
+*** Case 4: unbounded and time-bounded analysis.
+*** The user must do TWO things:
+***    a. for unbounded analysis start with state {...} timeBound INF
+***    b. for time-bounded analysis set the value after 'timeBound' to the desired value.
+
+omod UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS is
+  including DYNAMICS-WITHOUT-TICK .
+
+  vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
+  vars T T1 : Time .
+  var T2 : TimeInf .
+  vars E Q RXNS : Oid .
+  var N : Nat .
+  var EVENTS : Events .
+  var QUEUE : EQueue .
+
+   
+  op _timeBound_ : ClockedSystem TimeInf -> ClockedSystem [ctor] .
+
+
+  crl [tick] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
+      < RXNS : Invoked | >} timeBound T2
+   =>
+     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
+                                 :: decreaseTags(QUEUE, T) >
+      < RXNS : Invoked | reactions : none >} timeBound (T2 monus T)
+   if T := minimum(T1, smallestTimer(CONF1), T2)
+   /\ T gt zero .
+
+
+  crl [extraTickRuleForPhysActs] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | >} timeBound T2
+   =>
+     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | reactions : none >} timeBound (T2 monus T)
+   if T := minimum(smallestTimer(CONF1), T2)
+   /\ T gt zero
+   /\ CONF1 =/= none .      --- implied by typing of T
+endom
 
 --- NOTICE: In general, our states are tuples
 --- (newState, reactionsInvokedToReachNewState)
