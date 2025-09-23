@@ -47,63 +47,10 @@ search [1] initSystem in time 0 =>* {REST:Configuration
 
 
 
-in model-checker.maude
-
-
 omod MODEL-CHECK-ADAS is
   including MODEL-CHECKER .
   including TIME-BOUNDED-ADAS .
-  subsort ClockedSystem < State .
-
-  --- generic atomic proposition:
-
-  var REST : Configuration .
-  var REACTORID : ReactorId .
-  var VAR : VarId .
-  var VAL : Value .
-  var RS : ReactorState .
-  var T : Time .
-  var O : Oid .
-  var RID : ReactionId .
-  var RIDS : ReactionIdSet .
-
-  vars EQ1 EQ2 : EQueue .
-  var EVENT : Event .
-  var TAG : Tag .
-
-  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
-
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
-     |= VAR in REACTORID is VAL = true . 
-
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >} in time T
-     |= VAR in REACTORID is VAL = true .
-
-
-  --- An event is in the event queue:
-  op _isInQueue : Event -> Prop [ctor] .
-
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
-     |=  EVENT isInQueue = true .
-
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
-     |=  EVENT isInQueue = true .
-
-  --- NEW Feb25: a reaction is/was invoken in this/last step:
-  op reaction_invoked : ReactionId -> Prop [ctor] .
-
-  eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) >}
-     |=  reaction RID invoked = true .
-
-  eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) >}  in time T
-     |=  reaction RID invoked = true .
-
+  including LF-PROP .
 endom
 
 

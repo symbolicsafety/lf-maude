@@ -103,24 +103,12 @@ omod TIME-BOUNDED-SUBWAY is
   eq timeBound = 11 .
 endom  
 
-in model-checker.maude
+
 
 omod MODEL-CHECK-SUBWAY is
   including MODEL-CHECKER .
   including TIME-BOUNDED-SUBWAY .
-  subsort ClockedSystem < State .
-
-  var REST : Configuration .
-  var RID : ReactionId .
-  var RIDS : ReactionIdSet .
-  var T : Time .
-  var O : Oid .
-
-  op reaction_invoked : ReactionId -> Prop [ctor] .
-  eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) >
-     } in time T
-      |=  reaction RID invoked = true .
+  including LF-PROP .
 endom
 
 red modelCheck(initSystem in time 0, <> (reaction (ums . 4) invoked)) .

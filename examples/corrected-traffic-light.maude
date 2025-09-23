@@ -124,49 +124,10 @@ endom
 
 search initSystem =>* {none} .   --- benchmarking
 
-in model-checker.maude
-
 omod MODEL-CHECK-TRAFFIC-LIGHT is
   including MODEL-CHECKER .
   including TIME-BOUNDED-TRAFFIC-LIGHT .
-  subsort ClockedSystem < State .
-
-  --- generic atomic proposition:
-
-  var REST : Configuration .
-  var REACTORID : ReactorId .
-  var VAR : VarId .
-  var VAL : Value .
-  var RS : ReactorState .
-  var T : Time .
-  var O : Oid .
-
-  vars EQ1 EQ2 : EQueue .
-  var EVENT : Event .
-  var TAG : Tag .
-
-  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
-
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
-     |= VAR in REACTORID is VAL = true . 
-
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >} in time T
-     |= VAR in REACTORID is VAL = true .
-
-
-  --- An event is in the event queue:
-  op _isInQueue : Event -> Prop [ctor] .
-
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
-     |=  EVENT isInQueue = true .
-
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
-     |=  EVENT isInQueue = true .
-
+  including LF-PROP .
 endom
 
 red modelCheck(initSystem in time 0,
@@ -181,43 +142,7 @@ red modelCheck(initSystem in time 0,
 omod UNBOUNDED-MODEL-CHECK-TRAFFIC-LIGHT is
   including MODEL-CHECKER .
   including UNBOUNDED-TRAFFIC-LIGHT .
-  subsort ClockedSystem < State .
-
-  --- generic atomic proposition:
-
-  var REST : Configuration .
-  var REACTORID : ReactorId .
-  var VAR : VarId .
-  var VAL : Value .
-  var RS : ReactorState .
-  var T : Time .
-  var O : Oid .
-
-  vars EQ1 EQ2 : EQueue .
-  var EVENT : Event .
-  var TAG : Tag .
-
-  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
-
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
-     |= VAR in REACTORID is VAL = true . 
-
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >} in time T
-     |= VAR in REACTORID is VAL = true .
-
-
-  --- An event is in the event queue:
-  op _isInQueue : Event -> Prop [ctor] .
-
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
-     |=  EVENT isInQueue = true .
-
-  eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >} in time T
-     |=  EVENT isInQueue = true .
+  including LF-PROP .
 
 endom
 

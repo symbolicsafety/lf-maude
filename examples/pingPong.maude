@@ -89,28 +89,12 @@ omod TIME-BOUNDED-PINGPONG is
   eq timeBound = 4 .
 endom  
 
-in model-checker.maude
+
 
 omod MODEL-CHECK-PINGPONG is
   including MODEL-CHECKER .
   including CHECK-PINGPONG .
-  subsort ClockedSystem < State .
-
-  var REST : Configuration .
-  var RID : ReactionId .
-  var RIDS : ReactionIdSet .
-  var T : Time .
-  var O : Oid .
-
-  op reaction_invoked : ReactionId -> Prop [ctor] .
-  eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) >
-     } in time T
-      |=  reaction RID invoked = true .
-      
-    eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) > }
-      |=  reaction RID invoked = true .    
+  including LF-PROP .
 endom
 
 red modelCheck(initSystem, [] ((reaction (ping . 2) invoked) => O(~ (reaction (ping . 2) invoked)))) .

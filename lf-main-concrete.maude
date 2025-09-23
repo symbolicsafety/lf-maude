@@ -16,3 +16,5 @@ load executeStep-concrete
 load physicalActions-concrete
 load dynamics-concrete
 
+load model-checker
+load lf-prop

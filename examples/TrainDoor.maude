@@ -73,28 +73,11 @@ omod TIME-BOUNDED-TRAINDOOR is
   eq timeBound = 1 .
 endom 
 
-in model-checker.maude
 
 omod MODEL-CHECK-TRAINDOOR is
   including MODEL-CHECKER .
   including TIME-BOUNDED-TRAINDOOR .
-  subsort ClockedSystem < State .
- 
-  var REST : Configuration .
-  var RID : ReactionId .
-  var RIDS : ReactionIdSet .
-  var T : Time .
-  var O : Oid .
-
-  op reaction_invoked : ReactionId -> Prop [ctor] .
-  eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) >
-     } in time T
-      |=  reaction RID invoked = true .
-      
-    eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) > }
-      |=  reaction RID invoked = true .    
+  including LF-PROP .
 endom
 
 

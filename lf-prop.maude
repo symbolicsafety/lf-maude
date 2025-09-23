@@ -1,0 +1,46 @@
+
+omod LF-PROP is
+  pr SATISFACTION .
+  pr UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
+
+  subsort ClockedSystem < State .
+
+  var REST : Configuration .
+  var REACTORID : ReactorId .
+  var VAR : VarId .
+  var VAL : Value .
+  var RS : ReactorState .
+  var T : Time .
+  var O : Oid .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
+  vars EQ1 EQ2 : EQueue .
+  var EVENT : Event .
+  var TAG : Tag .
+
+  --- generic atomic proposition:
+
+  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
+
+  eq {REST
+      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID is VAL = true . 
+
+  --- An event is in the event queue:
+  op _isInQueue : Event -> Prop [ctor] .
+
+  eq {REST
+      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
+     |=  EVENT isInQueue = true .
+
+  --- NEW Feb25: a reaction is/was invoken in this/last step:
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}
+     |=  reaction RID invoked = true .
+
+  --- Extend to timed/time-bounded cases
+  ceq STATE:State   in time T |= P:Prop = true if STATE:State |= P:Prop .
+  ceq STATE:State timeBound T |= P:Prop = true if STATE:State |= P:Prop .
+endom

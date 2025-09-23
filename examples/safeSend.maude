@@ -73,24 +73,12 @@ omod TIME-BOUNDED-SAFE-SEND is
   eq timeBound = 1 .
 endom  
 
-in model-checker.maude
+
 
 omod MODEL-CHECK-SAFE-SEND is
   including MODEL-CHECKER .
   including TIME-BOUNDED-SAFE-SEND .
-  subsort ClockedSystem < State .
-
-  var REST : Configuration .
-  var RID : ReactionId .
-  var RIDS : ReactionIdSet .
-  var T : Time .
-  var O : Oid .
-
-  op reaction_invoked : ReactionId -> Prop [ctor] .
-  eq {REST
-      < O : Invoked | reactions : (RID ; RIDS) >
-     } in time T
-      |=  reaction RID invoked = true .
+  including LF-PROP .
 endom
 
 red modelCheck(initSystem in time 0, <> (reaction (client . 2) invoked)) .
