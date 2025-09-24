@@ -55,7 +55,7 @@ endom
 
 
 red modelCheck(initSystem in time 0,
-               <> (brakesApplied in brakes is [1])) .
+               <> (brakesApplied in brakes == [1])) .
 
 
 
@@ -69,12 +69,12 @@ red modelCheck(initSystem in time 0,
 
 --- New Feb25:
 red modelCheck(initSystem in time 0,
-               [] ((reaction (lidar . 1) invoked) -> (<> (brakesApplied in brakes is [1])))) .
+               [] (((lidar . 1) invoked) -> (<> (brakesApplied in brakes == [1])))) .
 
 --- property in Lee paper:
 red modelCheck(initSystem in time 0,
-               [] ((reaction (lidar . 1) invoked /\ requestStop in adasProcessor is [1])
-	       -> <> brakesApplied in brakes is [1])) .
+               [] (((lidar . 1) invoked /\ requestStop in adasProcessor == [1])
+	       -> <> brakesApplied in brakes == [1])) .
 
 
 --- Another inttesting property is that after the pedal has been pressed, the brakles are

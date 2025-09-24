@@ -97,10 +97,10 @@ omod MODEL-CHECK-PINGPONG is
   including LF-PROP .
 endom
 
-red modelCheck(initSystem, [] ((reaction (ping . 2) invoked) => O(~ (reaction (ping . 2) invoked)))) .
+red modelCheck(initSystem, [] (((ping . 2) invoked) => O(~ ((ping . 2) invoked)))) .
 
 ***(    Result:
-reduce in MODEL-CHECK-PINGPONG : modelCheck(initSystem, [](reaction ping . 2 invoked => O ~ reaction ping . 2 invoked)) .
+reduce in MODEL-CHECK-PINGPONG : modelCheck(initSystem, [](ping . 2 invoked => O ~ ping . 2 invoked)) .
 rewrites: 1821 in 2ms cpu (1ms real) (910500 rewrites/second)
 result ModelCheckResult: counterexample( ... ) 
 )***

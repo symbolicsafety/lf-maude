@@ -122,27 +122,14 @@ omod TIME-BOUNDED-RSU is
   eq timeBound = 10 .
 endom  
 
-in model-checker.maude
 
 omod MODEL-CHECK-RSU is
   including MODEL-CHECKER .
   including TIME-BOUNDED-RSU .
-  subsort ClockedSystem < State .
-
-  var REST : Configuration .
-  vars N N1 N2 : Nat .
-  var T : Time .
-  vars O O1 O2 : RPortId .
-
-  op inport_is_ : RPortId Nat -> Prop [ctor] .
-  eq {REST 
-        < vehicle1 : Reactor | inports : < O1 : Port | value : [N1] > >
-        < vehicle2 : Reactor | inports : < O2 : Port | value : [N2] > >
-    } in time T
-       |= inport O is N = (N1 == N) and (N2 == N) and (O == O1) and (O == O2) .
+  including LF-PROP .
 endom
 
-red modelCheck(initSystem in time 0, [] (~ inport grant is 1)) .
+red modelCheck(initSystem in time 0, [] (~ (grant in vehicle1 == [1] /\ grant in vehicle2 == [1]))) .
 
 ***(    Result:
 reduce in MODEL-CHECK-RSU : modelCheck(initSystem in time 0, []~ inport grant is 1) .

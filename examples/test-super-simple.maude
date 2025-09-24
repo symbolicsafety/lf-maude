@@ -86,9 +86,9 @@ omod MODEL-CHECK-TRAIN3 is
 endom
 
 
---- red modelCheck(initSystem, <> (locked in door is [true])) .
+--- red modelCheck(initSystem, <> (locked in door == [true])) .
 
---- red modelCheck(initSystem, <> (locked in door is [true])) .
+--- red modelCheck(initSystem, <> (locked in door == [true])) .
 --- gives counterexample, as Marjan said it would.
 --- however, it seems to be the trivial counterxample,
 --- where the external button, to start the train, is never pushed.
@@ -102,11 +102,10 @@ endom
 
 red modelCheck(initSystem,
                (((~ event(controller, external, [false]) isInQueue) W
-	       (locked in door is [true]))
+	       (locked in door == [true]))
 	       /\ ([] <> (event(controller, external, [true]) isInQueue)))
-	       ->  <> (locked in door is [true])) .
+	       ->  <> (locked in door == [true])) .
 
-eof
 
 --- Holds when period of extOpen is 11 and external is NOT timeNonDet.
 --- Does not hold when external is timeNonDet.
@@ -118,6 +117,6 @@ eof
 
 red modelCheck(initSystem,
                 ([] <> (event(controller, external, [true]) isInQueue))
-	       ->  <> (locked in door is [true])) .
+	       ->  <> (locked in door == [true])) .
 
 

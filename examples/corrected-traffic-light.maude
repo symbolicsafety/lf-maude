@@ -131,7 +131,7 @@ omod MODEL-CHECK-TRAFFIC-LIGHT is
 endom
 
 red modelCheck(initSystem in time 0,
-               <> (mode in trafficLight is [1])) .
+               <> (mode in trafficLight == [1])) .
 
 
 *** return true for bound 5.
@@ -149,7 +149,7 @@ endom
 *** The traffic light is infinitely often in RED AND infinitely often in GREEN!!!
 
 red modelCheck(initSystem in time 0,
-               ([] <> (mode in trafficLight is [1])) /\ ([] <> (mode in trafficLight is [0]))) .
+               ([] <> (mode in trafficLight == [1])) /\ ([] <> (mode in trafficLight == [0]))) .
 
 
 *** retuens true!!!

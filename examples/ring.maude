@@ -118,7 +118,7 @@ omod MODEL-CHECK-RING is
   including LF-PROP .
 endom
 
-red modelCheck(initSystem in time 0, <> (reaction (source . 3) invoked)) .
+red modelCheck(initSystem in time 0, <> ((source . 3) invoked)) .
 
 ***(    Result:
 reduce in MODEL-CHECK-RING : modelCheck(initSystem in time 0, <> reaction source . 3 invoked) .

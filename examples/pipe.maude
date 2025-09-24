@@ -132,32 +132,17 @@ spec="G[0, 1 sec](!(Pipe_node1_count <= 1 && Pipe_node2_count <= 1 && Pipe_node3
 
 )***
 
-in model-checker.maude
 
 
 omod MODEL-CHECK-PIPE is
   including MODEL-CHECKER .
   including TIME-BOUNDED-PIPE .
-  subsort ClockedSystem < State .
-
-  --- generic atomic proposition:
-
-  var REST : Configuration .
-  vars N N1 N2 N3 N4 N5 : Nat .
-  vars RS1 RS2 RS3 RS4 RS5 : ReactorState .
-  var T : Time .
-  
-  op countersLessThan_ : Nat -> Prop [ctor] .
-  eq {REST  < node1 : Reactor | state : (count |-> [ N1 ]) ; RS1 >
-            < node2 : Reactor | state : (count |-> [ N2 ]) ; RS2 >
-            < node3 : Reactor | state : (count |-> [ N3 ]) ; RS3 >
-            < node4 : Reactor | state : (count |-> [ N4 ]) ; RS4 >
-            < node5 : Reactor | state : (count |-> [ N5 ]) ; RS5 >} in time T
-       |= countersLessThan N = (N1 <= N) and (N2 <= N) and (N3 <= N) and (N4 <= N) and (N5 <= N) .
+  including LF-PROP .
 endom
 
 
-red modelCheck(initSystem in time 0, [] (countersLessThan 1)) .
+red modelCheck(initSystem in time 0, 
+    [] (count in node1 <= [1] /\ count in node2 <= [1] /\ count in node3 <= [1] /\ count in node4 <= [1] /\ count in node5 <= [1])) .
 
 ***(  Result:
 reduce in MODEL-CHECK-PIPE : modelCheck(initSystem in time 0, []countersLessThan 1) .

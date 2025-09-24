@@ -126,7 +126,7 @@ endom
 
 
 red modelCheck(initSystem in time 0,
-               <> (brakesApplied in brakes is [1])) .
+               <> (brakesApplied in brakes == [1])) .
 
 --- exactly what Edward Lee wanted
 

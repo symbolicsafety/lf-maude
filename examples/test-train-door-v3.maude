@@ -115,13 +115,12 @@ endom
 
 red modelCheck(initSystem,
                (((~ event(controller, external, [false]) isInQueue) W
-	       (locked in door is [true]))
+	       (locked in door == [true]))
 	       /\ ([] <> (event(controller, external, [true]) isInQueue)))
-	       ->  <> (locked in door is [true])) .
+	       ->  <> (locked in door == [true])) .
 
 
-
-
+eof
 
 
 --- Holds when period of extOpen is 11 and external is NOT timeNonDet.
@@ -131,19 +130,18 @@ red modelCheck(initSystem,
 
 --- Note that the simpler property will not hold even with good
 --- parameters, since we may have many false external events:
----(
 red modelCheck(initSystem,
                 ([] <> (event(controller, external, [true]) isInQueue))
-	       ->  <> (locked in door is [true])) .
-)---
+	       ->  <> (locked in door == [true])) .
 
 
----(  EMSOFT DEADLINE STUFF:
-red modelCheck(initSystem, <> (locked in door is [false] /\ (door . 2) invoked)) .
+
+---  EMSOFT DEADLINE STUFF:
+red modelCheck(initSystem, <> (locked in door == [false] /\ (door . 2) invoked)) .
+
 --- returns counterexample
-red modelCheck(initSystem, ~ <> (locked in door is [false] /\ (door . 2) invoked)) .
+red modelCheck(initSystem, ~ <> (locked in door == [false] /\ (door . 2) invoked)) .
 
 --- Now I change extOpen nondet to false, and model check.
 --- Remember to reset this value back.
-red modelCheck(initSystem, <> [] (locked in door is [false])) .
-)---
+red modelCheck(initSystem, <> [] (locked in door == [false])) .

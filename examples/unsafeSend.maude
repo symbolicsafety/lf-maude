@@ -81,7 +81,7 @@ omod MODEL-CHECK-UNSAFE-SEND is
   including LF-PROP .
 endom
 
-red modelCheck(initSystem in time 0, <> (reaction (client . 2) invoked)) .
+red modelCheck(initSystem in time 0, <> ((client . 2) invoked)) .
 
 ***(    Result:
 reduce in MODEL-CHECK-UNSAFE-SEND : modelCheck(initSystem in time 0, <> reaction client . 2 invoked) .

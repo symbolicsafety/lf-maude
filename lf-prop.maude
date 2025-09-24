@@ -5,35 +5,74 @@ omod LF-PROP is
 
   subsort ClockedSystem < State .
 
-  var REST : Configuration .
+  var REST INPORTS : Configuration .
   var REACTORID : ReactorId .
   var VAR : VarId .
-  var VAL : Value .
+  var VAL VAL' : Value .
+  var RVAR : RVarId .
+  var RVAL RVAL' : Value .
   var RS : ReactorState .
   var T : Time .
   var O : Oid .
+  var PI : PortId .
+  var RPI : RPortId .
   var RID : ReactionId .
   var RIDS : ReactionIdSet .
   vars EQ1 EQ2 : EQueue .
   var EVENT : Event .
   var TAG : Tag .
 
-
----(
-  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
-  op reaction_invoked : ReactionId -> Prop [ctor] .
-  op _isInQueue : Event -> Prop [ctor] .
-  op inport_is_ : RPortId Nat -> Prop [ctor] .
-)---
-
-
   --- generic atomic proposition:
 
-  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_==_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_!=_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_<=_ : RVarId ReactorId RatValue -> Prop [ctor] .
+  op _in_<_  : RVarId ReactorId RatValue -> Prop [ctor] .
+  op _in_>=_ : RVarId ReactorId RatValue -> Prop [ctor] .
+  op _in_>_  : RVarId ReactorId RatValue -> Prop [ctor] .
 
-  eq {REST
-      < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
-     |= VAR in REACTORID is VAL = true . 
+  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID == VAL = true . 
+
+  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID != VAL' = (VAL =/= VAL') .
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID <= RVAL' = (RVAL <= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID < RVAL' = (RVAL < RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID >= RVAL' = (RVAL >= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
+
+  op _in_==_ : PortId ReactorId Value -> Prop [ctor] .
+  op _in_!=_ : PortId ReactorId Value -> Prop [ctor] .
+  op _in_<=_ : RPortId ReactorId RatValue -> Prop [ctor] .
+  op _in_<_  : RPortId ReactorId RatValue -> Prop [ctor] .
+  op _in_>=_ : RPortId ReactorId RatValue -> Prop [ctor] .
+  op _in_>_  : RPortId ReactorId RatValue -> Prop [ctor] .
+
+  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
+     |= PI in REACTORID == VAL = true . 
+
+  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
+     |= PI in REACTORID != VAL' = (VAL =/= VAL') . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID <= RVAL' = (RVAL <= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID < RVAL' = (RVAL < RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID >= RVAL' = (RVAL >= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
 
   --- An event is in the event queue:
   op _isInQueue : Event -> Prop [ctor] .
@@ -43,11 +82,11 @@ omod LF-PROP is
      |=  EVENT isInQueue = true .
 
   --- NEW Feb25: a reaction is/was invoken in this/last step:
-  op reaction_invoked : ReactionId -> Prop [ctor] .
+  op _invoked : ReactionId -> Prop [ctor] .
 
   eq {REST
       < O : Invoked | reactions : (RID ; RIDS) >}
-     |=  reaction RID invoked = true .
+     |=  RID invoked = true .
 
   --- Extend to timed/time-bounded cases
   ceq STATE:State   in time T |= P:Prop = true if STATE:State |= P:Prop .

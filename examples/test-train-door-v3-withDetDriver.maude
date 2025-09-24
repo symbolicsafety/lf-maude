@@ -70,5 +70,5 @@ omod MODEL-CHECK-TRAIN3 is
 endom
 
 
-red modelCheck(initSystem, <> (hasBeenLocked in door is [true])) .
+red modelCheck(initSystem, <> (hasBeenLocked in door == [true])) .
 

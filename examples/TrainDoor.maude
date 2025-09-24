@@ -87,7 +87,7 @@ spec="(!TrainDoor_t_reaction_0)U[0, 1 sec](TrainDoor_d_reaction_0)", expect=fals
 
 )***
 
-red modelCheck(initSystem, ~ (reaction (train . 1) invoked) U (reaction (door . 1) invoked)) .
+red modelCheck(initSystem, ~ ((train . 1) invoked) U ((door . 1) invoked)) .
 
 
 ***( Result:
