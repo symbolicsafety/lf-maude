@@ -18,6 +18,15 @@ omod LF-PROP is
   var EVENT : Event .
   var TAG : Tag .
 
+
+---(
+  op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
+  op reaction_invoked : ReactionId -> Prop [ctor] .
+  op _isInQueue : Event -> Prop [ctor] .
+  op inport_is_ : RPortId Nat -> Prop [ctor] .
+)---
+
+
   --- generic atomic proposition:
 
   op _in_is_ : VarId ReactorId Value -> Prop [ctor] .
