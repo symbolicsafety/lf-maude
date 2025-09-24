@@ -88,9 +88,13 @@ omod LF-PROP is
       < O : Invoked | reactions : (RID ; RIDS) >}
      |=  RID invoked = true .
 
+  --- Default false case
+  eq STATE:State |= P:Prop = false [owise] .
+
   --- Extend to timed/time-bounded cases
   ceq STATE:State   in time T |= P:Prop = true if STATE:State |= P:Prop .
   ceq STATE:State timeBound T |= P:Prop = true if STATE:State |= P:Prop .
+
 endom
 
 
