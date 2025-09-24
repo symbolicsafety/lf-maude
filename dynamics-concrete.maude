@@ -348,6 +348,57 @@ omod UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS is
    /\ CONF1 =/= none .      --- implied by typing of T
 endom
 
+
+*** Case 5: unbounded and time-bounded analysis.
+*** The user must do TWO things:
+***    a. for unbounded analysis start with state {...} timeBound INF
+***    b. for time-bounded analysis set the value after 'timeBound' to the desired value.
+
+omod TIMED-SIMULATION-DYNAMICS is
+  including DYNAMICS-WITHOUT-TICK .
+
+  vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
+  vars T T1 : Time .
+  var T2 : TimeInf .
+  vars E Q RXNS : Oid .
+  var N : Nat .
+  var EVENTS : Events .
+  var QUEUE : EQueue .
+
+   
+  op _timeBound_ : ClockedSystem TimeInf -> ClockedSystem [ctor] .
+
+
+  crl [tick] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
+      < RXNS : Invoked | >} timeBound T2
+   =>
+     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
+                                 :: decreaseTags(QUEUE, T) >
+      < RXNS : Invoked | reactions : none >} in time T timeBound (T2 monus T)
+   if T := minimum(T1, smallestTimer(CONF1), T2)
+   /\ T gt zero .
+
+
+  crl [extraTickRuleForPhysActs] :
+     {< E : Environment | physicalActions : CONF1 >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | >} timeBound T2
+   =>
+     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
+      REACTORS-AND-CONNECTIONS
+      < Q : EventQueue | queue : empty >
+      < RXNS : Invoked | reactions : none >} in time T timeBound (T2 monus T)
+   if T := minimum(smallestTimer(CONF1), T2)
+   /\ T gt zero
+   /\ CONF1 =/= none .      --- implied by typing of T
+endom
+
 --- NOTICE: In general, our states are tuples
 --- (newState, reactionsInvokedToReachNewState)
 --- so we should be aware of the order.  If you want
