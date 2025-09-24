@@ -358,8 +358,8 @@ omod TIMED-SIMULATION-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T T1 : Time .
-  var T2 : TimeInf .
+  vars T T1 T3 : Time .
+  vars TI2 TI : TimeInf .
   vars E Q RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
@@ -368,19 +368,20 @@ omod TIMED-SIMULATION-DYNAMICS is
    
   op _timeBound_ : ClockedSystem TimeInf -> ClockedSystem [ctor] .
 
+  eq {C:Configuration} timeBound TI = {C:Configuration} in time 0 timeBound TI .
 
   crl [tick] :
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
-      < RXNS : Invoked | >} timeBound T2
+      < RXNS : Invoked | >} in time T3 timeBound TI2
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
                                  :: decreaseTags(QUEUE, T) >
-      < RXNS : Invoked | reactions : none >} in time T timeBound (T2 monus T)
-   if T := minimum(T1, smallestTimer(CONF1), T2)
+      < RXNS : Invoked | reactions : none >} in time (T + T3) timeBound (TI2 monus T)
+   if T := minimum(T1, smallestTimer(CONF1), TI2)
    /\ T gt zero .
 
 
@@ -388,13 +389,13 @@ omod TIMED-SIMULATION-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | >} timeBound T2
+      < RXNS : Invoked | >} in time T3 timeBound TI2
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | reactions : none >} in time T timeBound (T2 monus T)
-   if T := minimum(smallestTimer(CONF1), T2)
+      < RXNS : Invoked | reactions : none >} in time (T + T3) timeBound (TI2 monus T)
+   if T := minimum(smallestTimer(CONF1), TI2)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T
 endom
