@@ -124,15 +124,15 @@ omod DYNAMICS-WITHOUT-TICK is
    
   *** Here starts helper functions for analysis
   op _._in_ : ReactorId VarId Configuration -> Value .
-  op _inEQueue_ : Event Configuration -> Bool .
+  op _inQueue_ : Event Configuration -> Bool .
   op _invoked_ : ReactionId Configuration -> Bool .
    
   eq REACTORID . VAR in REST
       < REACTORID : Reactor | state : (VAR |-> VAL) ; RS > = VAL .
       
-  eq EVENT inEQueue REST
+  eq EVENT inQueue REST
       < O : EventQueue | queue : (EQ1 :: ((EVENT EVENTS) at TAG) :: EQ2) > = true .
-  eq EVENT inEQueue REST = false [owise] .    
+  eq EVENT inQueue REST = false [owise] .    
       
   eq RID invoked REST
       < O : Invoked | reactions : (RID ; RIDS) > = true .

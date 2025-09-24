@@ -20,6 +20,7 @@ omod LF-PROP is
   var RIDS : ReactionIdSet .
   vars EQ1 EQ2 : EQueue .
   var EVENT : Event .
+  var EVENTS : Events .
   var TAG : Tag .
 
   --- generic atomic proposition:
@@ -75,11 +76,11 @@ omod LF-PROP is
      |= RPI in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
 
   --- An event is in the event queue:
-  op _isInQueue : Event -> Prop [ctor] .
+  op _inQueue : Event -> Prop [ctor] .
 
   eq {REST
-      < O : EventQueue | queue : (EQ1 :: (EVENT at TAG) :: EQ2) >}
-     |=  EVENT isInQueue = true .
+      < O : EventQueue | queue : (EQ1 :: ((EVENT EVENTS) at TAG) :: EQ2) >}
+     |=  EVENT inQueue = true .
 
   --- NEW Feb25: a reaction is/was invoken in this/last step:
   op _invoked : ReactionId -> Prop [ctor] .

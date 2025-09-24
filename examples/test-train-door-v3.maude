@@ -114,9 +114,9 @@ endom
 --- that the door is locked:
 
 red modelCheck(initSystem,
-               (((~ event(controller, external, [false]) isInQueue) W
+               (((~ event(controller, external, [false]) inQueue) W
 	       (locked in door == [true]))
-	       /\ ([] <> (event(controller, external, [true]) isInQueue)))
+	       /\ ([] <> (event(controller, external, [true]) inQueue)))
 	       ->  <> (locked in door == [true])) .
 
 
@@ -131,7 +131,7 @@ eof
 --- Note that the simpler property will not hold even with good
 --- parameters, since we may have many false external events:
 red modelCheck(initSystem,
-                ([] <> (event(controller, external, [true]) isInQueue))
+                ([] <> (event(controller, external, [true]) inQueue))
 	       ->  <> (locked in door == [true])) .
 
 
