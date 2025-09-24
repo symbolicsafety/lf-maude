@@ -12,6 +12,7 @@ omod LF-PROP is
   var RVAL RVAL' : Value .
   var RS : ReactorState .
   var T : Time .
+  var TI : TimeInf .
   var O : Oid .
   var PI : PortId .
   var RPI : RPortId .
@@ -92,8 +93,8 @@ omod LF-PROP is
   eq STATE:State |= P:Prop = false [owise] .
 
   --- Extend to timed/time-bounded cases
-  ceq STATE:State   in time T |= P:Prop = true if STATE:State |= P:Prop .
-  ceq STATE:State timeBound T |= P:Prop = true if STATE:State |= P:Prop .
+  ceq STATE:State   in time TI |= P:Prop = true if STATE:State |= P:Prop .
+  ceq STATE:State timeBound TI |= P:Prop = true if STATE:State |= P:Prop .
 
 endom
 
