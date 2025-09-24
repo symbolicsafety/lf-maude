@@ -6,6 +6,7 @@ omod LF-PROP is
 
   var REST INPORTS : Configuration .
   var REACTORID : ReactorId .
+  var AT : ActionTrigger .
   var VAR : VarId .
   var VAL VAL' : Value .
   var RVAR : RVarId .
@@ -81,6 +82,13 @@ omod LF-PROP is
   eq {REST
       < O : EventQueue | queue : (EQ1 :: ((EVENT EVENTS) at TAG) :: EQ2) >}
      |=  EVENT inQueue = true .
+
+  op event(_,_)inQueue : ReactorId ActionTrigger -> Prop [ctor] .
+
+  eq {REST
+      < O : EventQueue | queue : (EQ1 :: ((event(REACTORID,AT,VAL) EVENTS) at TAG) :: EQ2) >}
+     |=  event(REACTORID, AT) inQueue = true .
+
 
   --- NEW Feb25: a reaction is/was invoken in this/last step:
   op _invoked : ReactionId -> Prop [ctor] .
