@@ -41,17 +41,18 @@ reactor Door {
 }
 
 @maudePhysAct(name="external", inReactor="c", vals="true, false", period=10, timeNonDet=true)
-@maudePhysAct(name="extOpen", inReactor="door", vals="true", period=11, timeNonDet=true)
-@maude(analysis="simulation", rewrites=10)
-@maude(analysis="reachability", goal="locked in door == true")
-@maude(analysis="reachability", goal="(locked in door == true) /\ (isOpen in door == true)")
-@maude(analysis="reachability", timeBound=150, goal="(locked in door == false) /\ (door.2 invoked)")
-@maude(analysis="ltl", goal="<>(locked in door == true)")
-@maude(analysis="ltl", goal="(((~ (event(c, external, false) inQueue)) W (locked in door == true))) /\ ([] (<> (event(c, external, true) inQueue))) -> <>(locked in door == true)")
+@maudePhysAct(name="extOpen", inReactor="d", vals="true", period=11, timeNonDet=true)
+//@maude(analysis="simulation", rewrites=10)
+//@maude(analysis="reachability", goal="locked in d == true")
+//@maude(analysis="reachability", goal="(locked in d == true) /\ (isOpen in d == true)")
+//@maude(analysis="reachability", timeBound=150, goal="(locked in d == false) /\ (d.2 invoked)")
+//@maude(analysis="ltl", goal="<>(locked in d == true)")
+//@maude(analysis="ltl", goal="(((~ (event(c, external, false) inQueue)) W (locked in d == true))) /\ ([] (<> (event(c, external, true) inQueue))) -> <>(locked in d == true)")
+@maude(analysis="ltl", goal="<> ((locked in d == false) /\ ((d.2) invoked))")
 
 main reactor {
   c = new Controller()
-  door = new Door()
+  d = new Door()
   c.lock -> d.lock after 5 nsec
   c.unlock -> d.unlock after 4 nsec
   c.open -> d.open after 7 nsec
