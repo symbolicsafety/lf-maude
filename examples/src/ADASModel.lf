@@ -1,0 +1,90 @@
+target C;
+
+reactor Camera {
+    output out:int;
+    state  frame:int;
+    timer  t(0, 17 nsec); // 60 fps
+    reaction(t) -> out {=
+        // Capture a frame.
+        self->frame = 1;
+        lf_set(out, self->frame);
+    =}
+}
+
+reactor LiDAR {
+    output out:int;
+    state  frame:int;
+    timer  t(0, 34 nsec); // 30 fps
+    reaction(t) -> out {=
+        // Capture a frame.
+        self->frame = 2;
+        lf_set(out, self->frame);
+    =}
+}
+
+reactor Pedal {
+    output out:int;
+    physical action a;
+    reaction(a) -> out {=
+        lf_set(out, 1); =}
+}
+
+reactor Brakes {
+    input inADAS:int;
+    input inPedal:int;
+    state brakesApplied:int = 0;
+    reaction(inADAS, inPedal) {=
+        // Actuate brakes.
+        self->brakesApplied = 1;
+    =}
+}
+
+reactor ADASProcessor {
+    input in1:int;
+    input in2:int;
+    output out1:int;
+    output out2:int;
+    logical action a(50 nsec);
+    state requestStop:int;
+    reaction(in1,in2) -> a {=
+        // ... Detect danger
+		// and request stop.
+        lf_schedule(a, 0);
+        self->requestStop = 1;
+    =}
+    reaction(a) -> out1, out2 {=
+        if (self->requestStop == 1)
+            lf_set(out1, 1);
+    =} 
+}
+
+reactor Dashboard {
+    input in:int;
+    state received:int;
+    reaction(in) {=
+        self->received = 1; =}
+}
+
+@maudePhysAct(name="a", inReactor="p", vals="69, 71", period=5, timeNonDet=true)
+@maude(analysis="simulation", rewrites=51)
+@maude(analysis="reachability", timeBound=55, goal="brakesApplied in b == 1")
+@maude(analysis="reachability", timeBound=55, goal="event(p, a) inQueue")
+@maude(analysis="ltl", timeBound=55, goal="<>(brakesApplied in b == 1)")
+@maude(analysis="ltl",  goal="[] (((l.1) invoked) -> (<> (brakesApplied in b == 1)))")
+@maude(analysis="ltl",  goal="[](((l.1) invoked /\ requestStop in v == 1) -> (<> brakesApplied in b == 1))")
+@maude(analysis="reachability",  goal="(p.1 invoked) /\ (brakesApplied in b != 1)")
+
+
+main reactor ADASModel {
+    c = new Camera();
+    l = new LiDAR();
+    v = new ADASProcessor();
+    b = new Brakes();
+    d = new Dashboard();
+    p = new Pedal();
+    l.out -> v.in1; 
+    c.out -> v.in2;
+    v.out2 -> d.in;
+    v.out1 -> b.inADAS after 5 nsec;
+    p.out -> b.inPedal;
+}
