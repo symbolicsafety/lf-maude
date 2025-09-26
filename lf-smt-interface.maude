@@ -1,0 +1,121 @@
+
+  
+fmod LF-SMT-INTERFACE is
+  protecting LF-VALUE-TIME .
+  protecting ALT-SMT-CHECK .
+
+  --- to quickly check for obvious unsat for the symbolic case
+  op checkNotFalse : BoolValue ~> Bool .
+  eq checkNotFalse(BV:BoolValue) = not (BV:BoolValue == falseVal) .
+
+  --- 
+  op smtCheck : BoolValue ~> Bool .
+  eq smtCheck([B:BoolExp]) = smtCheck(B:BoolExp) .
+
+  --- SMT variable ids for time
+  op tv : Nat -> SMTVarId . 
+endfm
+
+
+omod VAR-GEN is
+  protecting NAT .
+
+  class VarGen | counter : Nat .
+endom
+
+
+omod SYM-INFRA is
+  protecting LF-ABS-VALUE-TIME .
+  protecting VAR-GEN .
+
+
+  class SymInfra | constraint : BoolValue, tickApplicable : Bool .
+  subclass SymInfra < VarGen .
+endom
+
+
+
+fmod LF-FME-INTERFACE is
+  protecting FOURIER-MOTZKIN .
+  protecting LF-SMT-INTERFACE .
+
+
+  vars RE1 RE2 RE3 : RExp .
+  vars BE1 BE2 : BoolExp .
+  var VAR : RVar .
+  var SVAR : SetVar .
+  var CR : ConjRelLinRExp .
+  vars SCR SCR' : SetConjRelLinRExp .
+  vars R R' S : Rat .
+  var N : Nat .
+
+
+  sort SetVar .
+  subsort RVar < SetVar .
+  op empty : -> SetVar .
+  op _,_ : SetVar SetVar -> SetVar [ctor assoc comm id: empty] .
+  eq VAR, VAR = VAR .
+
+  sort SetConjRelLinRExp .
+  subsort ConjRelLinRExp < SetConjRelLinRExp .
+  op emptyRes : -> SetConjRelLinRExp [ctor] .
+  op _;;;_ : SetConjRelLinRExp SetConjRelLinRExp -> SetConjRelLinRExp [ctor comm assoc id: emptyRes] .
+  eq CR ;;; CR = CR .
+
+
+  op tvars : BoolExp ~> SetVar .
+  op tvars : RExp    ~> SetVar [memo] .
+  eq tvars(true)  = empty .
+  eq tvars(BE1 and BE2) = tvars(BE1), tvars(BE2) .
+  eq tvars(r(tv(N))) = r(tv(N)) .
+  eq tvars(RE1 <= RE2)  = tvars(RE1), tvars(RE2).
+  eq tvars(RE1 < RE2)   = tvars(RE1), tvars(RE2).
+  eq tvars(RE1 >= RE2)  = tvars(RE1), tvars(RE2).
+  eq tvars(RE1 > RE2)   = tvars(RE1), tvars(RE2).
+  eq tvars(RE1 + RE2) = tvars(RE1) , tvars(RE2) .
+  eq tvars(RE1 - RE2) = tvars(RE1) , tvars(RE2) .
+  eq tvars(RE1 * RE2) = tvars(RE1) , tvars(RE2) .
+  eq tvars(RE1 / RE2) = tvars(RE1) , tvars(RE2) .
+  eq tvars(RE1) = empty [owise] .
+  eq tvars(BE1) =  empty [owise] .
+
+
+  op qe : BoolValue ~> SetConjRelLinRExp .
+  op qeAux : SetConjRelLinRExp SetConjRelLinRExp ~> SetConjRelLinRExp .
+  eq qe([BE1]) = qeAux(dnfset(BE1), emptyRes) .
+  eq qeAux(emptyRes, SCR) = SCR .
+  eq qeAux(CR ;;; SCR, SCR') = qeAux(SCR, SCR' ;;; fme-all(tvars(CR), CR)) .
+
+
+  op fme-all : SetVar ConjRelLinRExp ~> ConjRelLinRExp .
+  eq fme-all(empty, BE1) = BE1 .
+  eq fme-all((VAR, SVAR), BE1) = fme(VAR, fme-all(SVAR, BE1)) .
+
+
+  op dnfset : BoolExp ~> SetConjRelLinRExp .
+  eq dnfset(false) = emptyRes .
+  eq dnfset(CR) = CR .
+  eq dnfset(CR and (BE1 or BE2)) = dnfset(CR and BE1) ;;; dnfset(CR and BE2) .
+
+
+  op hrsim : SetConjRelLinRExp ~> SetConjRelLinRExp .
+  eq hrsim((0 <= R + - VAR) and CR ; SCR) = hrsim((VAR <= R) and CR ; SCR) .
+  eq hrsim((0 <  R + - VAR) and CR ; SCR) = hrsim((VAR <  R) and CR ; SCR) .
+  eq hrsim((0 >= R + - VAR) and CR ; SCR) = hrsim((VAR >= R) and CR ; SCR) .
+  eq hrsim((0 >  R + - VAR) and CR ; SCR) = hrsim((VAR >  R) and CR ; SCR) .
+
+---(
+  ceq hrsim((RE1 + R * VAR <= RE2) and CR ; SCR) = hrsim((RE1 <= RE2 + (-1) * R * VAR) and CR ; SCR) if R < 0 .
+  ceq hrsim((RE1 + R * VAR <  RE2) and CR ; SCR) = hrsim((RE1 <  RE2 + (-1) * R * VAR) and CR ; SCR) if R < 0 .
+  ceq hrsim((RE1 + R * VAR >= RE2) and CR ; SCR) = hrsim((RE1 >= RE2 + (-1) * R * VAR) and CR ; SCR) if R < 0 .
+  ceq hrsim((RE1 + R * VAR >  RE2) and CR ; SCR) = hrsim((RE1 >  RE2 + (-1) * R * VAR) and CR ; SCR) if R < 0 .
+)---
+
+  ceq hrsim((VAR <= R) and (VAR <= R') and CR ; SCR) = hrsim(VAR <= R and CR ; SCR) if R <= R' .
+  ceq hrsim((VAR <  R) and (VAR <  R') and CR ; SCR) = hrsim(VAR <  R and CR ; SCR) if R <= R' .
+  ceq hrsim((VAR >= R) and (VAR >= R') and CR ; SCR) = hrsim(VAR <= R and CR ; SCR) if R >= R' .
+  ceq hrsim((VAR >  R) and (VAR >  R') and CR ; SCR) = hrsim(VAR <  R and CR ; SCR) if R >= R' .
+
+  eq hrsim(SCR) = SCR [owise] .
+
+endfm

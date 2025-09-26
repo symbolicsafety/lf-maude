@@ -1,0 +1,74 @@
+in TrainDoor_v3-withDetDriver.maude
+
+omod TEST-TRAIN-V3-DET-DRIVER is
+  including TRAINDOOR-V3-DET-DRIVER .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     {< env : Environment |
+           physicalActions :
+                             < (door . extOpen) : PhysAct |
+	                           leftOfPeriod : 0,
+				   period : 3,
+				   --- should be 11, user can block if 2 
+ 				   possibleValues : ([true]),
+				   timeNonDet : true >    ---- should be true
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+omod SIMULATE-TRAIN is
+  including TEST-TRAIN-V3-DET-DRIVER .
+  including SIMULATION-DYNAMICS .
+endom  
+
+
+
+rew [10] initSystem .
+
+
+
+---(
+search [1] initSystem =>*
+             {REST:Configuration
+	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} in time T:Time .
+)--- finds a good state
+
+---(
+omod CLOCKED-TRAIN is
+  including TEST-TRAIN-V3-DET-DRIVER .
+  including TIME-BOUNDED-DYNAMICS  .
+endom
+
+search [1] initSystem in time 0 =>*
+             {REST:Configuration
+	      < door : Reactor | state : (hasBeenLocked |-> [false]) ; RS:ReactorState, ATTS:AttributeSet >
+
+} in time T:Time such that T:Time > 20 .
+
+eof
+)---
+
+omod UNCLOCKED-TRAIN is
+  including TEST-TRAIN-V3-DET-DRIVER .
+  including UNBOUNDED-ANALYSIS-DYNAMICS  .
+endom  
+
+
+
+omod MODEL-CHECK-TRAIN3 is
+  including MODEL-CHECKER .
+  including UNCLOCKED-TRAIN .
+  including LF-PROP .
+endom
+
+
+red modelCheck(initSystem, <> (hasBeenLocked in door == [true])) .
+

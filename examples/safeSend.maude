@@ -1,0 +1,90 @@
+
+omod SAFE-SEND is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops req error : -> RVarId [ctor] .
+  ops client server : -> ReactorId [ctor] .
+  ops in out : -> RPortId [ctor] .
+  ops startup err : -> RActionId [ctor] .
+  op init : -> Configuration .
+
+  eq init
+   = < client : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : req |-> [0],
+	      timers : none,
+	      actions : < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        (reaction when startup --> out do { (req := [1]) ; (out <- req) })
+             reaction when in do { req := [0] } 
+      >
+            
+      < server : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : error |-> [0],
+	      timers : none,
+	      actions : < err : LogicalAction | minDelay : 0, 
+                                            minSpacing : 0, 
+                                            policy : defer, 
+                                            payload : [0] >,
+	      reactions : 
+	        (reaction when in --> out ; err do { 
+	            if (in === [0]) then schedule(err,[0],[0])
+	            else (out <- in) fi
+	         })
+	         reaction when err do { error := [1] }
+      > 
+            
+      (client : out -- 1 --> server : in)
+       server : out --> client : in .
+endom
+
+omod TEST-SAFE-SEND is
+  including SAFE-SEND .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+***( the main property in the LF repository is
+
+spec="(F[0, 1 sec](SafeSend_c_reaction_1))", expect=true
+
+)***
+
+omod TIME-BOUNDED-SAFE-SEND is
+  including TEST-SAFE-SEND .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 1 .
+endom  
+
+
+
+omod MODEL-CHECK-SAFE-SEND is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-SAFE-SEND .
+  including LF-PROP .
+endom
+
+red modelCheck(initSystem in time 0, <> ((client . 2) invoked)) .
+
+***(    Result:
+reduce in MODEL-CHECK-SAFE-SEND : modelCheck(initSystem in time 0, <> reaction client . 2 invoked) .
+rewrites: 171 in 1ms cpu (0ms real) (171000 rewrites/second)
+result Bool: true
+)***

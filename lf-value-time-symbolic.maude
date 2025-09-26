@@ -1,0 +1,72 @@
+
+--- Similar to POSRAT-TIME-DOMAIN with a few differences
+fmod SYM-TIME-DOMAIN-WITH-INF is 
+  including TIME-INF .
+  including ALT-REAL-INTEGER-EXPR .
+
+  --- We assume that non-negativity is given as constraints.
+  --- The domain of relational operators is BoolExp. 
+
+  --- The min and max operators are not declared.
+  --- NzTime cannot be used!
+
+  subsort RExp < Time < TimeInf . --- any real expression can be time
+
+  vars R R' : RExp .
+
+  eq zero = 0 .
+  eq R plus R' = R + R' .
+
+  --- for efficiency purpose, monus is declared as -, and
+  --- assume that R >= R' is always given as a constraint.
+  eq R monus R' = R - R' .  
+  
+  eq R equals R' = (R === R') .
+  eq R le R' = R <= R' .
+  eq R lt R' = R <  R' .
+  eq R ge R' = R >= R' .
+  eq R gt R' = R >  R' .
+endfm
+
+
+fmod LF-VALUE-TIME is
+  including LF-ABS-VALUE-TIME .
+  including LF-EXPR .
+  protecting SYM-TIME-DOMAIN-WITH-INF .
+
+  op [_] : RExp -> RatValue [ctor] .
+  op [_] : BoolExp -> BoolValue [ctor] .
+
+  vars B1 B2 : BoolExp .
+  vars R1 R2 : RExp .
+  var N : IntExp .
+
+  --- abstract values and operations
+  eq trueVal  = [true] .
+  eq falseVal = [false] .
+  eq zeroVal  = [0] .
+
+  eq toTime([R1]) = R1 .
+
+  --- value operations
+  eq [R1] +  [R2] = [R1 +  R2] .
+  eq [R1] *  [R2] = [R1 *  R2] .
+  eq [R1] -  [R2] = [R1 -  R2] .
+
+  eq [R1] <  [R2] = [R1 <  R2] .
+  eq [R1] <= [R2] = [R1 <= R2] .
+  eq [R1] >  [R2] = [R1 >  R2] .
+  eq [R1] >= [R2] = [R1 >= R2] .
+
+  eq [R1] === [R2] = [R1 === R2] .
+  eq [B1] === [B2] = [B1 === B2] .
+
+  eq [R1] ==/= [R2] = [R1 =/== R2] .
+  eq [B1] ==/= [B2] = [B1 =/== B2] .
+
+  eq ! [B1] = [not B1] .
+
+  eq [B1] && [B2] = [B1 and B2] .
+  eq [B1] || [B2] = [B1 or  B2] .
+endfm
+

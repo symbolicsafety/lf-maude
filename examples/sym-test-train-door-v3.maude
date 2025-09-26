@@ -1,0 +1,81 @@
+
+in TrainDoor_v3.maude
+
+omod TEST-TRAIN is
+  including TRAINDOOR-V3 .
+  including DYNAMICS-WITHOUT-TICK .
+---  including TIME-BOUNDED-EVENT-CHECK .
+
+  ops p1 p2 : -> SMTVarId [ctor] . 
+
+  ops env queue rxns sym em : -> Oid [ctor] .
+
+  op initConf : -> Configuration .
+  eq initConf =
+       < env : Environment |
+           physicalActions : < (controller . external) : PhysAct |
+				   possibleValues : bool,
+                                   minSpace : 10,
+                                   clock : INF,
+				   counter : 0 >
+                             < (door . extOpen) : PhysAct |
+ 				   possibleValues : bool,
+                                   minSpace : 12,
+                                   clock : INF,
+				   counter : 0 > 
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : empty >
+       < rxns : Invoked | reactions : none >
+       < sym : SymInfra | constraint : [true], counter : 0, tickApplicable : true >  .
+endom
+
+---rew {initConf} .
+
+
+omod SYM-REACH-TRAIN is
+  including TEST-TRAIN .
+  including SYM-REACH-DYNAMICS .
+
+  var CONST : BoolValue .
+  var V : Value .
+  vars T T' : Time .
+  var RS : ReactorState .
+  var EVENT : Event .
+  var TAG : Tag . 
+  var EQ : EQueue .
+  var O : Oid .
+  vars AS AS' AS'' : AttributeSet .
+  var REST : Configuration .
+  vars REACTORS-AND-CONNECTIONS CONF : Configuration .
+  vars CONST' : BoolValue .
+  vars T0 T1 : Time .
+  var TI : TimeInf .
+  vars E Q PA SYM RXNS EM : Oid .
+  vars N NC : Nat .
+  var EVENTS : Events .
+  vars QUEUE NEW-QUEUE : EQueue .
+  var NZN : NzNat .
+  var REACTORID : ReactorId .
+  var TIMERID : TimerId .
+
+
+  eq timeBound = INF .
+endom  
+
+---search [,7] {initConf} in time 0 =>* {REST} in time T .
+
+
+rew [30] {initConf} in time 0 .
+
+
+
+--- finds a good state
+search [1] 
+    {initConf} in time 0
+=>*
+    {< door : Reactor | state : (locked |-> [true]) ; RS, AS > 
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T 
+such that smtCheck(CONST) .
+

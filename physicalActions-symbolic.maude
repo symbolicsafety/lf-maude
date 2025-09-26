@@ -1,0 +1,109 @@
+
+*** In this version, each physical action specifies a possible value 
+*** to be generated (either a boolean value or a rational number in 
+*** an interval). The envFire operation, declared at the kind level, 
+*** generates a single physical action and a symbolic value.
+
+omod CLOCK is
+  protecting TIME-INF .
+
+  class Clock | clock : TimeInf .
+
+  var O : Oid .
+  var TI : TimeInf .
+  var T : Time .
+  var CONF : Configuration .
+
+  --- increase clocks 
+  op increaseClock : Configuration Time ~> Configuration .
+  eq increaseClock(none, T) = none .
+  eq increaseClock(< O : Clock | clock : TI > CONF, T)
+   = < O : Clock | clock : TI plus T >  increaseClock(CONF, T) .
+endom
+
+
+omod PHYSICAL-ACTIONS is
+  protecting ENVIRONMENTS .
+  protecting LF-EXPR .
+  protecting CLOCK .
+  protecting SYM-INFRA .
+  protecting ABS-EVENT-QUEUE .
+  including LF-SMT-INTERFACE .
+
+  --- Dynamically, each physical action has:
+  ---    * home address
+  ---    * description of a possible value
+  ---    * minimum separation time
+  ---    * a clock to measure a separation time
+  ---    * a counter to generate a new variable
+
+  class PhysAct | possibleValues : PossibleValue,
+                  minSpace : Time .
+  subclass PhysAct < Clock VarGen .
+
+  --- a possible value to be generated is either a boolean value or 
+  --- a rational value in an interval
+  sort PossibleValue .
+  op bool : -> PossibleValue [ctor] .
+  op rat : RatValue RatValue -> PossibleValue [ctor] .
+  ---TODO: also other options, such as any rat, some enumeration, etc.
+
+  subsort PhysActId < Oid .
+
+  op pv : PhysActId Nat -> SMTVarId [ctor] .  --- SMT variable ids
+
+  vars O O2 SYM : Oid .
+  var AI : ActionId .
+  var RI : ReactorId .
+  var PV : PossibleValue .
+  var VAL : Value .
+  vars RV RV' RV'' : RatValue .
+  vars CONST CONST' : BoolValue .
+  var PENV : Object .
+  var CONF : Configuration .
+  var T : Time .
+  var TI : TimeInf .
+  var NC : Nat .
+  var EVENT : Event .
+  var QUEUE : EQueue .
+
+
+  --- An operation to "fire" a single physical action. This will be
+  --- triggered by another rule
+  op envFire : Object ~> Object .
+
+  --- fire ONE of its physical actions with a symbolic value 
+  crl [envFire] : 
+     < O : Environment | 
+        physicalActions : 
+          < (RI . AI) : PhysAct | possibleValues : PV, 
+                                  minSpace : T,
+                                  clock : TI,
+                                  counter : NC > CONF >
+     < O2 : EventQueue | queue : QUEUE >
+     < SYM : SymInfra | constraint : CONST >
+   =>
+     < O : Environment | 
+        physicalActions : 
+          < (RI . AI) : PhysAct | clock : zero, counter : s NC > CONF > 
+     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) >
+     < SYM : SymInfra | constraint : CONST && CONST' && [TI ge T], tickApplicable : true >
+   if {VAL,CONST'} := genSymVal(PV, (RI . AI), NC) 
+   /\ EVENT := event(RI, AI, VAL, trueVal) 
+   /\ smtCheck(CONST && CONST' && [TI ge T]) .
+
+
+
+   ---TODO: currently, TI ge T may generate redundant const..
+
+  sort ValueWithConst .
+  op {_,_} : Value BoolValue -> ValueWithConst [ctor] .
+
+  op genSymVal : PossibleValue PhysActId Nat -> ValueWithConst .
+  eq genSymVal(bool, (RI . AI), NC) 
+   = {[b(pv(RI . AI, NC))], trueVal} .
+  ceq genSymVal(rat(RV, RV'), (RI . AI), NC)
+    = {RV'', (RV <= RV'') && (RV'' <= RV')}
+   if RV'' := [r(pv(RI . AI, NC))] .
+endom
+

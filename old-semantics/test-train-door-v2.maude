@@ -1,0 +1,87 @@
+in dynamics.maude
+
+in TrainDoor_v2.maude
+
+omod TEST-TRAIN is
+  including TRAINDOOR-V2 .
+  including DYNAMICS-WITHOUT-TICK .
+---  including SIMULATION-DYNAMICS .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (controller . external) : PhysAct |
+	                           leftOfPeriod : 0,
+				   period : 50,
+				   possibleValues : ([true] : [false]),
+				   timeNonDet : true > >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup,init, empty) >
+       < rxns : Invoked | reactions : none >} .
+                              
+     
+endom
+
+
+omod SIMULATE-TRAIN is
+  including TEST-TRAIN .
+  including SIMULATION-DYNAMICS .
+endom  
+
+
+red initSystem .
+
+rew [33] initSystem .
+
+
+
+omod UNCLOCKED-TRAIN is
+  including TEST-TRAIN .
+  including UNBOUNDED-ANALYSIS-DYNAMICS  .
+endom  
+
+rew [33] initSystem .
+
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < train : Reactor | state : (moving |-> [true]) ; RS1:ReactorState,
+	                          ATTS1:AttributeSet >
+	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} .
+
+***( Result:
+search in UNCLOCKED-TRAIN : initSystem =>* {REST:Configuration
+< train : Reactor |
+       ATTS1:AttributeSet,
+       state : (RS1:ReactorState ; moving |-> [true]) >
+< door : Reactor |
+       ATTS2:AttributeSet,
+       state : (RS2:ReactorState ; locked |-> [false]) >}  .
+
+No solution.
+states: 17  rewrites: 946 in 4ms cpu (5ms real) (193416 rewrites/second)
+)***
+
+
+
+
+omod TIME-BOUNDED-TRAIN is
+  including TEST-TRAIN .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 149 .
+endom  
+
+
+rew initSystem in time 0 .
+
+
+--- time-bounded reachability
+search initSystem in time 0 =>*
+             {REST:Configuration
+	      < train : Reactor | state : (moving |-> [true]) ; RS1:ReactorState,
+	                          ATTS1:AttributeSet >
+	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} in time T:Time .

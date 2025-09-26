@@ -1,0 +1,80 @@
+*** This is a model of the third train door example given on Figure 7 in
+*** the Verification of Cyberphysical Systems paper.
+
+--- Korea, July 25.  We want to check under what circumstances
+---   the passenger can block the door from closing.
+---   If the driver is also a physical action, we do not know
+---   how often he will want to close the door.
+---   Therefore, we make the driver into a guy who wants to close the door
+---    periodically, given by a timer.
+
+--- We also add a variable in the door system denoting that
+---   the door HAS BEEN closed sometimes up to now.
+
+omod TRAINDOOR-V3-DET-DRIVER is 
+ including LF-REPR .
+  protecting LF-VALUE-TIME .
+
+  op counter1 : -> RVarId [ctor] .
+ ops isOpen locked hasBeenLocked : -> BVarId [ctor] .
+ ops controller train door : -> ReactorId [ctor] .
+ ops close lock unlock open : -> BPortId [ctor] .
+ ops startup  extOpen : -> BActionId .
+ op init : -> Configuration .
+ op external : -> TimerId [ctor] .
+
+ --- parameter
+ ops p2 : -> SMTVarId [ctor] . 
+
+ eq init = 
+    < controller : Reactor | 
+      inports : none,
+      outports : < lock : Port | value : [false] > 
+                 < open : Port | value : [false] >
+		 < unlock : Port | value : [false] > 
+                 < close : Port | value : [false] >, 
+      state : empty,
+      timers : < external : Timer | offset : 0, period : 10 >,
+      actions : < startup : LogicalAction | minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [false] >,
+      reactions : 
+        (reaction when startup do { skip })
+        reaction when external --> close ; lock ; open ; unlock do
+---	{ if external then (close <- [true] ) ; (lock <- [true]) 
+---	  else (open <- [true]) ; (unlock <- [true]) fi }
+        {(close <- [true] ) ; (lock <- [true])} 
+    >
+--- the startup stuff does not really do anything ...
+
+    
+    < door : Reactor | 
+        inports : < lock : Port | value : [false] >
+	          < unlock : Port | value : [false] >
+		  < open : Port | value : [false] >
+	          < close : Port | value : [false] >,
+        outports : none,
+        state : (locked |-> [false])  ; (isOpen |-> [false])
+	        ; (hasBeenLocked |-> [false]),
+        timers : none,
+        actions : < extOpen : PhysicalAction | 
+                               minDelay : 0, 
+                               minSpacing : 0, 
+                               policy : defer, 
+                               payload : [false] >,
+        reactions : (reaction when close do {isOpen := [false]})
+                    (reaction when lock do
+		       { if isOpen === [false] then
+		         ((locked := [true]) ; (hasBeenLocked := [true])) fi })
+                    (reaction when unlock do { locked := [false] }) 
+                    (reaction when (extOpen ; open) do               *** new!
+		       { if locked === [false] then isOpen := [true] fi }) 
+   >
+
+    (controller : lock -- 5 --> door : lock)
+    (controller : unlock -- 4 --> door : unlock)
+    (controller : open -- 7 --> door : open)
+    (controller : close -- r(p2) --> door : close) .
+   
+endom

@@ -1,0 +1,78 @@
+
+omod PROCESS-SYNC is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+
+  op tmCounter : -> RVarId [ctor] .
+  op task : -> ReactorId [ctor] .
+  op t  : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < task : Reactor |
+          inports : none,
+          outports : none,
+          state : tmCounter |-> [0],
+          timers : < t : Timer | offset : 0, period : 1 >,
+          actions : none,
+          reactions : reaction when t do { tmCounter := tmCounter + [1] } > .
+
+endom
+
+omod TEST-PROCESS-SYNC is
+  including PROCESS-SYNC .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+omod TIME-BOUNDED-PROCESS-SYNC is
+  including TEST-PROCESS-SYNC .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 2 .
+endom  
+
+rew initSystem in time 0 .
+
+
+***(  Property given in LF benchmarks repository:
+
+spec="G[2 nsec](ProcessSync_task_tm_synchronization_processing_counter == 3)", expect=true
+
+)***
+
+--- Notice G[2], and not G[0,2]!  We can of course use Real-Time Maude's Timed CTL model
+--- checker, but an easy solution here is to do an invariant check when the system clock shows 2:
+
+--- search for breach of invariant when system clock is 5:
+search initSystem in time 0 =>* { REST:Configuration
+    < task : Reactor | AS:AttributeSet,
+	                   state : tmCounter |-> [N:Nat] >
+} in time 2
+    such that N:Nat == 3 .
+
+***(    Result:
+search in TIME-BOUNDED-PROCESS-SYNC : initSystem in time 0 =>* {REST:Configuration < task : Reactor | AS:AttributeSet, state : tmCounter |-> [N:Nat] >}  in time 2 such that N:Nat == 3
+    = true .
+
+Solution 1 (state 5)
+states: 6  rewrites: 219 in 1ms cpu (0ms real) (219000 rewrites/second)
+REST:Configuration --> < env : Environment | physicalActions : none > < queue : EventQueue | queue : event(task, t, [0]) at tag(1, 0) > < rxns : Invoked | reactions : (task . 1) >
+AS:AttributeSet --> inports : none, outports : none, reactions : reaction 1 when t --> none do{tmCounter := (tmCounter + [1])}, timers : < t : Timer | period : 1, offset : 0 >,
+    actions : none
+N:Nat --> 3
+
+No more solutions.
+states: 6  rewrites: 236 in 1ms cpu (0ms real) (236000 rewrites/second)
+)***
+
+

@@ -1,0 +1,120 @@
+
+omod SUBWAY is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops pos inUse : -> RVarId [ctor] .
+  ops ums train : -> ReactorId [ctor] .
+  ops query req done response grant : -> RPortId [ctor] .
+  ops startup issue wait passing : -> RActionId [ctor] .
+  op init : -> Configuration .
+
+  eq init
+   = < ums : Reactor |
+          inports : < query : Port | value : [0] >
+                    < req : Port | value : [0] >
+                    < done : Port | value : [0] >,
+	      outports : < response : Port | value : [0] >
+	                 < grant : Port | value : [0] >,
+	      state : (pos |-> [0]) ; (inUse |-> [0]),
+	      timers : none,
+	      actions : < issue : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        (reaction when startup do { (pos := [0]) ; (inUse := [0]) })
+	        (reaction when query --> response do { response <- pos })
+	        (reaction when req --> grant ; issue do { 
+	            if (inUse === [0]) then ((grant <- [1]) ; schedule(issue,[0],[0]))
+	            else (grant <- [0]) fi
+	         })
+	        (reaction when done do { inUse := [0] })
+             reaction when issue do { inUse := [1] } 
+      >
+            
+      < train : Reactor |
+          inports : < response : Port | value : [0] >
+	                < grant : Port | value : [0] >,
+	      outports : < query : Port | value : [0] >
+                     < req : Port | value : [0] >
+                     < done : Port | value : [0] >,
+	      state : empty,
+	      timers : none,
+	      actions : < wait : LogicalAction | minDelay : 2, 
+                                             minSpacing : 0, 
+                                             policy : defer, 
+                                             payload : [0] >
+                    < passing : LogicalAction | minDelay : 10, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions : 
+	        (reaction when startup --> query do { query <- [1] })
+	        (reaction when wait --> req do { req <- [1] })
+	        (reaction when passing --> done do { done <- [1] })
+	        (reaction when response --> wait ; req do { 
+	            if (response === [0]) then schedule(wait,[0],[0])
+	            else (req <- [1]) fi
+	         })
+	         reaction when grant --> passing do { schedule(passing,[0],[0]) }
+      > 
+            
+      (train : done --> ums : done)      
+      (train : query --> ums : query)      
+      (train : req --> ums : req)
+      (ums : grant --> train : grant)
+       ums : response --> train : response .
+endom
+
+omod TEST-SUBWAY is
+  including SUBWAY .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+***( the main property in the LF repository is
+
+spec="F[0, 11 minute](Subway_u_reaction_3)", expect=false
+
+)***
+
+omod TIME-BOUNDED-SUBWAY is
+  including TEST-SUBWAY .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 11 .
+endom  
+
+
+
+omod MODEL-CHECK-SUBWAY is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-SUBWAY .
+  including LF-PROP .
+endom
+
+red modelCheck(initSystem in time 0, <> ((ums . 4) invoked)) .
+
+***(    Result:
+reduce in MODEL-CHECK-SUBWAY : modelCheck(initSystem in time 0, <> reaction ums . 4 invoked) .
+rewrites: 822 in 1ms cpu (0ms real) (822000 rewrites/second)
+result ModelCheckResult: counterexample( ... )
+)***

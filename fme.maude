@@ -1,0 +1,302 @@
+--- Fourier-Motzkin Elimination for eliminating real-valued variables 
+
+fmod LINEAR-TERM is
+  including ALT-REAL-INTEGER-EXPR .
+  sort LinRTerm .
+  subsorts Rat RVar < LinRTerm < RExp .
+  op _*_ : Rat LinRTerm -> LinRTerm [ditto] .
+
+  sort StLinRTerm .
+  subsorts RVar < StLinRTerm < LinRTerm StRExp .
+  op _*_ : Rat StLinRTerm -> StLinRTerm [ditto] .
+endfm
+
+fmod LINEAR-EXPR is
+  including LINEAR-TERM .
+  sort LinRExp .
+  subsorts LinRTerm < LinRExp < RExp .
+  op _+_ : LinRExp LinRExp -> LinRExp [ditto] .
+
+  sort StLinRExp .
+  subsort StLinRTerm < StLinRExp < LinRExp StRExp .
+  op _+_ : StLinRExp LinRExp -> StLinRExp [ditto] .
+endfm
+
+fmod REL-LINEAR-EXPR is
+  including LINEAR-EXPR .
+
+  sort RelLinRExp .
+  subsort Bool < RelLinRExp < BoolExp .
+  op _<_ : LinRExp LinRExp -> RelLinRExp [ditto] .
+  op _<=_ : LinRExp LinRExp -> RelLinRExp [ditto] .
+  op _>_ : LinRExp LinRExp -> RelLinRExp [ditto] .
+  op _>=_ : LinRExp LinRExp -> RelLinRExp [ditto] .
+endfm
+
+view RelLinRExp from TRIV to REL-LINEAR-EXPR is
+  sort Elt to RelLinRExp .
+endv
+
+fmod CONJ-REL-LIN-REAL-EXPR is
+  pr REL-LINEAR-EXPR .
+
+  sort ConjRelLinRExp .
+  subsort RelLinRExp < ConjRelLinRExp < BoolExp .
+  op _and_ : ConjRelLinRExp ConjRelLinRExp -> ConjRelLinRExp [ditto] .
+endfm
+
+
+fmod POLYNOMIAL-EXPANSION is
+  protecting ALT-REAL-INTEGER-EXPR .
+
+  var  X          : RVar .
+  vars R R1 R2    : Rat .
+  vars RE RE1 RE2 : RExp .
+
+  eq 0 + RE = RE .
+  eq 0 * RE = 0 .
+  eq 1 * RE = RE .
+
+  --- eliminate the minus operators
+  eq RE1 - RE2 = RE1 + (- RE2) .
+
+  eq - X = -1 * X .
+  eq - (- RE) = RE .
+  eq - (RE1 + RE2) = (- RE1) + (- RE2) .
+  eq - (RE1 * RE2) = (- RE1) * RE2 .
+  eq - (RE1 - RE2) = (- RE1) + RE2 .
+  eq - (RE1 / RE2) = (- RE1) / RE2 .
+
+  --- distributive law
+  eq RE * (RE1 + RE2) = RE * RE1 + RE * RE2 .
+
+  --- merging two terms (Note: 1 is not declared as id)
+  eq R1 * RE + R2 * RE = (R1 + R2) * RE .
+  eq R1 * RE +      RE = (R1 +  1) * RE .  
+  eq      RE +      RE = 2         * RE .
+endfm
+
+
+--- We first compute "normalized" relations of the form EXP <=/< 0.
+fmod CONJ-REL-LIN-REAL-EXPR-NORMAL is
+  pr CONJ-REL-LIN-REAL-EXPR .
+
+  var X         : RVar .
+  var NR        : NzRat .
+  vars SRE      : StRExp .
+  vars RE RE'   : RExp .
+  vars CRL CRL' : ConjRelLinRExp .
+
+  op normal : ConjRelLinRExp ~> ConjRelLinRExp .
+  eq normal(RE <= SRE and CRL) = RE + (- SRE) <= 0 and normal(CRL) .
+  eq normal(RE <  SRE and CRL) = RE + (- SRE) <  0 and normal(CRL) .
+  eq normal(RE >= SRE and CRL) = SRE + (- RE) <= 0 and normal(CRL) .
+  eq normal(RE >  SRE and CRL) = SRE + (- RE) <  0 and normal(CRL) .
+
+  eq normal(RE <= NR and CRL) = RE + (- NR) <= 0 and normal(CRL) .
+  eq normal(RE <  NR and CRL) = RE + (- NR) <  0 and normal(CRL) .
+  eq normal(RE >= NR and CRL) = NR + (- RE) <= 0 and normal(CRL) .
+  eq normal(RE >  NR and CRL) = NR + (- RE) <  0 and normal(CRL) .
+
+  eq normal(NR * X <= 0 and CRL) = if NR > 0 then X <= 0 else -1 * X <= 0 fi and normal(CRL) .
+  eq normal(NR * X <  0 and CRL) = if NR > 0 then X <  0 else -1 * X <  0 fi and normal(CRL) .
+  eq normal(NR * X >= 0 and CRL) = if NR > 0 then -1 * X <= 0 else X <= 0 fi and normal(CRL) .
+  eq normal(NR * X >  0 and CRL) = if NR > 0 then -1 * X <  0 else X <  0 fi and normal(CRL) .
+
+  eq normal(RE >= 0 and CRL) = - RE <= 0 and normal(CRL) [owise] .
+  eq normal(RE >  0 and CRL) = - RE <  0 and normal(CRL) [owise] .
+
+  eq normal(RE <= SRE) = RE + (- SRE) <= 0 .
+  eq normal(RE <  SRE) = RE + (- SRE) <  0 .
+  eq normal(RE >= SRE) = SRE + (- RE) <= 0 .
+  eq normal(RE >  SRE) = SRE + (- RE) <  0 .
+
+  eq normal(RE <= NR) = RE + (- NR) <= 0 .
+  eq normal(RE <  NR) = RE + (- NR) <  0 .
+  eq normal(RE >= NR) = NR + (- RE) <= 0 .
+  eq normal(RE >  NR) = NR + (- RE) <  0 .
+
+  eq normal(NR * X <= 0) = if NR > 0 then X <= 0 else -1 * X <= 0 fi .
+  eq normal(NR * X <  0) = if NR > 0 then X <  0 else -1 * X <  0 fi .
+  eq normal(NR * X >= 0) = if NR > 0 then -1 * X <= 0 else X <= 0 fi .
+  eq normal(NR * X >  0) = if NR > 0 then -1 * X <  0 else X <  0 fi .
+
+  eq normal(RE >= 0) = - RE <= 0 [owise] .
+  eq normal(RE >  0) = - RE <  0 [owise] .
+
+  eq normal(true and CRL) = normal(CRL) .
+  eq normal(false and CRL) = false .
+
+  eq normal(CRL) = CRL [owise] .
+endfm
+
+
+fmod FOURIER-MOTZKIN-STANDARD is
+  pr CONJ-REL-LIN-REAL-EXPR-NORMAL .
+  pr POLYNOMIAL-EXPANSION .
+
+  var NR          : Rat .
+  var X Y         : RVar .
+  vars RE RE1 RE2 : RExp .
+  var RLE         : RelLinRExp .
+  vars CRL CRL'   : ConjRelLinRExp .
+
+--- transform normalized linear inequalities containing X 
+  op std : RVar ConjRelLinRExp ~> ConjRelLinRExp .
+
+  eq std(X, NR * X + RE <= 0 and CRL) 
+   = (if NR > 0 then X + RE * (1 / NR) <= 0 else X + RE * (1 / NR) >= 0 fi) and std(X, CRL) .
+  eq std(X, NR * X + RE <= 0) 
+   = (if NR > 0 then X + RE * (1 / NR) <= 0 else X + RE * (1 / NR) >= 0 fi) .
+
+  eq std(X, NR * X + RE < 0 and CRL) 
+   = (if NR > 0 then X + RE * (1 / NR) < 0 else X + RE * (1 / NR) > 0 fi) and std(X, CRL) .
+  eq std(X, NR * X + RE < 0) 
+   = (if NR > 0 then X + RE * (1 / NR) < 0 else X + RE * (1 / NR) > 0 fi) .
+
+  eq std(X, NR * X <= 0 and CRL) = (if NR > 0 then X <= 0 else X >= 0 fi) and std(X, CRL) .
+  eq std(X, NR * X <= 0 ) = (if NR > 0 then X <= 0 else X >= 0 fi) .
+
+  eq std(X, NR * X <  0 and CRL) = (if NR > 0 then X < 0 else X > 0 fi) and std(X, CRL) .
+  eq std(X, NR * X <  0 ) = (if NR > 0 then X < 0 else X > 0 fi) .
+
+  eq std(X, CRL) = CRL [owise] . --- no term containing X
+endfm
+
+
+fmod FOURIER-MOTZKIN is
+  pr FOURIER-MOTZKIN-STANDARD .
+  inc SET{RelLinRExp} * 
+     (op _,_ : Set{RelLinRExp} Set{RelLinRExp} -> Set{RelLinRExp} to _;_) .
+
+  vars X Y          : RVar .
+  vars R R1 R2 R3   : Rat .
+  vars RE RE1 RE2   : RExp .
+  var RLE           : RelLinRExp .
+  var RLS RLS1 RLS2 : Set{RelLinRExp} .
+  var CRL NCRL      : ConjRelLinRExp .
+  var KCRL          : [ConjRelLinRExp] .
+
+--- short-circuit evaluation
+  op _and-then_ : ConjRelLinRExp ConjRelLinRExp ~> Bool [ditto] .
+  eq true and-then KCRL = KCRL .
+  eq false and-then KCRL = false .
+  eq CRL and-then KCRL = CRL and KCRL [owise] .
+
+--- Fourier-Motzkin Elimination
+  op fme : RVar ConjRelLinRExp ~> ConjRelLinRExp .
+  eq fme(X, CRL) = elimEq(X, normal(CRL)) .
+
+  --- eliminate some equalities
+  op elimEq : RVar ConjRelLinRExp ~> ConjRelLinRExp .
+  eq elimEq(X, X + (-1) * Y <= 0 and (-1) * X + Y <= 0 and CRL) = subst(X, Y, CRL) . --- [print X " <- " Y] .
+  eq elimEq(X, X + (- R) <= 0 and (-1) * X + R <= 0 and CRL) = subst(X, R, CRL) . --- [print X " <- " R] .
+  eq elimEq(X, CRL) = elimEqStd(X,std(X,CRL)) [owise] .
+
+  --- eliminate more equalities
+  op elimEqStd : RVar ConjRelLinRExp ~> ConjRelLinRExp .
+  eq elimEqStd(X, X + RE >= 0 and X + RE <= 0 and CRL) = normal(subst(X, - RE, CRL)) . --- [print X " <- " RE] .
+  eq elimEqStd(X, CRL) = split(X, CRL, empty, empty) [owise] . --- [ print X " by FME"] .
+
+--- substitute X by RE
+  op subst : RVar RExp ConjRelLinRExp ~> ConjRelLinRExp .
+  eq subst(X, RE, R * X + RE1 <= 0 and CRL) = R * RE + RE1 <= 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X + RE1 <= 0 and CRL) = RE + RE1 <= 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, R * X <= 0 and CRL) = R * RE <= 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X <= 0 and CRL) = RE <= 0 and subst(X, RE, CRL) .
+
+  eq subst(X, RE, R * X + RE1 < 0 and CRL) = R * RE + RE1 < 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X + RE1 < 0 and CRL) = RE + RE1 < 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, R * X < 0 and CRL) = R * RE < 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X < 0 and CRL) = RE < 0 and subst(X, RE, CRL) .
+
+  eq subst(X, RE, R * X + RE1 >= 0 and CRL) = R * RE + RE1 >= 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X + RE1 >= 0 and CRL) = RE + RE1 >= 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, R * X >= 0 and CRL) = R * RE >= 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X >= 0 and CRL) = RE >= 0 and subst(X, RE, CRL) .
+
+  eq subst(X, RE, R * X + RE1 > 0 and CRL) = R * RE + RE1 > 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X + RE1 > 0 and CRL) = RE + RE1 > 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, R * X > 0 and CRL) = R * RE > 0 and subst(X, RE, CRL) .
+  eq subst(X, RE, X > 0 and CRL) = RE > 0 and subst(X, RE, CRL) .
+
+  eq subst(X, RE, CRL) = CRL [owise] .
+
+  --- split a set of inequalities into the three cases: X >= RE or X > RE,
+  --- X <= RE or X < RE, and inequalities not containing X
+  op split : RVar ConjRelLinRExp Set{RelLinRExp} Set{RelLinRExp} ~> ConjRelLinRExp .
+  eq split(X, X + RE >= 0 and CRL, RLS1, RLS2) = split(X, CRL, X + RE >= 0 ; RLS1, RLS2) .
+  eq split(X, X + RE >  0 and CRL, RLS1, RLS2) = split(X, CRL, X + RE >  0 ; RLS1, RLS2) .
+  eq split(X, X + RE <= 0 and CRL, RLS1, RLS2) = split(X, CRL, RLS1, X + RE <= 0 ; RLS2) .
+  eq split(X, X + RE <  0 and CRL, RLS1, RLS2) = split(X, CRL, RLS1, X + RE <  0 ; RLS2) .
+
+  eq split(X, X >= 0 and CRL, RLS1, RLS2) = split(X, CRL, X >= 0 ; RLS1, RLS2) .
+  eq split(X, X >  0 and CRL, RLS1, RLS2) = split(X, CRL, X >  0 ; RLS1, RLS2) .
+  eq split(X, X <= 0 and CRL, RLS1, RLS2) = split(X, CRL, RLS1, X <= 0 ; RLS2) .
+  eq split(X, X <  0 and CRL, RLS1, RLS2) = split(X, CRL, RLS1, X <  0 ; RLS2) .
+
+  eq split(X, X + RE >= 0, RLS1, RLS2) = split(X, true, X + RE >= 0 ; RLS1, RLS2) .
+  eq split(X, X + RE >  0, RLS1, RLS2) = split(X, true, X + RE >  0 ; RLS1, RLS2) .
+  eq split(X, X + RE <= 0, RLS1, RLS2) = split(X, true, RLS1, X + RE <= 0 ; RLS2) .
+  eq split(X, X + RE <  0, RLS1, RLS2) = split(X, true, RLS1, X + RE <  0 ; RLS2) .
+
+  eq split(X, X >= 0, RLS1, RLS2) = split(X, true, X >= 0 ; RLS1, RLS2) .
+  eq split(X, X >  0, RLS1, RLS2) = split(X, true, X >  0 ; RLS1, RLS2) .
+  eq split(X, X <= 0, RLS1, RLS2) = split(X, true, RLS1, X <= 0 ; RLS2) .
+  eq split(X, X <  0, RLS1, RLS2) = split(X, true, RLS1, X <  0 ; RLS2) .
+
+  eq split(X, CRL, RLS1, RLS2) = CRL and gen(reduceM(X,RLS1), reduceM(X,RLS2)) [owise] .
+
+  --- Generate new inequalities 
+  op gen : Set{RelLinRExp} Set{RelLinRExp} ~> ConjRelLinRExp .
+  eq gen(RLS1, empty) = true .
+  eq gen(empty, RLS2) = true .
+  eq gen(RLE ; RLS1, RLS2) = gen1(RLE,RLS2) and-then gen(RLS1,RLS2) [owise] .
+
+  op gen1 : RelLinRExp Set{RelLinRExp} ~> ConjRelLinRExp .
+
+  eq gen1(X + RE1 >= 0, X + RE2 <= 0 ; RLS2) = (RE2 + (- RE1) <= 0) and-then gen1(X + RE1 >= 0, RLS2) .
+  eq gen1(X >= 0, X + RE2 <= 0 ; RLS2) = (RE2 <= 0) and-then gen1(X >= 0, RLS2) .
+  eq gen1(X + RE1 >= 0, X <= 0 ; RLS2) = ((- RE1) <= 0) and-then gen1(X + RE1 >= 0, RLS2) .
+  eq gen1(X >= 0, X <= 0 ; RLS2) = gen1(true, RLS2) .
+
+  eq gen1(X + RE1 >= 0, X + RE2 < 0 ; RLS2) = (RE2 + (- RE1) < 0) and-then gen1(X + RE1 >= 0, RLS2) .
+  eq gen1(X >= 0, X + RE2 < 0 ; RLS2) = (RE2 < 0) and-then gen1(X >= 0, RLS2) .
+  eq gen1(X + RE1 >= 0, X < 0 ; RLS2) = ((- RE1) < 0) and-then gen1(X + RE1 >= 0, RLS2) .
+  eq gen1(X >= 0, X < 0 ; RLS2) = false .
+
+  eq gen1(X + RE1 > 0, X + RE2 <= 0 ; RLS2) = (RE2 + (- RE1) < 0) and-then gen1(X + RE1 > 0, RLS2) .
+  eq gen1(X > 0, X + RE2 <= 0 ; RLS2) = (RE2 < 0) and-then gen1(X > 0, RLS2) .
+  eq gen1(X + RE1 > 0, X <= 0 ; RLS2) = ((- RE1) < 0) and-then gen1(X + RE1 > 0, RLS2) .
+  eq gen1(X > 0, X <= 0 ; RLS2) = false .
+
+  eq gen1(X + RE1 > 0, X + RE2 < 0 ; RLS2) = (RE2 + (- RE1) < 0) and-then gen1(X + RE1 > 0, RLS2) .
+  eq gen1(X > 0, X + RE2 < 0 ; RLS2) = (RE2 < 0) and-then gen1(X > 0, RLS2) .
+  eq gen1(X + RE1 > 0, X < 0 ; RLS2) = ((- RE1) < 0) and-then gen1(X + RE1 > 0, RLS2) .
+  eq gen1(X > 0, X < 0 ; RLS2) = false .
+
+  eq gen1(RLE, empty) = true .
+
+  --- Remove some obvious intermdiate eqs
+  ---NOTE: strict operators are rarely used, so we omit reduction for them
+  op reduceM : RVar Set{RelLinRExp} ~> Set{RelLinRExp} .
+
+  ceq reduceM(X, X + R1 * Y + RE <= 0 ; X + R2 * Y + RE <= 0 ; X + R3 * Y + RE <= 0 ; RLS)
+    = reduceM(X, X + R1 * Y + RE <= 0 ; X + R2 * Y + RE <= 0 ; RLS)
+   if R1 <= R3 /\ R3 <= R2 .
+
+  ceq reduceM(X, X + R1 * Y <= 0 ; X + R2 * Y <= 0 ; X + R3 * Y <= 0 ; RLS)
+    = reduceM(X, X + R1 * Y <= 0 ; X + R2 * Y <= 0 ; RLS)
+   if R1 <= R3 /\ R3 <= R2 .
+
+  ceq reduceM(X, X + R1 * Y + RE >= 0 ; X + R2 * Y + RE >= 0 ; X + R3 * Y + RE >= 0 ; RLS)
+    = reduceM(X, X + R1 * Y + RE >= 0 ; X + R2 * Y + RE >= 0 ; RLS)
+   if R1 <= R3 /\ R3 <= R2 .
+
+  ceq reduceM(X, X + R1 * Y >= 0 ; X + R2 * Y >= 0 ; X + R3 * Y >= 0 ; RLS)
+    = reduceM(X, X + R1 * Y >= 0 ; X + R2 * Y >= 0 ; RLS)
+   if R1 <= R3 /\ R3 <= R2 .
+
+  eq reduceM(X, RLS) = RLS [owise] .
+endfm 
+

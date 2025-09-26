@@ -1,0 +1,263 @@
+*** Railroad example from Lingua Franca verification benchmarks
+***   github.com/lf-lang/lf-verifier-benchmarks
+
+*** For signal, 0 means green, 1 means red
+*** For out, 0 is arrive, 1 is leave
+*** For mode, 0 is away, 1 is wait, 2 is bridge
+
+
+omod RAILROAD  is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops sOut sMode west east nearW nearE : -> RVarId [ctor] .
+  ops trainW trainE controller : -> ReactorId [ctor] .
+  ops signal signalW signalE inW out inE : -> RPortId [ctor] .
+  ops startup outUpdated toModeAway toModeWait toModeBridge westUpdated eastUpdated : -> RActionId [ctor] .
+  op t   : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < trainW : Reactor |
+          inports : < signal : Port | value : [0] >,
+          outports : < out : Port | value : [0] >,
+          state : (sOut |-> [0]) ; (sMode |-> [0]),
+          timers : < t : Timer | offset : 1, period : 1000000000 >,
+          actions : < outUpdated : LogicalAction | minDelay : 0, 
+                                                   minSpacing : 0, 
+                                                   policy : defer, 
+                                                   payload : [0] >
+                    < toModeAway : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < toModeWait : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < toModeBridge : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >,
+          reactions :
+            (reaction when startup do {sMode := [0]})
+            (reaction when t --> (out ; outUpdated)  do
+	        {if (sMode === [0])
+		 then ((out <- [0]) ; (sOut := [0]) ; schedule(outUpdated, [0], [0]))
+		 else (if (sMode === [2]) then ((out <- [1]) ; (sOut := [1]) ; schedule(outUpdated, [0], [0]))
+		       fi)
+		 fi })
+            (reaction when (outUpdated ; signal) --> (toModeAway ; toModeWait ; toModeBridge) do
+	        { if (sMode === [0]) then
+		     (if (isPresent(outUpdated) && (sOut === [0])) then schedule(toModeWait, [0], [0]) fi) 
+                  else
+		     (if (sMode === [1]) then
+		         (if (isPresent(signal) && (signal === [0])) then schedule(toModeBridge, [0], [0]) fi)
+		      else
+		         (if (isPresent(outUpdated) && (sOut === [1])) then schedule(toModeAway, [0], [0]) fi)
+		      fi)
+		  fi  })
+            (reaction when toModeAway do {sMode := [0]})
+            (reaction when toModeWait do {sMode := [1]})
+            (reaction when toModeBridge do {sMode := [2]})   >
+
+
+     < trainE : Reactor |
+          inports : < signal : Port | value : [0] >,
+          outports : < out : Port | value : [0] >,
+          state : (sOut |-> [0]) ; (sMode |-> [0]),
+          timers : < t : Timer | offset : 1, period : 1000000000 >,
+          actions : < outUpdated : LogicalAction | minDelay : 0, 
+                                                   minSpacing : 0, 
+                                                   policy : defer, 
+                                                   payload : [0] >
+                    < toModeAway : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < toModeWait : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < toModeBridge : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >,
+          reactions :
+            (reaction when startup do {sMode := [0]})
+            (reaction when t --> (out ; outUpdated)  do
+	        {if (sMode === [0])
+		 then ((out <- [0]) ; (sOut := [0]) ; schedule(outUpdated, [0], [0]))
+		 else (if (sMode === [2]) then ((out <- [1]) ; (sOut := [1]) ; schedule(outUpdated, [0], [0]))
+		       fi)
+		 fi })
+            (reaction when (outUpdated ; signal) --> (toModeAway ; toModeWait ; toModeBridge) do
+	        { if (sMode === [0]) then
+		     (if (isPresent(outUpdated) && (sOut === [0])) then schedule(toModeWait, [0], [0]) fi) 
+                  else
+		     (if (sMode === [1]) then
+		         (if (isPresent(signal) && (signal === [0])) then schedule(toModeBridge, [0], [0]) fi)
+		      else
+		         (if (isPresent(outUpdated) && (sOut === [1])) then schedule(toModeAway, [0], [0]) fi)
+		      fi)
+		  fi  })
+            (reaction when toModeAway do {sMode := [0]})
+            (reaction when toModeWait do {sMode := [1]})
+            (reaction when toModeBridge do {sMode := [2]})   >
+
+    < controller : Reactor |
+             inports :  < inW : Port | value : [0] > < inE : Port | value : [0] >,
+             outports : < signalW : Port | value : [0] > < signalE : Port | value : [0] >,
+             state : (west |-> [0]) ; (east |-> [0]) ; (nearW |-> [0]) ; (nearE |-> [0]),
+             timers : none,
+             actions : < startup : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                       < westUpdated : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                       < eastUpdated : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >,
+             reactions :
+                (reaction when startup do {(west := [1]) ; (east := [1]) ; (nearW := [0]) ;
+		                           (nearE := [0])})
+                (reaction when (inW ; inE) --> (westUpdated ; eastUpdated) do
+		  { (if (isPresent(inE) && (inE === [0])) then nearE := [1] fi)   ;  
+                    (if (isPresent(inE) && (inE === [1])) then nearE := [0] fi)   ;
+                    (if (isPresent(inW) && (inW === [0])) then nearW := [1] fi)   ;
+		    (if (isPresent(inW) && (inW === [1])) then nearW := [0] fi)   ;
+		    (if (nearE ==/= [1]) then
+		      ((east := [1]) ; schedule(eastUpdated, [0], [0]))
+		   else
+		      (if (west === [1]) then
+		          ((east := [0]) ; schedule(eastUpdated, [0], [0])) fi)
+                   fi)                                                           ;
+		   (if (nearW ==/= [1]) then
+		      ((west := [1]) ; schedule(westUpdated, [0], [0]))
+		   else
+		      (if (east === [1]) then
+		          ((west := [0]) ; schedule(westUpdated, [0], [0])) fi)
+                   fi)                                                           })
+		(reaction when westUpdated --> signalW do { signalW <- west })
+		(reaction when eastUpdated --> signalE do { signalE <- east })   >
+
+      (trainW : out --> controller : inW)
+      (trainE : out --> controller : inE)
+      (controller : signalW --> trainW : signal)
+      (controller : signalE --> trainE : signal) .
+
+endom
+
+
+red generateAPG(event(controller, startup, [0])  event(trainE, startup, [0])
+                event(trainW, startup, [0]),  addReactionIndices(init)) .
+
+
+red generateAPG(event(controller, startup, [0])  event(trainE, startup, [0])
+                event(trainW, startup, [0]) event(trainE, t, [0])
+                event(trainW, t, [0]),  addReactionIndices(init)) .
+
+
+omod TEST-RAILROAD is
+  including RAILROAD .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, addStartup(startup, init, empty)) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+omod SIMULATE-RAILROAD is
+  including TEST-RAILROAD .
+  including SIMULATION-DYNAMICS .
+endom  
+
+rew [1] initSystem .
+
+
+
+
+omod TIME-BOUNDED-RAILROAD is
+  including TEST-RAILROAD .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 55 .
+endom  
+
+rew [1] initSystem in time 0 .
+
+omod UNBOUNDED-RAILROAD is
+  including TEST-RAILROAD .
+  including UNBOUNDED-ANALYSIS-DYNAMICS  .
+endom  
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < trainE : Reactor | state : (sMode |-> [1]) ; RS1:ReactorState, AS1:AttributeSet >
+	      < trainW : Reactor | state : (sMode |-> [1]) ; RS2:ReactorState, AS2:AttributeSet >} .
+
+---(
+No solution.
+states: 7  rewrites: 866 in 7ms cpu (7ms real) (117487 rewrites/second)
+)---
+
+*** Conclusion: we have tried to simulate the systen by hand, and it seems
+*** that it is correct that we only have 7 reachable states ....
+--- Basically, both trains will wait indefinitely.  Mode = 1 for both of them ...
+--- there seems to be nothing breaking the symmetry.
+
+*** Mario actually executed the corresponding LF code, with printfs for
+*** all mode changes.  Indeed, the trains go from outside to waiting,
+*** but never go on from 'waiting' (mode 1)
+
+
+
+***(   Property as stated in LF repository:
+
+spec="G[0, 5 sec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20, expect=true
+
+This is a super simple state property, not even including a reaction. Easy to check with
+search on a time-bounded model with time bound 5, but we can equally check the much stronger property
+without time bounds.
+
+)***
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < trainE : Reactor | state : (sMode |-> [2]) ; RS1:ReactorState, AS1:AttributeSet >
+	      < trainW : Reactor | state : (sMode |-> [2]) ; RS2:ReactorState, AS2:AttributeSet >} .
+
+***(   Result:
+
+search [1] in UNBOUNDED-RAILROAD : initSystem =>* {REST:Configuration
+< trainW : Reactor |
+       AS2:AttributeSet,
+       state : (RS2:ReactorState ; sMode |-> [2]) >
+< trainE : Reactor |
+       AS1:AttributeSet,
+       state : (RS1:ReactorState ; sMode |-> [2]) >}  .
+
+No solution.
+states: 8  rewrites: 875 in 3ms cpu (3ms real) (233395 rewrites/second)
+Maude> 
+)***
+

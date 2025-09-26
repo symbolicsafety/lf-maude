@@ -1,0 +1,106 @@
+
+omod THERMOSTAT is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops mode heat temp : -> RVarId [ctor] .
+  ops environment thermostat : -> ReactorId [ctor] .
+  ops heatOn temperature : -> RPortId [ctor] .
+  ops startup changeMode : -> RActionId [ctor] .
+  op t : -> TimerId [ctor] .
+  op init : -> Configuration .
+
+  eq init
+   = < environment : Reactor |
+      inports : < heatOn : Port | value : [0] >,
+	  outports : < temperature : Port | value : [0] >,
+	  state : (heat |-> [0]) ; (temp |-> [0]),
+	  timers : < t : Timer | offset : 1, period : 10 >,
+	  actions : < startup : LogicalAction | minDelay : 0, 
+                                            minSpacing : 0, 
+                                            policy : defer, 
+                                            payload : [0] >,
+	  reactions :
+	    (reaction when startup do { temp := [19] })
+	    (reaction when t --> temperature do {
+	        (if (heat === [0]) then (temp := temp - [1])
+	        else (temp := temp + [1]) fi) ;
+	        (temperature <- temp)
+	     }) 
+         reaction when heatOn do { heat := heatOn } 
+     >
+     
+     < thermostat : Reactor |
+      inports : < temperature : Port | value : [0] >,
+	  outports : < heatOn : Port | value : [0] >,
+	  state : mode |-> [0],
+	  timers : none,
+	  actions : < changeMode : LogicalAction | minDelay : 0, 
+                                            minSpacing : 0, 
+                                            policy : defer, 
+                                            payload : [0] >
+                < startup : LogicalAction | minDelay : 0, 
+                                            minSpacing : 0, 
+                                            policy : defer, 
+                                            payload : [0] >,
+	  reactions :
+	    (reaction when startup do { mode := [0] })
+	    (reaction when temperature --> heatOn ; changeMode do {
+	        *** something is wrong in the LF code, tried to fix here, hope I got the idea correctly!!!
+	        if (mode === [0]) then if (temperature <= [18]) then ((heatOn <- [1]) ; schedule(changeMode,[0],[0])) fi
+	        else if (temperature >= [22]) then ((heatOn <- [0]) ; schedule(changeMode,[0],[0])) fi fi
+	     }) 
+         reaction when changeMode do { if (mode === [0]) then mode := [1] else mode := [0] fi } 
+     > 
+     
+     (environment : temperature --> thermostat : temperature)
+     thermostat : heatOn --> environment : heatOn .
+endom
+
+omod TEST-THERMOSTAT is
+  including THERMOSTAT .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+omod SIMULATE-THERMOSTAT is
+  including TEST-THERMOSTAT .
+  including SIMULATION-DYNAMICS .
+endom  
+
+rew initSystem .
+
+search initSystem =>! GS:GlobalSystem .    --- obvious trivial result
+
+omod CHECK-THERMOSTAT is
+  including TEST-THERMOSTAT .
+  including UNBOUNDED-ANALYSIS-DYNAMICS .
+endom  
+
+search initSystem =>* {none} .
+
+***( the main property in the LF repository is
+
+spec="G[0, 20 sec](((Thermostat_t_temperature <= 18) ==> F[0](Thermostat_t__mode == 1))  &&  ((Thermostat_t_temperature >= 22) ==> F[0](Thermostat_t__mode == 0)))", expect=true
+
+should be done in rtm!
+
+We could also assume at each tick step, the formula "ticked" holds.
+Then <>_0 BLA should be equivalent to (no tick) U BLA. (i.e. F[0] is equivalent to U)
+But, for this to work, we need to modify the tick rule and instead
+reactionsInvoked = none.
+should have something like
+reactionsInvoked = "ticked"
+)***
+
+
+

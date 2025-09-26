@@ -1,0 +1,76 @@
+in TrainDoor_v3-withDetDriverAndParam2.maude
+
+omod TEST-TRAIN-V3-DET-DRIVER is
+  including TRAINDOOR-V3-DET-DRIVER .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns sym : -> Oid [ctor] .
+
+  ops p1 : -> SMTVarId [ctor] . 
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     {< env : Environment |
+           physicalActions :
+                             < (door . extOpen) : PhysAct |
+ 				   possibleValues : bool,
+                                   minSpace : 10,
+                                   clock : INF,
+	                           counter : 0 >
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >
+       < sym : SymInfra | constraint : ([r(p3) > 2]), counter : 0, tickApplicable : true >}  .
+
+endom
+
+
+
+omod SIMULATE-TRAIN is
+  including TEST-TRAIN-V3-DET-DRIVER .
+  including SYM-REACH-DYNAMICS .
+  including LF-FME-INTERFACE .
+
+
+  var CONST : BoolValue .
+  var V : Value .
+  vars T T' : Time .
+  var RS : ReactorState .
+  var EVENT : Event .
+  var TAG : Tag . 
+  var EQ : EQueue .
+  var O : Oid .
+  vars AS AS' AS'' : AttributeSet .
+  var REST : Configuration .
+  vars REACTORS-AND-CONNECTIONS CONF : Configuration .
+  vars CONST' : BoolValue .
+  vars T0 T1 : Time .
+  var TI : TimeInf .
+  vars E Q PA SYM RXNS EM : Oid .
+  vars N NC : Nat .
+  var EVENTS : Events .
+  vars QUEUE NEW-QUEUE : EQueue .
+  var NZN : NzNat .
+  var REACTORID : ReactorId .
+  var TIMERID : TimerId .
+  vars SCR SCR' : SetConjRelLinRExp .
+
+  eq timeBound = 43 .
+
+endom  
+
+
+
+---rew [10] initSystem in time 0 .
+
+
+search  [1]
+    initSystem in time 0
+=>*
+    {< door : Reactor | state : (hasBeenLocked |-> [false]) ; RS, AS > 
+     < sym : SymInfra | constraint : CONST, AS' > REST}
+  in time T 
+such that smtCheck(CONST && [T > 40]) 
+       /\ SCR := hrsim(qe(CONST && [T > 40])) .
+

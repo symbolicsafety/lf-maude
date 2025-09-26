@@ -1,0 +1,204 @@
+in dynamics.maude
+
+omod COOP-SCHEDULE is including RUNTIME-APG .
+
+  op counter : -> IVarId [ctor] .
+  ops trigger task1 task2 task3 task4 task5 : -> ReactorId [ctor] .
+  ops cnt out : -> IPortId [ctor] .
+  ops startup : -> IActionId [ctor] .
+  op t : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < trigger : Reactor |
+          inports : none,
+	  outports : < out : Port | value : [0] >,
+	  state : empty,
+	  timers : < t : Timer | offset : 0, period : 1 >,
+	  actions : none,
+	  reactions : reaction when t --> out do {out <- [1]} >
+
+    < task1 : Reactor |
+          inports : < cnt : Port | value : [0] >,
+	  outports : none,
+	  state : counter |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when cnt do {counter := counter + [2]} > 
+
+    < task2 : Reactor |
+          inports : < cnt : Port | value : [0] >,
+	  outports : none,
+	  state : counter |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when cnt do {counter := counter + [2]} > 
+
+    < task3 : Reactor |
+          inports : < cnt : Port | value : [0] >,
+	  outports : none,
+	  state : counter |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when cnt do {counter := counter + [2]} > 
+
+    < task4 : Reactor |
+          inports : < cnt : Port | value : [0] >,
+	  outports : none,
+	  state : counter |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when cnt do {counter := counter + [2]} > 
+
+    < task5 : Reactor |
+          inports : < cnt : Port | value : [0] >,
+	  outports : none,
+	  state : counter |-> [0],
+	  timers : none,
+	  actions : none,
+	  reactions : reaction when cnt do {counter := counter + [2]} > 
+ 
+    (trigger : out --> task1 : cnt)
+        (trigger : out --> task2 : cnt)
+	    (trigger : out --> task3 : cnt)
+	        (trigger : out --> task4 : cnt)
+		    (trigger : out --> task5 : cnt) .
+
+endom
+
+--- red generateAPG(event(trigger, t, [0]),  addReactionIndices(init)) .
+
+
+
+
+omod TEST-COOP-SCHEDULE is
+  including COOP-SCHEDULE .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+omod TIME-BOUNDED-COOP-SCHEDULE is
+  including TEST-COOP-SCHEDULE .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 1 .
+endom  
+
+rew initSystem in time 0 .
+
+
+
+
+in model-checker.maude
+
+
+omod MODEL-CHECK-COOP-SCHEDULE is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-COOP-SCHEDULE .
+  subsort ClockedSystem < State .
+
+  --- generic atomic proposition:
+
+  var REST : Configuration .
+  vars N1 N2 N3 N4 N5 SUM : Nat .
+  vars RS1 RS2 RS3 RS4 RS5 : ReactorState .
+  var T : Time .
+
+  op sumLessThan_ : Nat -> Prop [ctor] .
+  eq {REST  < task1 : Reactor | state : (counter |-> [ N1 ]) ; RS1 >
+            < task2 : Reactor | state : (counter |-> [ N2 ]) ; RS2 >
+            < task3 : Reactor | state : (counter |-> [ N3 ]) ; RS3 >
+            < task4 : Reactor | state : (counter |-> [ N4 ]) ; RS4 >
+            < task5 : Reactor | state : (counter |-> [ N5 ]) ; RS5 >} in time T
+       |= sumLessThan SUM = N1 + N2 + N3 + N4 + N5 < SUM .	    
+
+endom
+
+
+red modelCheck(initSystem in time 0, [] (sumLessThan 15)) .
+
+--- note that since since the time bound is 1, we have successfully
+--- model checked the property specified in the LF repository
+
+***(  Result:
+reduce in MODEL-CHECK-COOP-SCHEDULE : modelCheck(initSystem in time 0, []sumLessThan 15) .
+rewrites: 524 in 2ms cpu (2ms real) (218606 rewrites/second)
+result ModelCheckResult: counterexample(....,
+'step}, {{< trigger : Reactor |
+       inports : none,
+       outports : < out : Port |
+       value : [1] >,
+       state : empty,
+       reactions : reaction 1 when t --> out do{out <- [1]},
+       timers : < t : Timer |
+       offset : 0,
+       period : 1 >,
+       actions : none >
+< task1 : Reactor |
+       inports : < cnt : Port |
+       value : [1] >,
+       outports : none,
+       state : counter |-> [4],
+       reactions : reaction 1 when cnt --> none do{counter := (counter + [2])},
+       timers : none,
+       actions : none >
+< task2 : Reactor |
+       inports : < cnt : Port |
+       value : [1] >,
+       outports : none,
+       state : counter |-> [4],
+       reactions : reaction 1 when cnt --> none do{counter := (counter + [2])},
+       timers : none,
+       actions : none >
+< task3 : Reactor |
+       inports : < cnt : Port |
+       value : [1] >,
+       outports : none,
+       state : counter |-> [4],
+       reactions : reaction 1 when cnt --> none do{counter := (counter + [2])},
+       timers : none,
+       actions : none >
+< task4 : Reactor |
+       inports : < cnt : Port |
+       value : [1] >,
+       outports : none,
+       state : counter |-> [4],
+       reactions : reaction 1 when cnt --> none do{counter := (counter + [2])},
+       timers : none,
+       actions : none >
+< task5 : Reactor |
+       inports : < cnt : Port |
+       value : [1] >,
+       outports : none,
+       state : counter |-> [4],
+       reactions : reaction 1 when cnt --> none do{counter := (counter + [2])},
+       timers : none,
+       actions : none >
+< env : Environment |
+       physicalActions : none >
+< queue : EventQueue |
+       queue : event(trigger, t, [0]) at tag(1, 0) >
+< rxns : Invoked |
+       reactions : ((trigger . 1) ; (task1 . 1) ; (task2 . 1) ; (task3 . 1) ; (task4 . 1) ; (task5 . 1)) >
+(trigger : out --> task1 : cnt)
+(trigger : out --> task2 : cnt)
+(trigger : out --> task3 : cnt)
+(trigger : out --> task4 : cnt)
+trigger : out --> task5 : cnt}  in time 1,deadlock})
+
+)***
+
+--- This is correct, as also in the LF repository, they expect the result "false".
+
+--- NOTE for paper:  we get concrete counterexample when property does not hold,
+---    whereas it seems that Lin et al do not provide a counterexample ....
+---    which is a huge difference. Note: for complex TCTL formulas, we also
+---    do not provide counterexamples.

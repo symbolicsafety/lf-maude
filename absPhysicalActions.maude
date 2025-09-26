@@ -1,0 +1,15 @@
+
+--- This file now defines only a container of physical actions.
+
+omod ENVIRONMENTS is
+  protecting TIME-INF .
+  protecting ABS-EVENT-QUEUE .
+  protecting PHYSICAL-ACTION-ID .
+
+  --- The ENVIRONMENT represents all external actions,
+  ---   namely, the physical actions:
+
+  class Environment | physicalActions : Configuration .
+endom
+
+

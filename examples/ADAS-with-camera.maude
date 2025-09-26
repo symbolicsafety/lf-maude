@@ -1,0 +1,113 @@
+*** This treats ADAS as is, WITH multiple triggers for the ADAS-controller.
+*** We can now handle this case.
+
+
+
+omod ADAS-WITH-CAMERA is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+  
+  ops frame received brakesApplied requestStop : -> RVarId [ctor] .
+  ops lidar camera adasProcessor dashboard pedal brakes : -> ReactorId [ctor] .
+  op t : -> TimerId [ctor] .
+  ops in in1 in2 out out1 out2 inAdas inPedal : -> RPortId [ctor] .
+  op a : -> RActionId .
+  op init : -> Configuration .
+  
+  eq init = 
+     < lidar : Reactor | 
+       inports : none,
+       outports : < out : Port | value : [0] >, 
+       state : (frame |-> [0]),
+       timers : < t : Timer | offset : 0, period : 34 >, --- 0 and 34 originally
+           --- change above values to 11 and 17 for error number 3 in p19
+       actions : none,
+       reactions : 
+       reaction when t --> out do { (frame := frame + [1]) ;
+                                    (out <- frame)} >
+  
+    < camera : Reactor | 
+       inports : none,
+       outports : < out : Port | value : [0] >, 
+       state : frame |-> [0],
+       timers : < t : Timer | offset : 0, period : 17 >,	
+       actions : none,
+       reactions : 
+       reaction when t --> out do { (frame := frame + [1]) ; (out <- frame) } >
+  
+  
+     < adasProcessor : Reactor | 
+       inports : < in1 : Port | value : [0] >   < in2 : Port | value : [0] >,
+       outports : < out1 : Port | value : [0] >
+                  < out2 : Port | value : [0] >, 
+       state : requestStop |-> [0],
+       timers : none,
+       actions : < a : LogicalAction | minDelay : 50, --- change to 51 for error 4
+                                minSpacing : 0, 
+                                policy : defer, 
+                                payload : [0] >,
+       reactions : 
+          (reaction when (in1 ; in2) --> a do
+             { (requestStop := [1]) ;  schedule(a, [0], [0]) } )
+          reaction when a --> out1 ; out2 do { 
+           if requestStop === [1] then
+               (out1 <- [1]) fi     *** CORRECT!
+   *** ERROR     (out2 <- [1])     --- ERROR CASE 1, page 19
+          }
+     >
+  
+     < dashboard : Reactor | 
+         inports : < in : Port | value : [0] >,
+         outports : none,
+         state : received |-> [0],
+         timers : none,
+         actions : none,
+         reactions : reaction when in do { received := in }       
+     >
+     
+     < pedal : Reactor |
+       inports : none,
+       outports : < out : Port | value : [0] >,
+       timers : none, 
+       state : empty,
+       actions : < a : PhysicalAction | 
+                                minDelay : 0, 
+                                minSpacing : 0, 
+                                policy : defer, 
+                                payload : [0] >,
+       reactions : reaction when a --> out do { out <- [1] }
+     >
+  
+     < brakes : Reactor |
+       inports : < inAdas : Port | value : [0] > 
+                 < inPedal : Port | value : [0] >,
+       outports : none,
+       timers : none,
+       actions : none,
+       state : (brakesApplied |-> [0]),
+       reactions : (reaction when inAdas do {brakesApplied := inAdas})
+                   (reaction when inPedal do {brakesApplied := inPedal})
+  
+     >
+  
+     (camera : out --> adasProcessor : in2)
+     (lidar : out --> adasProcessor : in1)     *** CORRECT; comment out line for
+                                               ***   error 2 on p19
+     (adasProcessor : out1 -- 5 --> brakes : inAdas)  --- change to 6 error 5
+     (adasProcessor : out2 --> dashboard : in)
+     pedal : out --> brakes : inPedal .
+endom
+
+
+--- Property: within time 55, the brakes are applied.
+---  Since we know that the timer t has offset 0, it will
+--- fire at time 0, then 34, then 68, etc.
+--- Therefore, it is enough to verify the time-bounded
+--- formula <>_<= 55 (brakesApplied), which is what we will do.
+
+--- We will also show that the other error cases also give errors.
+--- While Real-Time Maude has a timed CTL model checker, we only use
+--- Maude and "home-made" time-bounded analysis in this case.
+
+red generateAPG(event(camera, t, [165]), addReactionIndices(init)) .

@@ -1,0 +1,88 @@
+*** Our model of physical actions using logical time:
+---    Which seems quite general:
+---    Each physical action has a period and a finite set of values
+---      to choose from.
+---    * At the end of each period, we choose nondeterministically
+---      whether the action happens or not
+---    * If the action happens, then we choose a value nondet
+---      from the set of possible values.
+
+--- Late change:   For analysis purposes it may sometimes be convenient
+---                to analyze the system when a physical action
+---                always triggers, even though this looks a lot like
+---                timers, although timers cannot select values
+---                nondeterministically.  Mostly needed for train door.
+---                therefore we add a flag "timeNonDet" for time-nondeterministic
+---                physical actions.
+
+
+omod PHYSICAL-ACTIONS is
+  protecting ENVIRONMENTS .
+  protecting LF-VALUE-TIME .
+  extending PERIODIC-OBJ .
+
+  --- Dynamically, each physical action has:
+  ---    * home address
+  ---    * time left of period
+  ---    * period
+  ---    * range of values
+
+  class PhysAct | leftOfPeriod : TimeInf,
+                  possibleValues : ValueSet,
+                  timeNonDet : Bool .
+  subclass PhysAct < PeriodicObj .
+
+  subsort PhysActId < Oid .
+  
+---  op _._ : ReactorId ActionId -> Oid [ctor] .
+  --- names of physical actions!
+
+  sort ValueSet .
+  subsort Value < ValueSet .
+  op noValue : -> ValueSet [ctor] .
+  op _:_ : ValueSet ValueSet -> ValueSet [ctor assoc comm id: noValue] .
+
+  --- generate possible values from range
+  op [_]..[_] : Nat Nat -> ValueSet .
+  
+  vars I J : Nat . 
+  ceq [I] .. [J] = [I] : ([I + 1] .. [J]) if I <= J .
+  ceq [I] .. [J] = noValue if I > J .
+
+  vars O O2 : Oid .
+  var AI : ActionId .
+  var RI : ReactorId .
+  var T : Time .
+  var P : TimeInf .
+  var V : Value .
+  var VS : ValueSet .
+  var EVENT : Event .
+  var QUEUE : EQueue .
+  var CONF : Configuration .
+
+
+---  commented out for testing:
+  crl [noAction] :
+     < O : PhysAct | leftOfPeriod : T, period : P, timeNonDet : true > 
+  => < O : PhysAct | leftOfPeriod : P >
+  if T equals zero .
+---     
+
+  msg scheduleAction : Event -> Msg .
+
+  crl [actionHappens] :
+     < (RI . AI) : PhysAct | leftOfPeriod : T, period : P,
+                             possibleValues : (V : VS) >
+   =>
+     < (RI . AI) : PhysAct | leftOfPeriod : P >
+     scheduleAction(event(RI, AI, V, trueVal))   --- the const is true
+  if T equals zero .
+
+
+  eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
+     < O2 : EventQueue | queue : QUEUE >
+   =
+     < O : Environment | physicalActions : CONF >
+     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) > .
+endom
+

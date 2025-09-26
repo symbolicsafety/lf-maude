@@ -1,0 +1,165 @@
+
+--- This file is almost the same as the one in dynamics-concrete.maude, except that 
+---  1) physicalActions do not have timers 
+---  3) an extra object for (global) symbolic constraints
+
+---(
+omod TIME-BOUNDED-EVENT-CHECK is
+  protecting EVENT-QUEUE .
+  protecting REACTION .
+  protecting CLOCK .
+
+  --- clock is reset when the event is first added to the queue
+  class EventMonitor | event : ReactionIdSet, 
+                       evalue : Value,
+                       econst : BoolValue .
+  subclass EventMonitor < Clock .
+
+  var EM : Oid .
+  var REACTORID : ReactorId .
+  var ACTIONID : ActionId .
+  var EVENTS : Events .
+  var TAG : Tag .
+  var QUEUE : EQueue .
+  var V : Value .
+  var BV : BoolValue .
+
+  --- reset clock when EVENT are in the queue
+  op check : Object EQueue -> Object .
+  eq check(< EM : EventMonitor | clock : INF, event : REACTORID . ACTIONID >, 
+           (event(REACTORID, ACTIONID, V, BV) EVENTS at TAG) ;; QUEUE)
+   = < EM : EventMonitor | clock : zero , evalue : V, econst : BV > .
+  eq check(< EM : EventMonitor | >, QUEUE) = < EM : EventMonitor | > [owise] .
+endom
+)---
+
+
+omod DYNAMICS-WITHOUT-TICK is
+  including ABS-DYNAMICS-WITHOUT-TICK .
+  including EXECUTE-STEP .
+  including EVENT-QUEUE .
+  including PHYSICAL-ACTIONS .
+  including SYM-INFRA .
+---  including TIME-BOUNDED-EVENT-CHECK .
+
+  --- At the moment, the global state is
+  --- < env : Environment | physicalActions : ... >
+  --- REACTORS and CONNECTIONS in some state
+  --- < q : EventQueue | queue : ... >
+  --- < sym : SymInfra | constraint : ..., counter : ... >
+  --- < em : EventMonitor | clock : ..., event : ... >   <- removed 
+
+
+  vars REACTORS-AND-CONNECTIONS NEW-NETWORK : Configuration .
+  vars QUEUE QUEUE' NEW-QUEUE : EQueue .
+  vars E Q EM RXNS SYM : Oid .
+  var INVOKED : ReactionIdSet .
+  var EVENT : Event .
+  var EVENTS : Events .
+  vars CONST CONST' CONST'' : BoolValue .
+  var TAG : Tag .
+  var TI : TimeInf .
+  vars T T' : Time .
+  var N N' : Nat .
+
+  --- In the symbolic setting, physical envs have no timer. Also,
+  --- executeStep is non-deterministic.
+  crl [step] :
+      {< E : Environment | >
+       REACTORS-AND-CONNECTIONS
+       < Q : EventQueue | queue : QUEUE >
+       < SYM : SymInfra | constraint : CONST >
+       < RXNS : Invoked | >}
+---       < EM : EventMonitor | > 
+    =>
+      {< E : Environment | >
+       NEW-NETWORK
+       < Q : EventQueue | queue : NEW-QUEUE >
+       < SYM : SymInfra | constraint : CONST && CONST' && CONST'', tickApplicable : true >
+       < RXNS : Invoked | reactions : INVOKED >}
+       ---check(< EM : EventMonitor | >, NEW-QUEUE) 
+   if QUEUE =/= empty
+   /\ getMaybeReadyEvents(QUEUE,CONST) => {EVENTS,tag(T,N),CONST',QUEUE'} 
+   /\ executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE', trueVal)
+      => networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST'') 
+   /\ smtCheck(CONST && CONST' && CONST'') .
+  
+endom
+
+
+*** Now we describe tick rules for symbolic analysis. 
+
+omod SYM-REACH-DYNAMICS is
+  including DYNAMICS-WITHOUT-TICK .
+
+  vars REACTORS-AND-CONNECTIONS CONF : Configuration .
+  vars CONST CONST' : BoolValue .
+  vars T T' T0 T1 : Time .
+  var TI : TimeInf .
+  vars E Q PA SYM RXNS EM : Oid .
+  vars N NC : Nat .
+  var EVENTS : Events .
+  vars QUEUE NEW-QUEUE : EQueue .
+  var NZN : NzNat .
+  var REACTORID : ReactorId .
+  var TIMERID : TimerId .
+
+  op timeBound : -> Time .   *** initialized by user
+
+  --- A tick rule for non-physical events. This rule advances time
+  --- until the first queue item is ready to execute.  Note that time 
+  --- values in the event queue may be symbolic
+   crl [tick] :
+       {< E : Environment | physicalActions : CONF >
+        REACTORS-AND-CONNECTIONS
+        < Q : EventQueue | queue : QUEUE >
+        < SYM : SymInfra | constraint : CONST, counter : NC, tickApplicable : true >
+        < RXNS : Invoked | >}
+        ---< EM : EventMonitor | >
+       in time T0
+    =>
+       {< E : Environment | physicalActions : increaseClock(CONF, T - T0) >
+        REACTORS-AND-CONNECTIONS
+        < Q : EventQueue | queue : decreaseTags(QUEUE, T - T0) >
+        < SYM : SymInfra | constraint : CONST', counter : s NC, tickApplicable : false >
+        < RXNS : Invoked | reactions : none >} 
+        ---increaseClock(< EM : EventMonitor | >, T - T0)
+       in time T
+    if T := r(tv(NC))    --- a fresh variable for the next global time
+    /\ CONST' := CONST && [T gt T0 and T le timeBound and (T - T0) <=mte QUEUE] 
+    /\ smtCheck(CONST') .
+
+---(
+   crl [tick] :
+       {< E : Environment | physicalActions : CONF >
+        REACTORS-AND-CONNECTIONS
+        < Q : EventQueue | queue : QUEUE >
+        < SYM : SymInfra | constraint : CONST, counter : NC >
+        < RXNS : Invoked | >}
+        ---< EM : EventMonitor | >
+       in time T0
+    =>
+       {< E : Environment | physicalActions : increaseClock(CONF, T) >
+        REACTORS-AND-CONNECTIONS
+        < Q : EventQueue | queue : decreaseTags(QUEUE, T) >
+        < SYM : SymInfra | constraint : CONST', counter : s NC >
+        < RXNS : Invoked | reactions : none >} 
+        ---increaseClock(< EM : EventMonitor | >, T)
+       in time (T0 plus T)
+    if T := r(tv(NC))    --- a fresh variable for duration
+    /\ CONST' := CONST && [T gt zero and T0 plus T le timeBound 
+                           and T <=mte QUEUE] 
+    /\ smtCheck(CONST') .
+)---
+
+  op _<=mte_ : Time EQueue ~> Bool .
+  eq T <=mte ((EVENTS at tag(T',N)) ;; QUEUE) = (T le T') and T <=mte QUEUE .
+  eq T <=mte empty = true .
+
+  --- Assume that T <= T' for any T'.
+  op decreaseTags : EQueue Time -> EQueue .
+  eq decreaseTags(empty, T) = empty .
+  eq decreaseTags((EVENTS at tag(T', N)) ;; QUEUE, T) =
+     (EVENTS at tag(T' monus T, N)) ;; decreaseTags(QUEUE, T) .
+endom
+

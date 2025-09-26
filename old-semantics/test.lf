@@ -1,0 +1,59 @@
+target Python
+
+reactor REACTOR1 {
+    state x = 0
+
+    input inport1
+    input inport2
+
+    output outport
+
+    reaction (inport2) -> outport {=
+        self.x = self.x ** 2
+        outport.set(self.x)
+    =}
+
+    reaction (inport1) {=
+        self.x += 8;
+        print(f"REACTOR1 receives on inport1 {inport1.value} and updates x to {self.x}.")
+    =}
+}
+
+reactor REACTOR2 {
+    input inport
+    output outport
+
+    reaction (inport) -> outport {=
+        elapsed_logical_time = lf.time.logical_elapsed()
+        print(f"Logical time since start: {elapsed_logical_time} nsec.")
+        outport.set(inport.value);
+    =}
+}
+
+reactor REACTOR3 {
+    input inport
+
+    reaction (inport) {=
+        elapsed_logical_time = lf.time.logical_elapsed()
+        print(f"Logical time since start: {elapsed_logical_time} nsec.")
+        print(f"REACTOR3 receives on inport {inport.value}")
+    =}
+}
+
+main reactor {
+    r1 = new REACTOR1()
+    r2 = new REACTOR2()
+    r3 = new REACTOR3()
+
+    r1.outport -> r2.inport
+    r2.outport -> r1.inport1
+    r1.outport -> r3.inport
+
+    reaction(startup) -> r1.inport2 {=
+        elapsed_logical_time = lf.time.logical_elapsed()
+        print(f"Logical time since start: {elapsed_logical_time} nsec.")
+        print(f"Stimulate REACTOR1.");
+        r1.inport2.set(0);
+    =}
+}
+
