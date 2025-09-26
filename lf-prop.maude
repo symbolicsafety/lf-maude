@@ -152,3 +152,75 @@ fmod SEARCH-GOAL is
 endfm
 
 
+omod LF-OUTPUT-REPR is
+  including LF-PROP .
+  including UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
+
+--- simplified counter example information
+  sort OutputItem .
+  op time:_ : Time -> OutputItem [ctor format(b o d)] .
+  op invoked:_ : ReactionIdSet -> OutputItem [ctor prec 124 format(b o d)] .
+  op queue:_ : EQueue -> OutputItem [ctor prec 124 format(b o d)] .
+  op inports:_ : Map{Oid,Value} -> OutputItem [ctor prec 124 format(b o d)] .
+  op state:_ : ReactorState -> OutputItem [ctor prec 124 format(b o d)] .
+  op _:`[_`] : ReactorId OutputItemSet -> OutputItem [ctor format(r o d n++i d --)] .
+
+  sort OutputItemSet .
+  subsort OutputItem < OutputItemSet .
+  op none : -> OutputItemSet [ctor] .
+  op __ : OutputItemSet OutputItemSet -> OutputItemSet [ctor comm assoc id: none format(d ni d) prec 126] .
+
+  sort Map{Oid,Value} .
+  subsort ReactorState < Map{Oid,Value} .
+  op _|->_ : Oid Value -> Map{Oid,Value} [ctor] .
+  op _;_ : Map{Oid,Value} Map{Oid,Value} -> Map{Oid,Value} [ctor ditto] .
+
+  var O : Oid .
+  var RIS : ReactionIdSet .
+  var EQ : EQueue .
+  var PORTS REST : Configuration .
+  var VALUATION : ReactorState .
+  var VAL : Value .
+  var T : Time .
+  var TI : TimeInf .
+  var OIS : OutputItemSet .
+
+--- simplify
+  op simplify : ClockedSystem ~> OutputItemSet .
+  eq simplify({REST} in time T  timeBound TI) = (time: T) simplify(REST) .
+  eq simplify({REST} in time INF timeBound TI) = simplify(REST) .
+  eq simplify({REST} timeBound TI) = simplify(REST) .
+  eq simplify({REST} in time T) = (time: T) simplify(REST) .
+  eq simplify({REST} in time INF) = simplify(REST) .
+  eq simplify({REST}) = simplify(REST) .
+
+  op simplify : Configuration ~> OutputItemSet .
+  eq simplify(< O : Invoked | reactions : RIS > REST) 
+   = (invoked: RIS) simplify(REST) .
+  eq simplify(< O : EventQueue | queue : EQ > REST) 
+   = (queue: EQ) simplify(REST) .
+  eq simplify(< O : Reactor | inports : PORTS, state : VALUATION > REST)
+   = (O : [inports: simplifyPorts(PORTS) state: VALUATION]) simplify(REST) .
+  eq simplify(REST) = none [owise] .
+
+  op simplifyPorts : Configuration ~> Map{Oid,Value} .
+  eq simplifyPorts(< O : Port | value : VAL > PORTS)
+   = (O |-> VAL) ; simplifyPorts(PORTS) .
+  eq simplifyPorts(none) = empty .
+endom
+
+
+
+omod LF-OUTPUT-COUNTEREXAMPLE is
+  including LF-OUTPUT-REPR .
+  including MODEL-CHECKER .
+
+  var STATE : State .
+  var RN : RuleName .
+
+  --- new counterexample transition
+  op `{_`}===[_]===> : OutputItemSet RuleName -> Transition [ctor format(n ++i d n -- d d d d)] .
+
+  eq {STATE, RN} = {simplify(STATE)}===[RN]===> .
+endom
+
