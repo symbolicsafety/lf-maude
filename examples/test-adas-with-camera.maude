@@ -51,12 +51,15 @@ omod MODEL-CHECK-ADAS is
   including MODEL-CHECKER .
   including TIME-BOUNDED-ADAS .
   including LF-PROP .
+  including LF-PROP-EXT .
 endom
 
 
 red modelCheck(initSystem in time 0,
                <> (brakesApplied in brakes == [1])) .
 
+red modelCheck(initSystem in time 0,
+               <> @ brakesApplied in brakes === @ [1]) .
 
 
 --- exactly what Edward Lee wanted
@@ -71,11 +74,17 @@ red modelCheck(initSystem in time 0,
 red modelCheck(initSystem in time 0,
                [] (((lidar . 1) invoked) -> (<> (brakesApplied in brakes == [1])))) .
 
+red modelCheck(initSystem in time 0,
+               [] (((lidar . 1) invoked) -> (<> @ brakesApplied in brakes === @ [1] ))) .
+
 --- property in Lee paper:
 red modelCheck(initSystem in time 0,
                [] (((lidar . 1) invoked /\ requestStop in adasProcessor == [1])
 	       -> <> brakesApplied in brakes == [1])) .
 
+red modelCheck(initSystem in time 0,
+               [] (((lidar . 1) invoked /\ requestStop in adasProcessor == [1])
+	       -> <> @ brakesApplied in brakes === @ [1])) .
 
 --- Another inttesting property is that after the pedal has been pressed, the brakles are
 --- applied immediately.

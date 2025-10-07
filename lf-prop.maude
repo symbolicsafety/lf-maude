@@ -1,80 +1,22 @@
-omod LF-PROP is
+omod LF-PROP-BASE is
   pr SATISFACTION .
   pr UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
 
   subsort ClockedSystem < State .
 
-  var REST INPORTS : Configuration .
+  var REST : Configuration .
+  var O : Oid .
   var REACTORID : ReactorId .
   var AT : ActionTrigger .
-  var VAR : VarId .
-  var VAL VAL' : Value .
-  var RVAR : RVarId .
-  var RVAL RVAL' : Value .
-  var RS : ReactorState .
+  var VAL : Value .
   var T : Time .
   var TI : TimeInf .
-  var O : Oid .
-  var PI : PortId .
-  var RPI : RPortId .
   var RID : ReactionId .
   var RIDS : ReactionIdSet .
   vars EQ1 EQ2 : EQueue .
   var EVENT : Event .
   var EVENTS : Events .
   var TAG : Tag .
-
-  --- generic atomic proposition:
-
-  op _in_==_ : VarId ReactorId Value -> Prop [ctor] .
-  op _in_!=_ : VarId ReactorId Value -> Prop [ctor] .
-  op _in_<=_ : RVarId ReactorId RatValue -> Prop [ctor] .
-  op _in_<_  : RVarId ReactorId RatValue -> Prop [ctor] .
-  op _in_>=_ : RVarId ReactorId RatValue -> Prop [ctor] .
-  op _in_>_  : RVarId ReactorId RatValue -> Prop [ctor] .
-
-  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
-     |= VAR in REACTORID == VAL = true . 
-
-  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
-     |= VAR in REACTORID != VAL' = (VAL =/= VAL') .
-
-  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
-     |= RVAR in REACTORID <= RVAL' = (RVAL <= RVAL') == [true] . 
-
-  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
-     |= RVAR in REACTORID < RVAL' = (RVAL < RVAL') == [true] . 
-
-  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
-     |= RVAR in REACTORID >= RVAL' = (RVAL >= RVAL') == [true] . 
-
-  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
-     |= RVAR in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
-
-  op _in_==_ : PortId ReactorId Value -> Prop [ctor] .
-  op _in_!=_ : PortId ReactorId Value -> Prop [ctor] .
-  op _in_<=_ : RPortId ReactorId RatValue -> Prop [ctor] .
-  op _in_<_  : RPortId ReactorId RatValue -> Prop [ctor] .
-  op _in_>=_ : RPortId ReactorId RatValue -> Prop [ctor] .
-  op _in_>_  : RPortId ReactorId RatValue -> Prop [ctor] .
-
-  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
-     |= PI in REACTORID == VAL = true . 
-
-  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
-     |= PI in REACTORID != VAL' = (VAL =/= VAL') . 
-
-  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
-     |= RPI in REACTORID <= RVAL' = (RVAL <= RVAL') == [true] . 
-
-  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
-     |= RPI in REACTORID < RVAL' = (RVAL < RVAL') == [true] . 
-
-  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
-     |= RPI in REACTORID >= RVAL' = (RVAL >= RVAL') == [true] . 
-
-  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
-     |= RPI in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
 
   --- An event is in the event queue:
   op _inQueue : Event -> Prop [ctor] .
@@ -101,10 +43,176 @@ omod LF-PROP is
   eq STATE:State |= P:Prop = false [owise] .
 
   --- Extend to timed/time-bounded cases
-  ceq STATE:State   in time TI |= P:Prop = true if STATE:State |= P:Prop .
-  ceq STATE:State timeBound TI |= P:Prop = true if STATE:State |= P:Prop .
-
+  eq STATE:State   in time TI |= P:Prop = STATE:State |= P:Prop .
+  eq STATE:State timeBound TI |= P:Prop = STATE:State |= P:Prop .
 endom
+
+
+
+omod LF-PROP is
+  including LF-PROP-BASE .
+
+  var REST INPORTS : Configuration .
+  var REACTORID : ReactorId .
+  var VAR : VarId .
+  var VAL VAL' : Value .
+  var RVAR : RVarId .
+  var RVAL RVAL' : Value .
+  var RS : ReactorState .
+  var PI : PortId .
+  var RPI : RPortId .
+
+  --- generic atomic proposition:
+
+  op _in_==_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_!=_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_<=_ : RVarId ReactorId RatValue -> Prop [ctor] .
+  op _in_<_  : RVarId ReactorId RatValue -> Prop [ctor] .
+  op _in_>=_ : RVarId ReactorId RatValue -> Prop [ctor] .
+  op _in_>_  : RVarId ReactorId RatValue -> Prop [ctor] .
+
+  op _in_==_ : PortId ReactorId Value -> Prop [ctor] .
+  op _in_!=_ : PortId ReactorId Value -> Prop [ctor] .
+  op _in_<=_ : RPortId ReactorId RatValue -> Prop [ctor] .
+  op _in_<_  : RPortId ReactorId RatValue -> Prop [ctor] .
+  op _in_>=_ : RPortId ReactorId RatValue -> Prop [ctor] .
+  op _in_>_  : RPortId ReactorId RatValue -> Prop [ctor] .
+
+  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID == VAL = true . 
+
+  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID != VAL' = (VAL =/= VAL') .
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID <= RVAL' = (RVAL <= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID < RVAL' = (RVAL < RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID >= RVAL' = (RVAL >= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (RVAR |-> RVAL) ; RS >}
+     |= RVAR in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
+     |= PI in REACTORID == VAL = true . 
+
+  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
+     |= PI in REACTORID != VAL' = (VAL =/= VAL') . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID <= RVAL' = (RVAL <= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID < RVAL' = (RVAL < RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID >= RVAL' = (RVAL >= RVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
+     |= RPI in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
+endom
+
+
+
+omod LF-PROP-EXT is
+  including LF-PROP-BASE .
+
+  --- We now support all LF expressions, except isPresent.
+
+  var REST ACTIONS INPORTS : Configuration .
+  var VALUATION : ReactorState .
+  var REACTORID : ReactorId .
+  var PORTID : PortId .
+  var ACTIONID : ActionId .
+  var VAR : VarId .
+  vars EXP EXP' : Expr .
+  vars REXP1 REXP2 : RatExpr .
+  var VAL : Value .
+  var BP : BPropExpr .
+  vars RP1 RP2 : RPropExpr .
+  vars EP EP' : PropExpr .
+
+--- syntax
+  sort RPropExpr BPropExpr PropExpr .
+  subsort RPropExpr BPropExpr < PropExpr .
+  subsort BPropExpr < Prop .
+
+  ops _===_ _==/=_ : PropExpr PropExpr -> BPropExpr [ctor] .
+  ops _<_ _>_ _<=_ _>=_ : RPropExpr RPropExpr -> BPropExpr [ctor] .
+  ops _+_ _*_ _-_ : RPropExpr RPropExpr -> RPropExpr . 
+
+  op @_ : Value -> PropExpr [ctor] .
+  op @_ : BoolValue -> BPropExpr [ctor] .
+  op @_ : RatValue -> RPropExpr [ctor] .
+
+  op @_in_ : Expr ReactorId -> PropExpr [ctor] .
+  op @_in_ : BoolExpr ReactorId -> BPropExpr [ctor] .
+  op @_in_ : RatExpr ReactorId -> RPropExpr [ctor] .
+
+  eq @ VAL in REACTORID = @ VAL .
+
+--- normalization
+  op normalize : PropExpr ~> PropExpr [memo] .
+
+  eq normalize(@ REXP1 + REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) + normalize(@ REXP2 in REACTORID) .
+  eq normalize(@ REXP1 * REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) * normalize(@ REXP2 in REACTORID) .
+  eq normalize(@ REXP1 - REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) - normalize(@ REXP2 in REACTORID) .
+
+  eq normalize(@ REXP1 < REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) < normalize(@ REXP2 in REACTORID) .
+  eq normalize(@ REXP1 <= REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) <= normalize(@ REXP2 in REACTORID) .
+  eq normalize(@ REXP1 > REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) > normalize(@ REXP2 in REACTORID) .
+  eq normalize(@ REXP1 > REXP2 in REACTORID) 
+   = normalize(@ REXP1 in REACTORID) >= normalize(@ REXP2 in REACTORID) .
+
+  eq normalize(@ EXP === EXP' in REACTORID) 
+   = normalize(@ EXP in REACTORID) === normalize(@ EXP' in REACTORID) .
+  eq normalize(@ EXP ==/= EXP' in REACTORID) 
+   = normalize(@ EXP in REACTORID) ==/= normalize(@ EXP' in REACTORID) .
+
+  eq normalize(EP) = EP [owise] .
+
+--- semantics
+  eq {REST} |= BP = ([[normalize(BP)]] REST) == [true] .
+
+  op [[_]]_ : PropExpr Configuration ~> Value .
+  op [[_]]_ : RPropExpr Configuration ~> RatValue .
+  op [[_]]_ : BPropExpr Configuration ~> BoolValue .
+
+  eq [[@ VAL]] REST = VAL .
+
+  eq [[@ PORTID in REACTORID]] REST
+     < REACTORID : Reactor | 
+         inports : < PORTID : Port | value : VAL > INPORTS > = VAL .
+
+  eq [[@ ACTIONID in REACTORID]] REST
+     < REACTORID : Reactor | 
+         actions : < ACTIONID : Action | payload : VAL > ACTIONS > = VAL .
+
+  eq [[@ VAR in REACTORID]] REST
+     < REACTORID : Reactor | state : (VAR |-> VAL) ; VALUATION > = VAL .
+
+  eq [[RP1 + RP2]] REST = [[RP1]] REST + [[RP2]] REST .
+  eq [[RP1 * RP2]] REST = [[RP1]] REST * [[RP2]] REST .
+  eq [[RP1 - RP2]] REST = [[RP1]] REST - [[RP2]] REST .
+
+  eq [[RP1 <  RP2]] REST = [[RP1]] REST <  [[RP2]] REST .
+  eq [[RP1 <= RP2]] REST = [[RP1]] REST <= [[RP2]] REST .
+  eq [[RP1 >  RP2]] REST = [[RP1]] REST >  [[RP2]] REST .
+  eq [[RP1 >= RP2]] REST = [[RP1]] REST >= [[RP2]] REST .
+
+  eq [[EP ===  EP']] REST = [[EP]] REST ===  [[EP']] REST .
+  eq [[EP ==/= EP']] REST = [[EP]] REST ==/= [[EP']] REST .
+endom
+
 
 
 fmod BOOLEAN-FORMULA is
@@ -133,6 +241,7 @@ fmod BOOLEAN-FORMULA is
 endfm
 
 
+
 fmod SEARCH-GOAL is
   pr SATISFACTION .
   pr BOOLEAN-FORMULA .
@@ -150,6 +259,7 @@ fmod SEARCH-GOAL is
   eq STATE |= (F /\ G) = (STATE |= F) and (STATE |= G) .
   eq STATE |= (F \/ G) = (STATE |= F) or  (STATE |= G) .
 endfm
+
 
 
 omod LF-OUTPUT-REPR is

@@ -100,6 +100,7 @@ spec="F[0, 20 msec]((Election_i0_elected + Election_i1_elected + Election_i2_ele
 
 )***
 
+---(
 omod TIME-BOUNDED-ELECTION is
   including TEST-ELECTION .
   including TIME-BOUNDED-DYNAMICS .
@@ -133,3 +134,17 @@ reduce in MODEL-CHECK-ELECTION : modelCheck(initSystem in time 0, <> sumIs 1) .
 rewrites: 679 in 1ms cpu (0ms real) (679000 rewrites/second)
 result Bool: true
 )***
+)---
+
+omod MODEL-CHECK-ELECTION is
+  including TEST-ELECTION .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+  including LF-PROP-EXT .
+  including MODEL-CHECKER .
+endom
+
+red modelCheck(initSystem timeBound 20, 
+               <> ((((@ elected in node0) + (@ elected in node1)) + (@ elected in node2)) === @ [1])) .
+
+red modelCheck(initSystem timeBound 20, 
+               <> ((((@ elected in node0) + (@ elected in node1)) + (@ elected in node2)) === @ [10])) .

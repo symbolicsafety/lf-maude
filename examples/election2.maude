@@ -83,6 +83,7 @@ It should be true in 30 msec
 
 )***
 
+---(
 omod TIME-BOUNDED-ELECTION2 is
   including TEST-ELECTION2 .
   including TIME-BOUNDED-DYNAMICS .
@@ -121,3 +122,17 @@ reduce in MODEL-CHECK-ELECTION2 : modelCheck(initSystem in time 0, <> sumIs 1) .
 rewrites: 520 in 1ms cpu (0ms real) (520000 rewrites/second)
 result Bool: true
 )***
+)---
+
+omod MODEL-CHECK-ELECTION2 is
+  including TEST-ELECTION2 .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+  including LF-PROP-EXT .
+  including MODEL-CHECKER .
+endom
+
+red modelCheck(initSystem timeBound 20, 
+               <> ((((@ elected in node0) + (@ elected in node1)) + (@ elected in node2)) === @ [1])) .
+
+red modelCheck(initSystem timeBound 30, 
+               <> ((((@ elected in node0) + (@ elected in node1)) + (@ elected in node2)) === @ [1])) .

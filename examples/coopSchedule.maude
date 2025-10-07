@@ -96,10 +96,9 @@ endom
 rew initSystem in time 0 .
 
 
-
+---(
 
 in model-checker.maude
-
 
 omod MODEL-CHECK-COOP-SCHEDULE is
   including MODEL-CHECKER .
@@ -125,6 +124,7 @@ endom
 
 
 red modelCheck(initSystem in time 0, [] (sumLessThan 15)) .
+red modelCheck(initSystem in time 0, [] (sumLessThan 21)) .
 
 --- note that since since the time bound is 1, we have successfully
 --- model checked the property specified in the LF repository
@@ -203,3 +203,28 @@ trigger : out --> task5 : cnt}  in time 1,deadlock})
 ---    whereas it seems that Lin et al do not provide a counterexample ....
 ---    which is a huge difference. Note: for complex TCTL formulas, we also
 ---    do not provide counterexamples.
+
+)---
+
+omod MODEL-CHECK-COOP-SCHEDULE is
+  including TIME-BOUNDED-COOP-SCHEDULE .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+  including LF-PROP-EXT .
+  including MODEL-CHECKER .
+endom
+
+
+
+red modelCheck(initSystem timeBound 1, 
+      [] ((((((@ counter in task1) + (@ counter in task2)) + 
+          (@ counter in task3)) + (@ counter in task4)) + 
+          (@ counter in task1)) < @ [15])) .
+
+red modelCheck(initSystem timeBound 1, 
+      [] ((((((@ counter in task1) + (@ counter in task2)) + 
+          (@ counter in task3)) + (@ counter in task4)) + 
+          (@ counter in task1)) < @ [21])) .
+
+
+eof
+
