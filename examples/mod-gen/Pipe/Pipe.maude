@@ -1,0 +1,239 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod PIPE is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op Pipe : -> ReactorId [ctor] .
+    op source : -> ReactorId [ctor] .
+    op node1 : -> ReactorId [ctor] .
+    op node2 : -> ReactorId [ctor] .
+    op node3 : -> ReactorId [ctor] .
+    op node4 : -> ReactorId [ctor] .
+    op node5 : -> ReactorId [ctor] .
+    op sink : -> ReactorId [ctor] .
+    op source.sv.value : -> RVarId [ctor] .
+    op node1.sv.count : -> RVarId [ctor] .
+    op node1.sv.payload : -> RVarId [ctor] .
+    op node2.sv.count : -> RVarId [ctor] .
+    op node2.sv.payload : -> RVarId [ctor] .
+    op node3.sv.count : -> RVarId [ctor] .
+    op node3.sv.payload : -> RVarId [ctor] .
+    op node4.sv.count : -> RVarId [ctor] .
+    op node4.sv.payload : -> RVarId [ctor] .
+    op node5.sv.count : -> RVarId [ctor] .
+    op node5.sv.payload : -> RVarId [ctor] .
+    op sink.sv.received : -> RVarId [ctor] .
+    op source.out.out : -> RPortId [ctor] .
+    op node1.in.in : -> RPortId [ctor] .
+    op node1.out.out : -> RPortId [ctor] .
+    op node2.in.in : -> RPortId [ctor] .
+    op node2.out.out : -> RPortId [ctor] .
+    op node3.in.in : -> RPortId [ctor] .
+    op node3.out.out : -> RPortId [ctor] .
+    op node4.in.in : -> RPortId [ctor] .
+    op node4.out.out : -> RPortId [ctor] .
+    op node5.in.in : -> RPortId [ctor] .
+    op node5.out.out : -> RPortId [ctor] .
+    op sink.in.in : -> RPortId [ctor] .
+    op source.t.t : -> TimerId [ctor] .
+    op source.la.a : -> RActionId [ctor] .
+    op node1.la.sendoutput : -> RActionId [ctor] .
+    op node2.la.sendoutput : -> RActionId [ctor] .
+    op node3.la.sendoutput : -> RActionId [ctor] .
+    op node4.la.sendoutput : -> RActionId [ctor] .
+    op node5.la.sendoutput : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < source : Reactor |
+            inports : none,
+            outports : 
+                < source.out.out : Port | value : [0] >,
+            state : 
+                ( source.sv.value |-> [0] ),
+            timers : 
+                < source.t.t : Timer | offset : 0, period : 2000000 >,
+            actions : 
+                < source.la.a : LogicalAction | minDelay : 1000000, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (source.t.t) --> (source.la.a ; source.out.out) do {
+                    (source.sv.value := (source.sv.value + [1])) ;
+                    (source.out.out <- source.sv.value) ;
+                    schedule(source.la.a, [0], [0])
+                })
+                (reaction when (source.la.a) --> (source.out.out) do {
+                    (source.out.out <- source.sv.value)
+                })
+        >
+        < node1 : Reactor |
+            inports : 
+                < node1.in.in : Port | value : [0] >,
+            outports : 
+                < node1.out.out : Port | value : [0] >,
+            state : 
+                ( node1.sv.count |-> [0] );
+                ( node1.sv.payload |-> [0] ),
+            timers : none,
+            actions : 
+                < node1.la.sendoutput : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (node1.in.in) --> (node1.la.sendoutput) do {
+                    (node1.sv.payload := node1.in.in) ;
+                    (node1.sv.count := (node1.sv.count + [1])) ;
+                    schedule(node1.la.sendoutput, [0], [0])
+                })
+                (reaction when (node1.la.sendoutput) --> (node1.out.out) do {
+                    (node1.out.out <- node1.sv.payload) ;
+                    (node1.sv.count := (node1.sv.count - [1]))
+                })
+        >
+        < node2 : Reactor |
+            inports : 
+                < node2.in.in : Port | value : [0] >,
+            outports : 
+                < node2.out.out : Port | value : [0] >,
+            state : 
+                ( node2.sv.count |-> [0] );
+                ( node2.sv.payload |-> [0] ),
+            timers : none,
+            actions : 
+                < node2.la.sendoutput : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (node2.in.in) --> (node2.la.sendoutput) do {
+                    (node2.sv.payload := node2.in.in) ;
+                    (node2.sv.count := (node2.sv.count + [1])) ;
+                    schedule(node2.la.sendoutput, [0], [0])
+                })
+                (reaction when (node2.la.sendoutput) --> (node2.out.out) do {
+                    (node2.out.out <- node2.sv.payload) ;
+                    (node2.sv.count := (node2.sv.count - [1]))
+                })
+        >
+        < node3 : Reactor |
+            inports : 
+                < node3.in.in : Port | value : [0] >,
+            outports : 
+                < node3.out.out : Port | value : [0] >,
+            state : 
+                ( node3.sv.count |-> [0] );
+                ( node3.sv.payload |-> [0] ),
+            timers : none,
+            actions : 
+                < node3.la.sendoutput : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (node3.in.in) --> (node3.la.sendoutput) do {
+                    (node3.sv.payload := node3.in.in) ;
+                    (node3.sv.count := (node3.sv.count + [1])) ;
+                    schedule(node3.la.sendoutput, [0], [0])
+                })
+                (reaction when (node3.la.sendoutput) --> (node3.out.out) do {
+                    (node3.out.out <- node3.sv.payload) ;
+                    (node3.sv.count := (node3.sv.count - [1]))
+                })
+        >
+        < node4 : Reactor |
+            inports : 
+                < node4.in.in : Port | value : [0] >,
+            outports : 
+                < node4.out.out : Port | value : [0] >,
+            state : 
+                ( node4.sv.count |-> [0] );
+                ( node4.sv.payload |-> [0] ),
+            timers : none,
+            actions : 
+                < node4.la.sendoutput : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (node4.in.in) --> (node4.la.sendoutput) do {
+                    (node4.sv.payload := node4.in.in) ;
+                    (node4.sv.count := (node4.sv.count + [1])) ;
+                    schedule(node4.la.sendoutput, [0], [0])
+                })
+                (reaction when (node4.la.sendoutput) --> (node4.out.out) do {
+                    (node4.out.out <- node4.sv.payload) ;
+                    (node4.sv.count := (node4.sv.count - [1]))
+                })
+        >
+        < node5 : Reactor |
+            inports : 
+                < node5.in.in : Port | value : [0] >,
+            outports : 
+                < node5.out.out : Port | value : [0] >,
+            state : 
+                ( node5.sv.count |-> [0] );
+                ( node5.sv.payload |-> [0] ),
+            timers : none,
+            actions : 
+                < node5.la.sendoutput : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (node5.in.in) --> (node5.la.sendoutput) do {
+                    (node5.sv.payload := node5.in.in) ;
+                    (node5.sv.count := (node5.sv.count + [1])) ;
+                    schedule(node5.la.sendoutput, [0], [0])
+                })
+                (reaction when (node5.la.sendoutput) --> (node5.out.out) do {
+                    (node5.out.out <- node5.sv.payload) ;
+                    (node5.sv.count := (node5.sv.count - [1]))
+                })
+        >
+        < sink : Reactor |
+            inports : 
+                < sink.in.in : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( sink.sv.received |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (sink.in.in) do {
+                    (sink.sv.received := sink.in.in)
+                })
+        >
+    (source : source.out.out --> node1 : node1.in.in)
+    (node1 : node1.out.out --> node2 : node2.in.in)
+    (node2 : node2.out.out --> node3 : node3.in.in)
+    (node3 : node3.out.out --> node4 : node4.in.in)
+    (node4 : node4.out.out --> node5 : node5.in.in)
+    (node5 : node5.out.out --> sink : sink.in.in)
+    .
+endom
+
+omod TEST-PIPE is
+    including PIPE .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-PIPE is
+    including TEST-PIPE .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-PIPE is
+    including TEST-PIPE .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-PIPE is
+    including TEST-PIPE .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-PIPE : modelCheck(initSystem timeBound 1000000 , (([] (~ (((((( (@ node1.sv.count in node1) <= @ [1] )))) /\ (((( (@ node2.sv.count in node2) <= @ [1] )))) /\ (((( (@ node3.sv.count in node3) <= @ [1] )))) /\ (((( (@ node4.sv.count in node4) <= @ [1] )))) /\ (((( (@ node5.sv.count in node5) <= @ [1] ))))))))) ) .
+
+quit

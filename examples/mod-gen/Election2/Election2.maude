@@ -1,0 +1,133 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod ELECTION2 is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op Election2 : -> ReactorId [ctor] .
+    op i0 : -> ReactorId [ctor] .
+    op i1 : -> ReactorId [ctor] .
+    op i2 : -> ReactorId [ctor] .
+    op i0.sv.id : -> RVarId [ctor] .
+    op i0.sv.elected : -> RVarId [ctor] .
+    op i1.sv.id : -> RVarId [ctor] .
+    op i1.sv.elected : -> RVarId [ctor] .
+    op i2.sv.id : -> RVarId [ctor] .
+    op i2.sv.elected : -> RVarId [ctor] .
+    op i0.in.in : -> RPortId [ctor] .
+    op i0.out.out : -> RPortId [ctor] .
+    op i1.in.in : -> RPortId [ctor] .
+    op i1.out.out : -> RPortId [ctor] .
+    op i2.in.in : -> RPortId [ctor] .
+    op i2.out.out : -> RPortId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < i0 : Reactor |
+            inports : 
+                < i0.in.in : Port | value : [0] >,
+            outports : 
+                < i0.out.out : Port | value : [0] >,
+            state : 
+                ( i0.sv.id |-> [0] );
+                ( i0.sv.elected |-> [0] ),
+            timers : none,
+            actions : 
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (i0.out.out) do {
+                    (i0.sv.id := [0]) ;
+                    (i0.out.out <- i0.sv.id)
+                })
+                (reaction when (i0.in.in) --> (i0.out.out) do {
+                    if ((i0.in.in > i0.sv.id)) then ((i0.out.out <- i0.in.in)) else (if ((i0.in.in === i0.sv.id)) then ((i0.sv.elected := [1])) fi) fi
+                })
+        >
+        < i1 : Reactor |
+            inports : 
+                < i1.in.in : Port | value : [0] >,
+            outports : 
+                < i1.out.out : Port | value : [0] >,
+            state : 
+                ( i1.sv.id |-> [0] );
+                ( i1.sv.elected |-> [0] ),
+            timers : none,
+            actions : 
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (i1.out.out) do {
+                    (i1.sv.id := [1]) ;
+                    (i1.out.out <- i1.sv.id)
+                })
+                (reaction when (i1.in.in) --> (i1.out.out) do {
+                    if ((i1.in.in > i1.sv.id)) then ((i1.out.out <- i1.in.in)) else (if ((i1.in.in === i1.sv.id)) then ((i1.sv.elected := [1])) fi) fi
+                })
+        >
+        < i2 : Reactor |
+            inports : 
+                < i2.in.in : Port | value : [0] >,
+            outports : 
+                < i2.out.out : Port | value : [0] >,
+            state : 
+                ( i2.sv.id |-> [0] );
+                ( i2.sv.elected |-> [0] ),
+            timers : none,
+            actions : 
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (i2.out.out) do {
+                    (i2.sv.id := [2]) ;
+                    (i2.out.out <- i2.sv.id)
+                })
+                (reaction when (i2.in.in) --> (i2.out.out) do {
+                    if ((i2.in.in > i2.sv.id)) then ((i2.out.out <- i2.in.in)) else (if ((i2.in.in === i2.sv.id)) then ((i2.sv.elected := [1])) fi) fi
+                })
+        >
+    (i0 : i0.out.out -- 10000000 --> i1 : i1.in.in)
+    (i1 : i1.out.out -- 10000000 --> i2 : i2.in.in)
+    (i2 : i2.out.out -- 10000000 --> i0 : i0.in.in)
+    .
+endom
+
+omod TEST-ELECTION2 is
+    including ELECTION2 .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-ELECTION2 is
+    including TEST-ELECTION2 .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-ELECTION2 is
+    including TEST-ELECTION2 .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-ELECTION2 is
+    including TEST-ELECTION2 .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-ELECTION2 : modelCheck(initSystem timeBound 20000000 , ((<> ((((((((( @ i0.sv.elected in i0) ))))+((((( @ i1.sv.elected in i1) ))))+((((( @ i2.sv.elected in i2) ))))) === (((((@ [1])))))))))) ) .
+
+quit

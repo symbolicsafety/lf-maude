@@ -1,0 +1,215 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod RAILROAD is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op Railroad : -> ReactorId [ctor] .
+    op trainw : -> ReactorId [ctor] .
+    op traine : -> ReactorId [ctor] .
+    op controller : -> ReactorId [ctor] .
+    op trainw.sv.out : -> RVarId [ctor] .
+    op trainw.sv.mode : -> RVarId [ctor] .
+    op traine.sv.out : -> RVarId [ctor] .
+    op traine.sv.mode : -> RVarId [ctor] .
+    op controller.sv.west : -> RVarId [ctor] .
+    op controller.sv.east : -> RVarId [ctor] .
+    op controller.sv.nearw : -> RVarId [ctor] .
+    op controller.sv.neare : -> RVarId [ctor] .
+    op trainw.in.signal : -> RPortId [ctor] .
+    op trainw.out.out : -> RPortId [ctor] .
+    op traine.in.signal : -> RPortId [ctor] .
+    op traine.out.out : -> RPortId [ctor] .
+    op controller.in.outw : -> RPortId [ctor] .
+    op controller.in.oute : -> RPortId [ctor] .
+    op controller.out.signalw : -> RPortId [ctor] .
+    op controller.out.signale : -> RPortId [ctor] .
+    op trainw.t.t : -> TimerId [ctor] .
+    op traine.t.t : -> TimerId [ctor] .
+    op trainw.la.outUpdated : -> RActionId [ctor] .
+    op trainw.la.toModeAway : -> RActionId [ctor] .
+    op trainw.la.toModeWait : -> RActionId [ctor] .
+    op trainw.la.toModeBridge : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op traine.la.outUpdated : -> RActionId [ctor] .
+    op traine.la.toModeAway : -> RActionId [ctor] .
+    op traine.la.toModeWait : -> RActionId [ctor] .
+    op traine.la.toModeBridge : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op controller.la.westUpdated : -> RActionId [ctor] .
+    op controller.la.eastUpdated : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < trainw : Reactor |
+            inports : 
+                < trainw.in.signal : Port | value : [0] >,
+            outports : 
+                < trainw.out.out : Port | value : [0] >,
+            state : 
+                ( trainw.sv.out |-> [0] );
+                ( trainw.sv.mode |-> [0] ),
+            timers : 
+                < trainw.t.t : Timer | offset : 1, period : 1000000000 >,
+            actions : 
+                < trainw.la.outUpdated : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < trainw.la.toModeAway : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < trainw.la.toModeWait : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < trainw.la.toModeBridge : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) do {
+                    (trainw.sv.mode := [0])
+                })
+                (reaction when (trainw.t.t) --> (trainw.out.out ; trainw.la.outUpdated) do {
+                    if ((trainw.sv.mode === [0])) then ((trainw.out.out <- [0]) ;
+                    (trainw.sv.out := [0]) ;
+                    schedule(trainw.la.outUpdated, [0], [0])) else (if ((trainw.sv.mode === [2])) then ((trainw.out.out <- [1]) ;
+                    (trainw.sv.out := [1]) ;
+                    schedule(trainw.la.outUpdated, [0], [0])) fi) fi
+                })
+                (reaction when (trainw.la.outUpdated ; trainw.in.signal) --> (trainw.la.toModeAway ; trainw.la.toModeWait ; trainw.la.toModeBridge) do {
+                    if ((trainw.sv.mode === [0])) then (if (((isPresent(trainw.la.outUpdated))) && ((trainw.sv.out === [0]))) then (schedule(trainw.la.toModeWait, [0], [0])) fi) else (if ((trainw.sv.mode === [1])) then (if (((isPresent(trainw.in.signal))) && ((trainw.in.signal === [0]))) then (schedule(trainw.la.toModeBridge, [0], [0])) fi) else (if (((isPresent(trainw.la.outUpdated))) && ((trainw.sv.out === [1]))) then (schedule(trainw.la.toModeAway, [0], [0])) fi) fi) fi
+                })
+                (reaction when (trainw.la.toModeAway) do {
+                    (trainw.sv.mode := [0])
+                })
+                (reaction when (trainw.la.toModeWait) do {
+                    (trainw.sv.mode := [1])
+                })
+                (reaction when (trainw.la.toModeBridge) do {
+                    (trainw.sv.mode := [2])
+                })
+        >
+        < traine : Reactor |
+            inports : 
+                < traine.in.signal : Port | value : [0] >,
+            outports : 
+                < traine.out.out : Port | value : [0] >,
+            state : 
+                ( traine.sv.out |-> [0] );
+                ( traine.sv.mode |-> [0] ),
+            timers : 
+                < traine.t.t : Timer | offset : 1, period : 1000000000 >,
+            actions : 
+                < traine.la.outUpdated : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < traine.la.toModeAway : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < traine.la.toModeWait : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < traine.la.toModeBridge : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) do {
+                    (traine.sv.mode := [0])
+                })
+                (reaction when (traine.t.t) --> (traine.out.out ; traine.la.outUpdated) do {
+                    if ((traine.sv.mode === [0])) then ((traine.out.out <- [0]) ;
+                    (traine.sv.out := [0]) ;
+                    schedule(traine.la.outUpdated, [0], [0])) else (if ((traine.sv.mode === [2])) then ((traine.out.out <- [1]) ;
+                    (traine.sv.out := [1]) ;
+                    schedule(traine.la.outUpdated, [0], [0])) fi) fi
+                })
+                (reaction when (traine.la.outUpdated ; traine.in.signal) --> (traine.la.toModeAway ; traine.la.toModeWait ; traine.la.toModeBridge) do {
+                    if ((traine.sv.mode === [0])) then (if (((isPresent(traine.la.outUpdated))) && ((traine.sv.out === [0]))) then (schedule(traine.la.toModeWait, [0], [0])) fi) else (if ((traine.sv.mode === [1])) then (if (((isPresent(traine.in.signal))) && ((traine.in.signal === [0]))) then (schedule(traine.la.toModeBridge, [0], [0])) fi) else (if (((isPresent(traine.la.outUpdated))) && ((traine.sv.out === [1]))) then (schedule(traine.la.toModeAway, [0], [0])) fi) fi) fi
+                })
+                (reaction when (traine.la.toModeAway) do {
+                    (traine.sv.mode := [0])
+                })
+                (reaction when (traine.la.toModeWait) do {
+                    (traine.sv.mode := [1])
+                })
+                (reaction when (traine.la.toModeBridge) do {
+                    (traine.sv.mode := [2])
+                })
+        >
+        < controller : Reactor |
+            inports : 
+                < controller.in.outw : Port | value : [0] >
+                < controller.in.oute : Port | value : [0] >,
+            outports : 
+                < controller.out.signalw : Port | value : [0] >
+                < controller.out.signale : Port | value : [0] >,
+            state : 
+                ( controller.sv.west |-> [0] );
+                ( controller.sv.east |-> [0] );
+                ( controller.sv.nearw |-> [0] );
+                ( controller.sv.neare |-> [0] ),
+            timers : none,
+            actions : 
+                < controller.la.westUpdated : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < controller.la.eastUpdated : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) do {
+                    (controller.sv.west := [1]) ;
+                    (controller.sv.east := [1]) ;
+                    (controller.sv.nearw := [0]) ;
+                    (controller.sv.neare := [0])
+                })
+                (reaction when (controller.in.outw ; controller.in.oute) --> (controller.la.westUpdated ; controller.la.eastUpdated) do {
+                    if (((isPresent(controller.in.oute))) && ((controller.in.oute === [0]))) then ((controller.sv.neare := [1])) fi ;
+                    if (((isPresent(controller.in.oute))) && ((controller.in.oute === [1]))) then ((controller.sv.neare := [0])) fi ;
+                    if (((isPresent(controller.in.outw))) && ((controller.in.outw === [0]))) then ((controller.sv.nearw := [1])) fi ;
+                    if (((isPresent(controller.in.outw))) && ((controller.in.outw === [1]))) then ((controller.sv.nearw := [0])) fi ;
+                    if ((controller.sv.neare ==/= [1])) then ((controller.sv.east := [1]) ;
+                    schedule(controller.la.eastUpdated, [0], [0])) else (if ((controller.sv.west === [1])) then ((controller.sv.east := [0]) ;
+                    schedule(controller.la.eastUpdated, [0], [0])) fi) fi ;
+                    if ((controller.sv.nearw ==/= [1])) then ((controller.sv.west := [1]) ;
+                    schedule(controller.la.westUpdated, [0], [0])) else (if ((controller.sv.east === [1])) then ((controller.sv.west := [0]) ;
+                    schedule(controller.la.westUpdated, [0], [0])) fi) fi
+                })
+                (reaction when (controller.la.westUpdated) --> (controller.out.signalw) do {
+                    (controller.out.signalw <- controller.sv.west)
+                })
+                (reaction when (controller.la.eastUpdated) --> (controller.out.signale) do {
+                    (controller.out.signale <- controller.sv.east)
+                })
+        >
+    (trainw : trainw.out.out --> controller : controller.in.outw)
+    (traine : traine.out.out --> controller : controller.in.oute)
+    (controller : controller.out.signalw --> trainw : trainw.in.signal)
+    (controller : controller.out.signale --> traine : traine.in.signal)
+    .
+endom
+
+omod TEST-RAILROAD is
+    including RAILROAD .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, addStartup(startup, init, empty)) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-RAILROAD is
+    including TEST-RAILROAD .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-RAILROAD is
+    including TEST-RAILROAD .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-RAILROAD is
+    including TEST-RAILROAD .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-RAILROAD : modelCheck(initSystem timeBound INF , (([] (~ (((((( (@ trainw.sv.mode in trainw) === @ [2] )))) /\ (((( (@ traine.sv.mode in traine) === @ [2] ))))))))) ) .
+
+search [1] in ANALYSIS-RAILROAD : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((~ (((( (@ trainw.sv.mode in trainw) === @ [2] )) /\ (( (@ traine.sv.mode in traine) === @ [2] )))))) .
+
+quit

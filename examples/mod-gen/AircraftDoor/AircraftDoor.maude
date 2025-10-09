@@ -1,0 +1,104 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod AIRCRAFTDOOR is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op AircraftDoor : -> ReactorId [ctor] .
+    op controller : -> ReactorId [ctor] .
+    op vision : -> ReactorId [ctor] .
+    op door : -> ReactorId [ctor] .
+    op vision.sv.ramp : -> RVarId [ctor] .
+    op door.sv.doorOpen : -> RVarId [ctor] .
+    op controller.out.out : -> RPortId [ctor] .
+    op vision.in.in : -> RPortId [ctor] .
+    op vision.out.out : -> RPortId [ctor] .
+    op door.in.in : -> RPortId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < controller : Reactor |
+            inports : none,
+            outports : 
+                < controller.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (controller.out.out) do {
+                    (controller.out.out <- [1])
+                })
+        >
+        < vision : Reactor |
+            inports : 
+                < vision.in.in : Port | value : [0] >,
+            outports : 
+                < vision.out.out : Port | value : [0] >,
+            state : 
+                ( vision.sv.ramp |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (vision.in.in) --> (vision.out.out) do {
+                    if ((vision.sv.ramp === [1])) then ((vision.out.out <- [0])) else ((vision.out.out <- [1])) fi
+                })
+        >
+        < door : Reactor |
+            inports : 
+                < door.in.in : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( door.sv.doorOpen |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (door.in.in) do {
+                    if ((door.in.in === [1])) then ((door.sv.doorOpen := [1])) else (if ((door.in.in === [0])) then ((door.sv.doorOpen := [0])) fi) fi
+                })
+        >
+    (controller : controller.out.out --> vision : vision.in.in)
+    (vision : vision.out.out --> door : door.in.in)
+    .
+endom
+
+omod TEST-AIRCRAFTDOOR is
+    including AIRCRAFTDOOR .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-AIRCRAFTDOOR is
+    including TEST-AIRCRAFTDOOR .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-AIRCRAFTDOOR is
+    including TEST-AIRCRAFTDOOR .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-AIRCRAFTDOOR is
+    including TEST-AIRCRAFTDOOR .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-AIRCRAFTDOOR : modelCheck(initSystem timeBound 0 , ((((( (@ vision.sv.ramp in vision) === @ [0] )))))->(([] (((((((door . 1) invoked )))))->((((( (@ door.sv.doorOpen in door) === @ [1] )))))))) ) .
+
+quit

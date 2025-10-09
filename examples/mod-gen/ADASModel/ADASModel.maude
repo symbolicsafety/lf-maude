@@ -1,0 +1,186 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod ADASMODEL is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op ADASModel : -> ReactorId [ctor] .
+    op c : -> ReactorId [ctor] .
+    op l : -> ReactorId [ctor] .
+    op v : -> ReactorId [ctor] .
+    op b : -> ReactorId [ctor] .
+    op d : -> ReactorId [ctor] .
+    op p : -> ReactorId [ctor] .
+    op c.sv.frame : -> RVarId [ctor] .
+    op l.sv.frame : -> RVarId [ctor] .
+    op v.sv.requestStop : -> RVarId [ctor] .
+    op b.sv.brakesApplied : -> RVarId [ctor] .
+    op d.sv.received : -> RVarId [ctor] .
+    op c.out.out : -> RPortId [ctor] .
+    op l.out.out : -> RPortId [ctor] .
+    op v.in.in1 : -> RPortId [ctor] .
+    op v.in.in2 : -> RPortId [ctor] .
+    op v.out.out1 : -> RPortId [ctor] .
+    op v.out.out2 : -> RPortId [ctor] .
+    op b.in.inADAS : -> RPortId [ctor] .
+    op b.in.inPedal : -> RPortId [ctor] .
+    op d.in.in : -> RPortId [ctor] .
+    op p.out.out : -> RPortId [ctor] .
+    op c.t.t : -> TimerId [ctor] .
+    op l.t.t : -> TimerId [ctor] .
+    op v.la.a : -> RActionId [ctor] .
+    op p.pa.a : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < c : Reactor |
+            inports : none,
+            outports : 
+                < c.out.out : Port | value : [0] >,
+            state : 
+                ( c.sv.frame |-> [0] ),
+            timers : 
+                < c.t.t : Timer | offset : 0, period : 17000000 >,
+            actions : none,
+            reactions : 
+                (reaction when (c.t.t) --> (c.out.out) do {
+                    (c.sv.frame := [1]) ;
+                    (c.out.out <- c.sv.frame)
+                })
+        >
+        < l : Reactor |
+            inports : none,
+            outports : 
+                < l.out.out : Port | value : [0] >,
+            state : 
+                ( l.sv.frame |-> [0] ),
+            timers : 
+                < l.t.t : Timer | offset : 0, period : 34000000 >,
+            actions : none,
+            reactions : 
+                (reaction when (l.t.t) --> (l.out.out) do {
+                    (l.sv.frame := [2]) ;
+                    (l.out.out <- l.sv.frame)
+                })
+        >
+        < v : Reactor |
+            inports : 
+                < v.in.in1 : Port | value : [0] >
+                < v.in.in2 : Port | value : [0] >,
+            outports : 
+                < v.out.out1 : Port | value : [0] >
+                < v.out.out2 : Port | value : [0] >,
+            state : 
+                ( v.sv.requestStop |-> [0] ),
+            timers : none,
+            actions : 
+                < v.la.a : LogicalAction | minDelay : 50000000, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (v.in.in1 ; v.in.in2) --> (v.la.a) do {
+                    schedule(v.la.a, [0], [0]) ;
+                    (v.sv.requestStop := [1])
+                })
+                (reaction when (v.la.a) --> (v.out.out1 ; v.out.out2) do {
+                    if ((v.sv.requestStop === [1])) then ((v.out.out1 <- [1])) fi
+                })
+        >
+        < b : Reactor |
+            inports : 
+                < b.in.inADAS : Port | value : [0] >
+                < b.in.inPedal : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( b.sv.brakesApplied |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (b.in.inADAS ; b.in.inPedal) do {
+                    (b.sv.brakesApplied := [1])
+                })
+        >
+        < d : Reactor |
+            inports : 
+                < d.in.in : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( d.sv.received |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (d.in.in) do {
+                    (d.sv.received := [1])
+                })
+        >
+        < p : Reactor |
+            inports : none,
+            outports : 
+                < p.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < p.pa.a : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (p.pa.a) --> (p.out.out) do {
+                    (p.out.out <- [1])
+                })
+        >
+    (c : c.out.out --> v : v.in.in2)
+    (l : l.out.out --> v : v.in.in1)
+    (v : v.out.out1 -- 5000000 --> b : b.in.inADAS)
+    (v : v.out.out2 --> d : d.in.in)
+    (p : p.out.out --> b : b.in.inPedal)
+    .
+endom
+
+omod TEST-ADASMODEL is
+    including ADASMODEL .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : 
+                < (p . p.pa.a ): PhysAct | leftOfPeriod : 5000000, period : 5000000, possibleValues : [69]: [71], timeNonDet : true >
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-ADASMODEL is
+    including TEST-ADASMODEL .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-ADASMODEL is
+    including TEST-ADASMODEL .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-ADASMODEL is
+    including TEST-ADASMODEL .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+rew [51] in SIMULATION-ADASMODEL : initSystem timeBound INF .
+
+search [1] in ANALYSIS-ADASMODEL : initSystem timeBound 55000000 =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((( (@ b.sv.brakesApplied in b) === @ [1] ))) .
+
+search [1] in ANALYSIS-ADASMODEL : initSystem timeBound 55000000 =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= (((event(p, p.pa.a) inQueue))) .
+
+red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound 55000000 , ((<> (((( (@ b.sv.brakesApplied in b) === @ [1] )))))) ) .
+
+red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound INF , (([] (((((((l . 1) invoked )))))->((((<> (((( (@ b.sv.brakesApplied in b) === @ [1] ))))))))))) ) .
+
+red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound INF , (([] (((((((l . 1) invoked )) /\ (( (@ v.sv.requestStop in v) === @ [1] )))))->((((<> (( (@ b.sv.brakesApplied in b) === @ [1] ))))))))) ) .
+
+search [1] in ANALYSIS-ADASMODEL : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((((((p . 1) invoked )))) /\ (((( (@ b.sv.brakesApplied in b) ==/= @ [1] ))))) .
+
+quit

@@ -5,6 +5,5 @@
 
 # Ignore build and generated folders inside the examples directory
 /examples/bin/
-/examples/mod-gen/
 /examples/src-gen/
 /examples/include/

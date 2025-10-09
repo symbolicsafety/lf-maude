@@ -1,0 +1,123 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod TRAINDOOR_V3 is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op TrainDoorv3 : -> ReactorId [ctor] .
+    op c : -> ReactorId [ctor] .
+    op d : -> ReactorId [ctor] .
+    op d.sv.locked : -> BVarId [ctor] .
+    op d.sv.isOpen : -> BVarId [ctor] .
+    op c.out.lock : -> BPortId [ctor] .
+    op c.out.open : -> BPortId [ctor] .
+    op c.out.unlock : -> BPortId [ctor] .
+    op c.out.close : -> BPortId [ctor] .
+    op d.in.lock : -> BPortId [ctor] .
+    op d.in.unlock : -> BPortId [ctor] .
+    op d.in.open : -> BPortId [ctor] .
+    op d.in.close : -> BPortId [ctor] .
+    op c.pa.external : -> BActionId [ctor] .
+    op d.pa.extOpen : -> BActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < c : Reactor |
+            inports : none,
+            outports : 
+                < c.out.lock : Port | value : [true] >
+                < c.out.open : Port | value : [true] >
+                < c.out.unlock : Port | value : [true] >
+                < c.out.close : Port | value : [true] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < c.pa.external : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [true] >,
+            reactions : 
+                (reaction when (c.pa.external) --> (c.out.close ; c.out.lock ; c.out.open ; c.out.unlock) do {
+                    if ((c.pa.external === [true])) then ((c.out.close <- [true]) ;
+                    (c.out.lock <- [true])) else ((c.out.open <- [true]) ;
+                    (c.out.unlock <- [true])) fi
+                })
+        >
+        < d : Reactor |
+            inports : 
+                < d.in.lock : Port | value : [true] >
+                < d.in.unlock : Port | value : [true] >
+                < d.in.open : Port | value : [true] >
+                < d.in.close : Port | value : [true] >,
+            outports : none,
+            state : 
+                ( d.sv.locked |-> [false] );
+                ( d.sv.isOpen |-> [false] ),
+            timers : none,
+            actions : 
+                < d.pa.extOpen : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [true] >,
+            reactions : 
+                (reaction when (d.in.close) do {
+                    (d.sv.isOpen := [false])
+                })
+                (reaction when (d.in.lock) do {
+                    if ((d.sv.isOpen === [false])) then ((d.sv.locked := [true])) fi
+                })
+                (reaction when (d.in.unlock) do {
+                    (d.sv.locked := [false])
+                })
+                (reaction when (d.in.open) do {
+                    if ((d.sv.locked === [false])) then ((d.sv.isOpen := [true])) fi
+                })
+                (reaction when (d.pa.extOpen) do {
+                    if ((d.sv.locked === [false])) then ((d.sv.isOpen := [true])) fi
+                })
+        >
+    (c : c.out.lock -- 5000000 --> d : d.in.lock)
+    (c : c.out.open -- 7000000 --> d : d.in.open)
+    (c : c.out.unlock -- 4000000 --> d : d.in.unlock)
+    (c : c.out.close -- 3000000 --> d : d.in.close)
+    .
+endom
+
+omod TEST-TRAINDOOR_V3 is
+    including TRAINDOOR_V3 .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : 
+                < (c . c.pa.external ): PhysAct | leftOfPeriod : 10000000, period : 10000000, possibleValues : [true]: [false], timeNonDet : true >
+                < (d . d.pa.extOpen ): PhysAct | leftOfPeriod : 11000000, period : 11000000, possibleValues : [true], timeNonDet : true >
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            empty >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-TRAINDOOR_V3 is
+    including TEST-TRAINDOOR_V3 .
+    including LF-PROP .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-TRAINDOOR_V3 is
+    including TEST-TRAINDOOR_V3 .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-TRAINDOOR_V3 is
+    including TEST-TRAINDOOR_V3 .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+rew [10] in SIMULATION-TRAINDOOR_V3 : initSystem timeBound INF .
+
+search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= (((d.sv.locked in d == [true] ))) .
+
+red in MODELCHECKER-TRAINDOOR_V3 : modelCheck(initSystem timeBound INF , ((<> ((((((d.sv.locked in d == [false] )))) /\ (((((((d . 2) invoked )))))))))) ) .
+
+quit

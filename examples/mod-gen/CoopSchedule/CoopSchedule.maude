@@ -1,0 +1,153 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod COOPSCHEDULE is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op CoopSchedule : -> ReactorId [ctor] .
+    op trigger : -> ReactorId [ctor] .
+    op task1 : -> ReactorId [ctor] .
+    op task2 : -> ReactorId [ctor] .
+    op task3 : -> ReactorId [ctor] .
+    op task4 : -> ReactorId [ctor] .
+    op task5 : -> ReactorId [ctor] .
+    op task1.sv.counter : -> RVarId [ctor] .
+    op task2.sv.counter : -> RVarId [ctor] .
+    op task3.sv.counter : -> RVarId [ctor] .
+    op task4.sv.counter : -> RVarId [ctor] .
+    op task5.sv.counter : -> RVarId [ctor] .
+    op trigger.out.out : -> RPortId [ctor] .
+    op task1.in.cnt : -> RPortId [ctor] .
+    op task2.in.cnt : -> RPortId [ctor] .
+    op task3.in.cnt : -> RPortId [ctor] .
+    op task4.in.cnt : -> RPortId [ctor] .
+    op task5.in.cnt : -> RPortId [ctor] .
+    op trigger.t.t : -> TimerId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < trigger : Reactor |
+            inports : none,
+            outports : 
+                < trigger.out.out : Port | value : [0] >,
+            state : empty,
+            timers : 
+                < trigger.t.t : Timer | offset : 0, period : 1000 >,
+            actions : none,
+            reactions : 
+                (reaction when (trigger.t.t) --> (trigger.out.out) do {
+                    (trigger.out.out <- [1])
+                })
+        >
+        < task1 : Reactor |
+            inports : 
+                < task1.in.cnt : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( task1.sv.counter |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task1.in.cnt) do {
+                    (task1.sv.counter := (task1.sv.counter + [2]))
+                })
+        >
+        < task2 : Reactor |
+            inports : 
+                < task2.in.cnt : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( task2.sv.counter |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task2.in.cnt) do {
+                    (task2.sv.counter := (task2.sv.counter + [2]))
+                })
+        >
+        < task3 : Reactor |
+            inports : 
+                < task3.in.cnt : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( task3.sv.counter |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task3.in.cnt) do {
+                    (task3.sv.counter := (task3.sv.counter + [2]))
+                })
+        >
+        < task4 : Reactor |
+            inports : 
+                < task4.in.cnt : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( task4.sv.counter |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task4.in.cnt) do {
+                    (task4.sv.counter := (task4.sv.counter + [2]))
+                })
+        >
+        < task5 : Reactor |
+            inports : 
+                < task5.in.cnt : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( task5.sv.counter |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task5.in.cnt) do {
+                    (task5.sv.counter := (task5.sv.counter + [2]))
+                })
+        >
+    (trigger : trigger.out.out --> task1 : task1.in.cnt)
+    (trigger : trigger.out.out --> task2 : task2.in.cnt)
+    (trigger : trigger.out.out --> task3 : task3.in.cnt)
+    (trigger : trigger.out.out --> task4 : task4.in.cnt)
+    (trigger : trigger.out.out --> task5 : task5.in.cnt)
+    .
+endom
+
+omod TEST-COOPSCHEDULE is
+    including COOPSCHEDULE .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-COOPSCHEDULE is
+    including TEST-COOPSCHEDULE .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-COOPSCHEDULE is
+    including TEST-COOPSCHEDULE .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-COOPSCHEDULE is
+    including TEST-COOPSCHEDULE .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+search [1] in ANALYSIS-COOPSCHEDULE : initSystem timeBound 1000000 =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= (((((((((((((((( @ task1.sv.counter in task1) ))))))))+((((((((( @ task2.sv.counter in task2) ))))))))+((((((((( @ task3.sv.counter in task3) ))))))))+((((((((( @ task4.sv.counter in task4) ))))))))+((((((((( @ task5.sv.counter in task5) ))))))))))))) < (((((@ [15]))))))) .
+
+quit

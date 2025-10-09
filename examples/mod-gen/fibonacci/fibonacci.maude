@@ -1,0 +1,115 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod FIBONACCI is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op fibonacci : -> ReactorId [ctor] .
+    op fib : -> ReactorId [ctor] .
+    op printer : -> ReactorId [ctor] .
+    op fib.sv.N : -> RVarId [ctor] .
+    op fib.sv.result : -> RVarId [ctor] .
+    op fib.sv.lastResult : -> RVarId [ctor] .
+    op fib.sv.secondLastResult : -> RVarId [ctor] .
+    op printer.sv.result : -> RVarId [ctor] .
+    op fib.out.out : -> RPortId [ctor] .
+    op printer.in.in : -> RPortId [ctor] .
+    op fib.t.t : -> TimerId [ctor] .
+    op fib.la.incrementN : -> RActionId [ctor] .
+    op fib.la.saveLast : -> RActionId [ctor] .
+    op fib.la.saveSecondLast : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < fib : Reactor |
+            inports : none,
+            outports : 
+                < fib.out.out : Port | value : [0] >,
+            state : 
+                ( fib.sv.N |-> [0] );
+                ( fib.sv.result |-> [0] );
+                ( fib.sv.lastResult |-> [0] );
+                ( fib.sv.secondLastResult |-> [0] ),
+            timers : 
+                < fib.t.t : Timer | offset : 0, period : 1000000 >,
+            actions : 
+                < fib.la.incrementN : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < fib.la.saveLast : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < fib.la.saveSecondLast : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (fib.t.t) --> (fib.out.out ; fib.la.incrementN ; fib.la.saveLast ; fib.la.saveSecondLast) do {
+                    if ((fib.sv.N < [2])) then ((fib.sv.result := [1])) else ((fib.sv.result := (fib.sv.lastResult + fib.sv.secondLastResult))) fi ;
+                    (fib.out.out <- fib.sv.result) ;
+                    schedule(fib.la.incrementN, [0], [0]) ;
+                    schedule(fib.la.saveLast, [0], [0]) ;
+                    schedule(fib.la.saveSecondLast, [0], [0])
+                })
+                (reaction when (fib.la.incrementN) do {
+                    (fib.sv.N := (fib.sv.N + [1]))
+                })
+                (reaction when (fib.la.saveSecondLast) do {
+                    (fib.sv.secondLastResult := fib.sv.lastResult)
+                })
+                (reaction when (fib.la.saveLast) do {
+                    (fib.sv.lastResult := fib.sv.result)
+                })
+        >
+        < printer : Reactor |
+            inports : 
+                < printer.in.in : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( printer.sv.result |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (printer.in.in) do {
+                    (printer.sv.result := printer.in.in)
+                })
+        >
+    (fib : fib.out.out --> printer : printer.in.in)
+    .
+endom
+
+omod TEST-FIBONACCI is
+    including FIBONACCI .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-FIBONACCI is
+    including TEST-FIBONACCI .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+
+    op remainingTime_ : TimeInf -> Prop .
+endom
+
+omod MODELCHECKER-FIBONACCI is
+    including TEST-FIBONACCI .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-FIBONACCI is
+    including TEST-FIBONACCI .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+
+search [1] in ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>! {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((((( (@ printer.sv.result in printer) ==/= @ [89] )))) /\ (((((printer . 1) invoked )))) /\ remainingTime 0 ) .
+
+quit
