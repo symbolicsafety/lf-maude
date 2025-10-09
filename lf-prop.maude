@@ -10,7 +10,7 @@ omod LF-PROP-BASE is
   var AT : ActionTrigger .
   var VAL : Value .
   var T : Time .
-  var TI : TimeInf .
+  vars TI TI' : TimeInf .
   var RID : ReactionId .
   var RIDS : ReactionIdSet .
   vars EQ1 EQ2 : EQueue .
@@ -42,9 +42,13 @@ omod LF-PROP-BASE is
   --- Default false case
   eq STATE:State |= P:Prop = false [owise] .
 
+  --- New Oct10
+  op remainingTime_ : TimeInf -> Prop .
+  eq STATE:State timeBound TI |= remainingTime TI' = (TI == TI') .
+
   --- Extend to timed/time-bounded cases
-  eq STATE:State   in time TI |= P:Prop = STATE:State |= P:Prop .
-  eq STATE:State timeBound TI |= P:Prop = STATE:State |= P:Prop .
+  eq STATE:State   in time TI |= P:Prop = STATE:State |= P:Prop [owise] .
+  eq STATE:State timeBound TI |= P:Prop = STATE:State |= P:Prop [owise] .
 endom
 
 
@@ -142,7 +146,7 @@ omod LF-PROP-EXT is
 
   ops _===_ _==/=_ : PropExpr PropExpr -> BPropExpr [ctor] .
   ops _<_ _>_ _<=_ _>=_ : RPropExpr RPropExpr -> BPropExpr [ctor] .
-  ops _+_ _*_ _-_ : RPropExpr RPropExpr -> RPropExpr . 
+  ops _+_ _*_ _-_ : RPropExpr RPropExpr -> RPropExpr [gather (E e)] . 
 
   op @_ : Value -> PropExpr [ctor] .
   op @_ : BoolValue -> BPropExpr [ctor] .
