@@ -32,8 +32,8 @@ reactor Task {
     =}
 }
 
-//@maude(analysis="reachability", goal="panic in task == 1 /\ remainingTime 0", timeBound=5 )
-@maude(analysis="reachability", goal="panic in task == 1", timeBound=5 )
+@maude(analysis="reachability", goal="panic in task == 1 /\ remainingTime 0", timeBound=5 )
+//@maude(analysis="reachability", goal="panic in task == 1", timeBound=5 )
 //@property(name="panic_free", tactic="bmc", spec="G[5 msec](ProcessMsg_task_panic != 1)", expect=true)
 main reactor {
     task = new Task()

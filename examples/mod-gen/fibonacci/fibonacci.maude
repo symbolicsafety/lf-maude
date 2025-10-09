@@ -93,8 +93,6 @@ omod ANALYSIS-FIBONACCI is
     including TEST-FIBONACCI .
     including LF-PROP-EXT .
     including SEARCH-GOAL .
-
-    op remainingTime_ : TimeInf -> Prop .
 endom
 
 omod MODELCHECKER-FIBONACCI is
@@ -109,7 +107,6 @@ omod SIMULATION-FIBONACCI is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-
-search [1] in ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>! {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((((( (@ printer.sv.result in printer) ==/= @ [89] )))) /\ (((((printer . 1) invoked )))) /\ remainingTime 0 ) .
+search [1] in ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((((( (@ printer.sv.result in printer) ==/= @ [89] )))) /\ (((((printer . 1) invoked )))) /\ (remainingTime 0)) .
 
 quit
