@@ -1,0 +1,169 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod RING is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op Ring : -> ReactorId [ctor] .
+    op s : -> ReactorId [ctor] .
+    op n1 : -> ReactorId [ctor] .
+    op n2 : -> ReactorId [ctor] .
+    op n3 : -> ReactorId [ctor] .
+    op n4 : -> ReactorId [ctor] .
+    op n5 : -> ReactorId [ctor] .
+    op s.sv.received : -> RVarId [ctor] .
+    op s.in.in : -> RPortId [ctor] .
+    op s.out.out : -> RPortId [ctor] .
+    op n1.in.in : -> RPortId [ctor] .
+    op n1.out.out : -> RPortId [ctor] .
+    op n2.in.in : -> RPortId [ctor] .
+    op n2.out.out : -> RPortId [ctor] .
+    op n3.in.in : -> RPortId [ctor] .
+    op n3.out.out : -> RPortId [ctor] .
+    op n4.in.in : -> RPortId [ctor] .
+    op n4.out.out : -> RPortId [ctor] .
+    op n5.in.in : -> RPortId [ctor] .
+    op n5.out.out : -> RPortId [ctor] .
+    op s.la.start : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < s : Reactor |
+            inports : 
+                < s.in.in : Port | value : [0] >,
+            outports : 
+                < s.out.out : Port | value : [0] >,
+            state : 
+                ( s.sv.received |-> [0] ),
+            timers : none,
+            actions : 
+                < s.la.start : LogicalAction | minDelay : 1000000, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (s.la.start) do {
+                    (s.sv.received := [0]) ;
+                    schedule(s.la.start, [0], [0])
+                })
+                (reaction when (s.la.start) --> (s.out.out) do {
+                    (s.out.out <- s.sv.received)
+                })
+                (reaction when (s.in.in) do {
+                    (s.sv.received := s.in.in)
+                })
+        >
+        < n1 : Reactor |
+            inports : 
+                < n1.in.in : Port | value : [0] >,
+            outports : 
+                < n1.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (n1.in.in) --> (n1.out.out) do {
+                    (n1.out.out <- (n1.in.in + [1]))
+                })
+        >
+        < n2 : Reactor |
+            inports : 
+                < n2.in.in : Port | value : [0] >,
+            outports : 
+                < n2.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (n2.in.in) --> (n2.out.out) do {
+                    (n2.out.out <- (n2.in.in + [1]))
+                })
+        >
+        < n3 : Reactor |
+            inports : 
+                < n3.in.in : Port | value : [0] >,
+            outports : 
+                < n3.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (n3.in.in) --> (n3.out.out) do {
+                    (n3.out.out <- (n3.in.in + [1]))
+                })
+        >
+        < n4 : Reactor |
+            inports : 
+                < n4.in.in : Port | value : [0] >,
+            outports : 
+                < n4.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (n4.in.in) --> (n4.out.out) do {
+                    (n4.out.out <- (n4.in.in + [1]))
+                })
+        >
+        < n5 : Reactor |
+            inports : 
+                < n5.in.in : Port | value : [0] >,
+            outports : 
+                < n5.out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (n5.in.in) --> (n5.out.out) do {
+                    (n5.out.out <- (n5.in.in + [1]))
+                })
+        >
+    (s : s.out.out -- 1000000 --> n1 : n1.in.in)
+    (n1 : n1.out.out -- 1000000 --> n2 : n2.in.in)
+    (n2 : n2.out.out -- 1000000 --> n3 : n3.in.in)
+    (n3 : n3.out.out -- 1000000 --> n4 : n4.in.in)
+    (n4 : n4.out.out -- 1000000 --> n5 : n5.in.in)
+    (n5 : n5.out.out -- 1000000 --> s : s.in.in)
+    .
+endom
+
+omod TEST-RING is
+    including RING .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-RING is
+    including TEST-RING .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-RING is
+    including TEST-RING .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-RING is
+    including TEST-RING .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-RING : modelCheck(initSystem timeBound 10000000 , ((<> (((((s . 3) invoked )))))) ) .
+
+red in MODELCHECKER-RING : modelCheck(initSystem in time 0, <> ((s . 3) invoked)) .
+
+quit

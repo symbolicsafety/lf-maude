@@ -52,7 +52,7 @@ omod RAILROAD is
                 ( trainw.sv.out |-> [0] );
                 ( trainw.sv.mode |-> [0] ),
             timers : 
-                < trainw.t.t : Timer | offset : 1, period : 1000000000 >,
+                < trainw.t.t : Timer | offset : 1, period : 1000000 >,
             actions : 
                 < trainw.la.outUpdated : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
                 < trainw.la.toModeAway : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
@@ -92,7 +92,7 @@ omod RAILROAD is
                 ( traine.sv.out |-> [0] );
                 ( traine.sv.mode |-> [0] ),
             timers : 
-                < traine.t.t : Timer | offset : 1, period : 1000000000 >,
+                < traine.t.t : Timer | offset : 1, period : 1000000 >,
             actions : 
                 < traine.la.outUpdated : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
                 < traine.la.toModeAway : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
@@ -208,8 +208,8 @@ omod SIMULATION-RAILROAD is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-RAILROAD : modelCheck(initSystem timeBound INF , (([] (~ (((((( (@ trainw.sv.mode in trainw) === @ [2] )))) /\ (((( (@ traine.sv.mode in traine) === @ [2] ))))))))) ) .
+red in MODELCHECKER-RAILROAD : modelCheck(initSystem timeBound 5000000 , (([] (((~ (((( (@ trainw.sv.mode in trainw) === @ [2] )) /\ (( (@ traine.sv.mode in traine) === @ [2] ))))))))) ) .
 
-search [1] in ANALYSIS-RAILROAD : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((~ (((( (@ trainw.sv.mode in trainw) === @ [2] )) /\ (( (@ traine.sv.mode in traine) === @ [2] )))))) .
+search [1] in ANALYSIS-RAILROAD : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((( (@ trainw.sv.mode in trainw) === @ [2] )) /\ (( (@ traine.sv.mode in traine) === @ [2] ))) .
 
 quit

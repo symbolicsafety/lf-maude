@@ -8,7 +8,7 @@ reactor Train {
     
     // It would be better to use a physical action
     // to model sporadic events.
-    timer t(1 nsec, 1 sec)
+    timer t(1 nsec, 1 msec)
     logical action outUpdated
     logical action toModeAway
     logical action toModeWait
@@ -114,8 +114,11 @@ reactor Controller {
     =}
 }
 
-@maude(analysis="ltl", goal="[]! ((_mode in train_w == 2) /\ (_mode in train_e == 2))")
-@maude(analysis="reachability", goal="! (_mode in train_w == 2 /\ _mode in train_e == 2)")
+// @property(name="TrainSafety", tactic="bmc", spec="G[0, 5 msec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20, expect=true)
+@maude(analysis="ltl", timeBound=5, goal="[] (! (_mode in train_w == 2 /\ _mode in train_e == 2))")
+// stronger property
+@maude(analysis="reachability", goal="_mode in train_w == 2 /\ _mode in train_e == 2")
+
 main reactor Railroad {
     train_w = new Train()
     train_e = new Train()

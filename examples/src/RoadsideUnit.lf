@@ -10,9 +10,9 @@ reactor Vehicle {
     // The assumption baked in here is quite strong.
     // An additional delay or a physical action
     // will be more suitable for modeling.
-    logical action finish(5 sec);
+    logical action finish(5 msec);
     
-    state duration_of_use:time(1 sec);
+    state duration_of_use:time = 1 msec;
     
     reaction(startup) -> request {=
         // info_print("Vehicle %d has arrived.", self->bank_index);
@@ -84,7 +84,8 @@ reactor RSU {
     =}
 }
 
-@property(name="mutual_exclusion", tactic="bmc", spec="G[0, 10 sec](!(RoadsideUnit_v1_grant == 1 && RoadsideUnit_v2_grant == 1))", expect=true)
+// @property(name="mutual_exclusion", tactic="bmc", spec="G[0, 10 msec](!(RoadsideUnit_v1_grant == 1 && RoadsideUnit_v2_grant == 1))", expect=true)
+@maude(analysis="ltl", timeBound=10, goal="[] (! (grant in v1 == 1 /\ grant in v2 == 1))")
 main reactor {
     
     v1 = new Vehicle()

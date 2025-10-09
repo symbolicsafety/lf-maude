@@ -16,7 +16,7 @@ target C;
 reactor Client {
     input in:int;
     output out:int;
-    state req:int(0);
+    state req:int = 0;
 
     reaction(startup) -> out {=
         // Sends a query
@@ -52,7 +52,8 @@ reactor Server {
     =}
 }
 
-@property(name="success", tactic="bmc", spec="(F[0, 1 sec](SafeSend_c_reaction_1))", expect=true)
+// @property(name="success", tactic="bmc", spec="(F[0, 1 msec](SafeSend_c_reaction_1))", expect=true)
+@maude(analysis="ltl", timeBound=1, goal="<> (c.2 invoked)")
 main reactor {
     c = new Client();
     s = new Server();

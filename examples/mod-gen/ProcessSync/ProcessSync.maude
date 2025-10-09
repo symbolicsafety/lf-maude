@@ -1,0 +1,68 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod PROCESSSYNC is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op ProcessSync : -> ReactorId [ctor] .
+    op task : -> ReactorId [ctor] .
+    op task.sv.tmsynchronizationprocessingcounter : -> RVarId [ctor] .
+    op task.t.t : -> TimerId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < task : Reactor |
+            inports : none,
+            outports : none,
+            state : 
+                ( task.sv.tmsynchronizationprocessingcounter |-> [0] ),
+            timers : 
+                < task.t.t : Timer | offset : 0, period : 1000000 >,
+            actions : none,
+            reactions : 
+                (reaction when (task.t.t) do {
+                    (task.sv.tmsynchronizationprocessingcounter := (task.sv.tmsynchronizationprocessingcounter + [1]))
+                })
+        >
+    .
+endom
+
+omod TEST-PROCESSSYNC is
+    including PROCESSSYNC .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-PROCESSSYNC is
+    including TEST-PROCESSSYNC .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-PROCESSSYNC is
+    including TEST-PROCESSSYNC .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-PROCESSSYNC is
+    including TEST-PROCESSSYNC .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+search [1] in ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>! CS:ClockedSystem  such that CS:ClockedSystem |= ((~ (((( (@ task.sv.tmsynchronizationprocessingcounter in task) === @ [3] )))))) .
+
+quit

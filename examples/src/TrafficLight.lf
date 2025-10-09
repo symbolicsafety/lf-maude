@@ -9,17 +9,19 @@ reactor _TrafficLight {
     output sigR:int
     output sigG:int
     output sigY:int
-    state count:int(0)
+    state count:int = 0
     // 0 = RED, 1 = GREEN, 2 = YELLOW, 3 = PENDING
-    state _mode:int(0)
+    state _mode:int = 0
     logical action resetCount
-    timer t(0, 1 sec)
+    timer t(0, 1 msec)
     
     reaction(startup) {=
         self->_mode = 0;
         self->count = 58;
     =}
-    reaction(t) pedestrian -> sigR, sigG, sigY, resetCount {=
+    // reaction(t) pedestrian -> sigR, sigG, sigY, resetCount {=
+    // we will implement "uses" later
+    reaction(pedestrian, t) -> sigR, sigG, sigY, resetCount {=
         // RED
         if (self->_mode == 0) {
             if (self->count >= 60) {
@@ -27,6 +29,8 @@ reactor _TrafficLight {
                 lf_schedule(resetCount, 0);
                 // A real bug:
                 // _mode is not changed.
+                // We fix it:
+                self->_mode = 1;
             } else {
                 self->count += 1;
             }
@@ -70,13 +74,14 @@ reactor _TrafficLight {
 
 reactor Pedestrian {
     output out:int
-    timer t(1 sec, 10 sec)
+    timer t(1 msec, 10 msec)
     reaction(t) -> out {=
         lf_set(out, 1);
     =}
 }
 
-@property(name="green_reachable", tactic="bmc", spec="F[0, 5 sec](TrafficLight_t__mode == 1)", expect=false)
+// @property(name="green_reachable", tactic="bmc", spec="F[0, 5 msec](TrafficLight_t__mode == 1)", expect=false)
+@maude(analysis="ltl", timeBound=5, goal="<> (_mode in t == 1)")
 main reactor {
     t = new _TrafficLight()
     p = new Pedestrian()

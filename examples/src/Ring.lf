@@ -6,7 +6,7 @@ target C
 reactor Source {
     input in:int
     output out:int
-    logical action start(1 nsec)
+    logical action start(1 msec)
     state received:int
     reaction(startup) -> start {=
         self->received = 0;
@@ -31,7 +31,8 @@ reactor Node {
     =}
 }
 
-@property(name="full_circle", tactic="bmc", spec="F[0, 10 nsec](Ring_s_reaction_2)", expect=true)
+// @property(name="full_circle", tactic="bmc", spec="F[0, 10 msec](Ring_s_reaction_2)", expect=true)
+@maude(analysis="ltl", timeBound=10, goal="<> (s.3 invoked)")
 main reactor {
     s = new Source()
     n1 = new Node()
@@ -39,10 +40,10 @@ main reactor {
     n3 = new Node()
     n4 = new Node()
     n5 = new Node()
-    s.out -> n1.in after 1 nsec
-    n1.out -> n2.in after 1 nsec
-    n2.out -> n3.in after 1 nsec
-    n3.out -> n4.in after 1 nsec
-    n4.out -> n5.in after 1 nsec
-    n5.out -> s.in after 1 nsec
+    s.out -> n1.in after 1 msec
+    n1.out -> n2.in after 1 msec
+    n2.out -> n3.in after 1 msec
+    n3.out -> n4.in after 1 msec
+    n4.out -> n5.in after 1 msec
+    n5.out -> s.in after 1 msec
 }

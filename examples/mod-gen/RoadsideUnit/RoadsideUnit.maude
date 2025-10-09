@@ -1,0 +1,174 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod ROADSIDEUNIT is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op RoadsideUnit : -> ReactorId [ctor] .
+    op v1 : -> ReactorId [ctor] .
+    op v2 : -> ReactorId [ctor] .
+    op rsu : -> ReactorId [ctor] .
+    op v1.sv.durationofuse : -> RVarId [ctor] .
+    op v2.sv.durationofuse : -> RVarId [ctor] .
+    op rsu.sv.assigned : -> RVarId [ctor] .
+    op rsu.sv.availabletime : -> RVarId [ctor] .
+    op rsu.sv.constwait : -> RVarId [ctor] .
+    op rsu.sv.currenttime : -> RVarId [ctor] .
+    op rsu.sv.done1 : -> RVarId [ctor] .
+    op rsu.sv.done2 : -> RVarId [ctor] .
+    op v1.in.grant : -> RPortId [ctor] .
+    op v1.out.done : -> RPortId [ctor] .
+    op v1.out.request : -> RPortId [ctor] .
+    op v2.in.grant : -> RPortId [ctor] .
+    op v2.out.done : -> RPortId [ctor] .
+    op v2.out.request : -> RPortId [ctor] .
+    op rsu.in.request1 : -> RPortId [ctor] .
+    op rsu.in.request2 : -> RPortId [ctor] .
+    op rsu.in.done1 : -> RPortId [ctor] .
+    op rsu.in.done2 : -> RPortId [ctor] .
+    op rsu.out.grant1 : -> RPortId [ctor] .
+    op rsu.out.grant2 : -> RPortId [ctor] .
+    op v1.la.finish : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op v2.la.finish : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op rsu.la.issuegrant1 : -> RActionId [ctor] .
+    op rsu.la.issuegrant2 : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < v1 : Reactor |
+            inports : 
+                < v1.in.grant : Port | value : [0] >,
+            outports : 
+                < v1.out.done : Port | value : [0] >
+                < v1.out.request : Port | value : [0] >,
+            state : 
+                ( v1.sv.durationofuse |-> [0] ),
+            timers : none,
+            actions : 
+                < v1.la.finish : LogicalAction | minDelay : 5000000, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (v1.out.request) do {
+                    (v1.out.request <- [1])
+                })
+                (reaction when (v1.in.grant) --> (v1.la.finish) do {
+                    schedule(v1.la.finish, [0], [0])
+                })
+                (reaction when (v1.la.finish) --> (v1.out.done) do {
+                    (v1.out.done <- [1])
+                })
+        >
+        < v2 : Reactor |
+            inports : 
+                < v2.in.grant : Port | value : [0] >,
+            outports : 
+                < v2.out.done : Port | value : [0] >
+                < v2.out.request : Port | value : [0] >,
+            state : 
+                ( v2.sv.durationofuse |-> [0] ),
+            timers : none,
+            actions : 
+                < v2.la.finish : LogicalAction | minDelay : 5000000, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (v2.out.request) do {
+                    (v2.out.request <- [1])
+                })
+                (reaction when (v2.in.grant) --> (v2.la.finish) do {
+                    schedule(v2.la.finish, [0], [0])
+                })
+                (reaction when (v2.la.finish) --> (v2.out.done) do {
+                    (v2.out.done <- [1])
+                })
+        >
+        < rsu : Reactor |
+            inports : 
+                < rsu.in.request1 : Port | value : [0] >
+                < rsu.in.request2 : Port | value : [0] >
+                < rsu.in.done1 : Port | value : [0] >
+                < rsu.in.done2 : Port | value : [0] >,
+            outports : 
+                < rsu.out.grant1 : Port | value : [0] >
+                < rsu.out.grant2 : Port | value : [0] >,
+            state : 
+                ( rsu.sv.assigned |-> [0] );
+                ( rsu.sv.availabletime |-> [0] );
+                ( rsu.sv.constwait |-> [0] );
+                ( rsu.sv.currenttime |-> [0] );
+                ( rsu.sv.done1 |-> [0] );
+                ( rsu.sv.done2 |-> [0] ),
+            timers : none,
+            actions : 
+                < rsu.la.issuegrant1 : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < rsu.la.issuegrant2 : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) do {
+                    (rsu.sv.constwait := [1]) ;
+                    (rsu.sv.currenttime := [0])
+                })
+                (reaction when (rsu.in.request1 ; rsu.in.request2) --> (rsu.la.issuegrant1 ; rsu.la.issuegrant2) do {
+                    if ((rsu.sv.currenttime > rsu.sv.availabletime)) then (if ((isPresent(rsu.in.request1))) then (schedule(rsu.la.issuegrant1, [0], [0])) else (schedule(rsu.la.issuegrant2, [0], [0])) fi ;
+                    (rsu.sv.availabletime := (rsu.sv.availabletime + (rsu.sv.currenttime + rsu.sv.constwait)))) fi
+                })
+                (reaction when (rsu.la.issuegrant1) --> (rsu.out.grant1) do {
+                    (rsu.out.grant1 <- [1])
+                })
+                (reaction when (rsu.la.issuegrant2) --> (rsu.out.grant2) do {
+                    (rsu.out.grant2 <- [1])
+                })
+                (reaction when (rsu.in.done1 ; rsu.in.done2) do {
+                    if ((isPresent(rsu.in.done1))) then ((rsu.sv.done1 := [1])) else ((rsu.sv.done2 := [1])) fi
+                })
+        >
+    (v1 : v1.out.done --> rsu : rsu.in.done1)
+    (v1 : v1.out.request --> rsu : rsu.in.request1)
+    (v2 : v2.out.done --> rsu : rsu.in.done2)
+    (v2 : v2.out.request --> rsu : rsu.in.request2)
+    (rsu : rsu.out.grant1 --> v1 : v1.in.grant)
+    (rsu : rsu.out.grant2 --> v2 : v2.in.grant)
+    .
+endom
+
+omod TEST-ROADSIDEUNIT is
+    including ROADSIDEUNIT .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-ROADSIDEUNIT is
+    including TEST-ROADSIDEUNIT .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-ROADSIDEUNIT is
+    including TEST-ROADSIDEUNIT .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-ROADSIDEUNIT is
+    including TEST-ROADSIDEUNIT .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-ROADSIDEUNIT : modelCheck(initSystem timeBound 10000000 , (([] (((~ (((( (@ v1.in.grant in v1) === @ [1] )) /\ (( (@ v2.in.grant in v2) === @ [1] ))))))))) ) .
+
+quit

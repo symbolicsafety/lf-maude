@@ -43,8 +43,8 @@ reactor Train {
     output done:int;
     input response:int;
     input grant:int;
-    logical action wait(2 minute);
-    logical action passing(10 minute);
+    logical action wait(2 msec);
+    logical action passing(10 msec);
     
     reaction(startup) -> query {=
         lf_set(query, 1);
@@ -67,7 +67,8 @@ reactor Train {
     =}
 }
 
-@property(name="ums_receives_done_within_11_minutes", tactic="bmc", spec="F[0, 11 minute](Subway_u_reaction_3)", expect=false)
+// @property(name="ums_receives_done_within_11_mseconds", tactic="bmc", spec="F[0, 11 msec](Subway_u_reaction_3)", expect=false)
+@maude(analysis="ltl", timeBound=11, goal="<> (u.4 invoked)")
 main reactor {
     u = new UMS();
     t = new Train();

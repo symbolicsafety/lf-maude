@@ -1,0 +1,141 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod SUBWAY is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op Subway : -> ReactorId [ctor] .
+    op u : -> ReactorId [ctor] .
+    op t : -> ReactorId [ctor] .
+    op u.sv.pos : -> RVarId [ctor] .
+    op u.sv.inUse : -> RVarId [ctor] .
+    op u.in.query : -> RPortId [ctor] .
+    op u.in.req : -> RPortId [ctor] .
+    op u.in.done : -> RPortId [ctor] .
+    op u.out.response : -> RPortId [ctor] .
+    op u.out.grant : -> RPortId [ctor] .
+    op t.in.response : -> RPortId [ctor] .
+    op t.in.grant : -> RPortId [ctor] .
+    op t.out.query : -> RPortId [ctor] .
+    op t.out.req : -> RPortId [ctor] .
+    op t.out.done : -> RPortId [ctor] .
+    op u.la.issue : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op t.la.wait : -> RActionId [ctor] .
+    op t.la.passing : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < u : Reactor |
+            inports : 
+                < u.in.query : Port | value : [0] >
+                < u.in.req : Port | value : [0] >
+                < u.in.done : Port | value : [0] >,
+            outports : 
+                < u.out.response : Port | value : [0] >
+                < u.out.grant : Port | value : [0] >,
+            state : 
+                ( u.sv.pos |-> [0] );
+                ( u.sv.inUse |-> [0] ),
+            timers : none,
+            actions : 
+                < u.la.issue : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) do {
+                    (u.sv.pos := [0]) ;
+                    (u.sv.inUse := [0])
+                })
+                (reaction when (u.in.query) --> (u.out.response) do {
+                    (u.out.response <- u.sv.pos)
+                })
+                (reaction when (u.in.req) --> (u.out.grant ; u.la.issue) do {
+                    if ((u.sv.inUse === [0])) then ((u.out.grant <- [1]) ;
+                    schedule(u.la.issue, [0], [0])) else ((u.out.grant <- [0])) fi
+                })
+                (reaction when (u.in.done) do {
+                    (u.sv.inUse := [0])
+                })
+                (reaction when (u.la.issue) do {
+                    (u.sv.inUse := [1])
+                })
+        >
+        < t : Reactor |
+            inports : 
+                < t.in.response : Port | value : [0] >
+                < t.in.grant : Port | value : [0] >,
+            outports : 
+                < t.out.query : Port | value : [0] >
+                < t.out.req : Port | value : [0] >
+                < t.out.done : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < t.la.wait : LogicalAction | minDelay : 2000000, minSpacing : 0, policy : defer, payload : [0] >
+                < t.la.passing : LogicalAction | minDelay : 10000000, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (t.out.query) do {
+                    (t.out.query <- [1])
+                })
+                (reaction when (t.la.wait) --> (t.out.req) do {
+                    (t.out.req <- [1])
+                })
+                (reaction when (t.la.passing) --> (t.out.done) do {
+                    (t.out.done <- [1])
+                })
+                (reaction when (t.in.response) --> (t.la.wait ; t.out.req) do {
+                    if ((t.in.response === [0])) then (schedule(t.la.wait, [0], [0])) else ((t.out.req <- [1])) fi
+                })
+                (reaction when (t.in.grant) --> (t.la.passing) do {
+                    schedule(t.la.passing, [0], [0])
+                })
+        >
+    (u : u.out.response --> t : t.in.response)
+    (u : u.out.grant --> t : t.in.grant)
+    (t : t.out.query --> u : u.in.query)
+    (t : t.out.req --> u : u.in.req)
+    (t : t.out.done --> u : u.in.done)
+    .
+endom
+
+omod TEST-SUBWAY is
+    including SUBWAY .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-SUBWAY is
+    including TEST-SUBWAY .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-SUBWAY is
+    including TEST-SUBWAY .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-SUBWAY is
+    including TEST-SUBWAY .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-SUBWAY : modelCheck(initSystem timeBound 11000000 , ((<> (((((u . 4) invoked )))))) ) .
+
+quit

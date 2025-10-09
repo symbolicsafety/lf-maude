@@ -1,0 +1,131 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod TRAINDOOR2 is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op TrainDoor2 : -> ReactorId [ctor] .
+    op c : -> ReactorId [ctor] .
+    op t : -> ReactorId [ctor] .
+    op d : -> ReactorId [ctor] .
+    op s : -> ReactorId [ctor] .
+    op t.sv.received : -> RVarId [ctor] .
+    op d.sv.received : -> RVarId [ctor] .
+    op s.sv.sum : -> RVarId [ctor] .
+    op c.out.out1 : -> RPortId [ctor] .
+    op c.out.out2 : -> RPortId [ctor] .
+    op t.in.in : -> RPortId [ctor] .
+    op t.out.out : -> RPortId [ctor] .
+    op d.in.in : -> RPortId [ctor] .
+    op d.out.out : -> RPortId [ctor] .
+    op s.in.in1 : -> RPortId [ctor] .
+    op s.in.in2 : -> RPortId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < c : Reactor |
+            inports : none,
+            outports : 
+                < c.out.out1 : Port | value : [0] >
+                < c.out.out2 : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (c.out.out1 ; c.out.out2) do {
+                    (c.out.out1 <- [1]) ;
+                    (c.out.out2 <- [2])
+                })
+        >
+        < t : Reactor |
+            inports : 
+                < t.in.in : Port | value : [0] >,
+            outports : 
+                < t.out.out : Port | value : [0] >,
+            state : 
+                ( t.sv.received |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (t.in.in) --> (t.out.out) do {
+                    (t.sv.received := t.in.in) ;
+                    (t.out.out <- t.sv.received)
+                })
+        >
+        < d : Reactor |
+            inports : 
+                < d.in.in : Port | value : [0] >,
+            outports : 
+                < d.out.out : Port | value : [0] >,
+            state : 
+                ( d.sv.received |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (d.in.in) --> (d.out.out) do {
+                    (d.sv.received := d.in.in) ;
+                    (d.out.out <- d.sv.received)
+                })
+        >
+        < s : Reactor |
+            inports : 
+                < s.in.in1 : Port | value : [0] >
+                < s.in.in2 : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( s.sv.sum |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (s.in.in1 ; s.in.in2) do {
+                    (s.sv.sum := (s.in.in1 + s.in.in2))
+                })
+        >
+    (c : c.out.out1 -- 1000000 --> t : t.in.in)
+    (c : c.out.out2 -- 1000000 --> d : d.in.in)
+    (t : t.out.out --> s : s.in.in1)
+    (d : d.out.out --> s : s.in.in2)
+    .
+endom
+
+omod TEST-TRAINDOOR2 is
+    including TRAINDOOR2 .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-TRAINDOOR2 is
+    including TEST-TRAINDOOR2 .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-TRAINDOOR2 is
+    including TEST-TRAINDOOR2 .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-TRAINDOOR2 is
+    including TEST-TRAINDOOR2 .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-TRAINDOOR2 : modelCheck(initSystem timeBound 1000000 , (((((~ (((((t . 1) invoked ))))))) U (((((d . 1) invoked )))))) ) .
+
+quit
