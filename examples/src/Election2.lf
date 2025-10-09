@@ -4,7 +4,7 @@ reactor Node0 {
     input in:int
     output out:int
     state id:int
-    state elected:int(0)
+    state elected:int = 0
         
     reaction(startup) -> out {=
         self->id = 0;
@@ -23,7 +23,7 @@ reactor Node1 {
     input in:int
     output out:int
     state id:int
-    state elected:int(0)
+    state elected:int = 0
         
     reaction(startup) -> out {=
         self->id = 1;
@@ -42,7 +42,7 @@ reactor Node2 {
     input in:int
     output out:int
     state id:int
-    state elected:int(0)
+    state elected:int = 0
         
     reaction(startup) -> out {=
         self->id = 2;
@@ -58,7 +58,8 @@ reactor Node2 {
 }
 
 // This property being checked does not hold. A valid property is F[0, 30 msec]((Election2_i0_elected + Election2_i1_elected + Election2_i2_elected) == 1)
-@property(name="exactly_one_elected", tactic="bmc", spec="F[0, 20 msec]((Election2_i0_elected + Election2_i1_elected + Election2_i2_elected) == 1)", expect=false)
+// @property(name="exactly_one_elected", tactic="bmc", spec="F[0, 20 msec]((Election2_i0_elected + Election2_i1_elected + Election2_i2_elected) == 1)", expect=false)
+@maude(analysis="ltl", goal="<> (elected in i0 + elected in i1 + elected in i2 == 1)", timeBound=20)
 main reactor {
     i0 = new Node0()
     i1 = new Node1()

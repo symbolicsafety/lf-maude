@@ -11,14 +11,15 @@ reactor Trigger {
 
 reactor Task {
     input cnt:int;
-    state counter:int(0);
+    state counter:int = 0;
 
     reaction(cnt) {=
         self->counter += 2; // Should be 1.
     =}
 }
 
-@property(name="upperbound", tactic="bmc", spec="G[0, 1 usec]((CoopSchedule_task1_counter + CoopSchedule_task2_counter + CoopSchedule_task3_counter + CoopSchedule_task4_counter + CoopSchedule_task5_counter) < 15)", expect=false)
+//@property(name="upperbound", tactic="bmc", spec="G[0, 1 usec]((CoopSchedule_task1_counter + CoopSchedule_task2_counter + CoopSchedule_task3_counter + CoopSchedule_task4_counter + CoopSchedule_task5_counter) < 15)", expect=false)
+@maude(analysis="reachability", timeBound=1, goal="((counter in task1) + (counter in task2) + (counter in task3) + (counter in task4) + (counter in task5)) < 15")
 main reactor {
     trigger = new Trigger()
     // TODO: Put these reactors in a bank.

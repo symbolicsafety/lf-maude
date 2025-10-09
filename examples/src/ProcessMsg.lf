@@ -5,10 +5,10 @@ reactor Task {
     output out:int
 
     state messageSent:int
-    state counter:int(0)
-    state panic:int(0)
+    state counter:int = 0
+    state panic:int = 0
 
-    timer t(0, 1 nsec)
+    timer t(0, 1 msec)
 
     logical action updateMessage
 
@@ -32,7 +32,9 @@ reactor Task {
     =}
 }
 
-@property(name="panic_free", tactic="bmc", spec="G[5 nsec](ProcessMsg_task_panic != 1)", expect=true)
+//@maude(analysis="reachability", goal="panic in task == 1 /\ remainingTime 0", timeBound=5 )
+@maude(analysis="reachability", goal="panic in task == 1", timeBound=5 )
+//@property(name="panic_free", tactic="bmc", spec="G[5 msec](ProcessMsg_task_panic != 1)", expect=true)
 main reactor {
     task = new Task()
     task.out -> task.in

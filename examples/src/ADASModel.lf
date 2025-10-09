@@ -3,7 +3,7 @@ target C;
 reactor Camera {
     output out:int;
     state  frame:int;
-    timer  t(0, 17 nsec); // 60 fps
+    timer  t(0, 17 msec); // 60 fps
     reaction(t) -> out {=
         // Capture a frame.
         self->frame = 1;
@@ -14,7 +14,7 @@ reactor Camera {
 reactor LiDAR {
     output out:int;
     state  frame:int;
-    timer  t(0, 34 nsec); // 30 fps
+    timer  t(0, 34 msec); // 30 fps
     reaction(t) -> out {=
         // Capture a frame.
         self->frame = 2;
@@ -44,7 +44,7 @@ reactor ADASProcessor {
     input in2:int;
     output out1:int;
     output out2:int;
-    logical action a(50 nsec);
+    logical action a(50 msec);
     state requestStop:int;
     reaction(in1,in2) -> a {=
         // ... Detect danger
@@ -70,8 +70,8 @@ reactor Dashboard {
 @maude(analysis="reachability", timeBound=55, goal="brakesApplied in b == 1")
 @maude(analysis="reachability", timeBound=55, goal="event(p, a) inQueue")
 @maude(analysis="ltl", timeBound=55, goal="<>(brakesApplied in b == 1)")
-@maude(analysis="ltl",  goal="[] (((l.1) invoked) -> (<> (brakesApplied in b == 1)))")
-@maude(analysis="ltl",  goal="[](((l.1) invoked /\ requestStop in v == 1) -> (<> brakesApplied in b == 1))")
+@maude(analysis="ltl",  goal="[] ((l.1 invoked) -> (<> (brakesApplied in b == 1)))")
+@maude(analysis="ltl",  goal="[]((l.1 invoked /\ requestStop in v == 1) -> (<> brakesApplied in b == 1))")
 @maude(analysis="reachability",  goal="(p.1 invoked) /\ (brakesApplied in b != 1)")
 
 
@@ -85,6 +85,6 @@ main reactor ADASModel {
     l.out -> v.in1; 
     c.out -> v.in2;
     v.out2 -> d.in;
-    v.out1 -> b.inADAS after 5 nsec;
+    v.out1 -> b.inADAS after 5 msec;
     p.out -> b.inPedal;
 }

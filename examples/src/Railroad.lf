@@ -114,7 +114,8 @@ reactor Controller {
     =}
 }
 
-@property(name="TrainSafety", tactic="bmc", spec="G[0, 5 sec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20, expect=true)
+@maude(analysis="ltl", goal="[]! ((_mode in train_w == 2) /\ (_mode in train_e == 2))")
+@maude(analysis="reachability", goal="! (_mode in train_w == 2 /\ _mode in train_e == 2)")
 main reactor Railroad {
     train_w = new Train()
     train_e = new Train()

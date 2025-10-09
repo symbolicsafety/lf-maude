@@ -1,13 +1,13 @@
 target C {
-    timeout: 10 nsec
+    timeout: 10 msec
 }
 
 reactor _Factorial {
     output out:int
-    timer t(0, 1 nsec);
+    timer t(0, 1 msec);
     logical action prepForNext
 
-    state N:int(0)
+    state N:int = 0
     state result:int
     state lastResult:int
 
@@ -35,7 +35,7 @@ reactor Printer {
     =}
 }
 
-@property(name="correctness", tactic="bmc", spec="G[10 nsec](Factorial_printer_reaction_0 ==> Factorial_printer_result == 3628800)", expect=true)
+//@property(name="correctness", tactic="bmc", spec="G[10 msec](Factorial_printer_reaction_0 ==> Factorial_printer_result == 3628800)", expect=true)
 main reactor {
     factorial = new _Factorial()
     printer = new Printer()

@@ -11,7 +11,7 @@ reactor Vision {
     
     input in:int;
     output out:int;
-    state ramp:int(0);
+    state ramp:int = 0;
     
     reaction(in) -> out {=
         if (self->ramp == 1) {
@@ -33,7 +33,8 @@ reactor Door {
     =}
 }
 
-@property(name="vision_works", tactic="bmc", spec="((AircraftDoor_vision_ramp == 0) ==> (G[0 sec](AircraftDoor_door_reaction_0 ==> (AircraftDoor_door_doorOpen == 1))))", expect=true)
+//@property(name="vision_works", tactic="bmc", spec="((AircraftDoor_vision_ramp == 0) ==> (G[0 sec](AircraftDoor_door_reaction_0 ==> (AircraftDoor_door_doorOpen == 1))))", expect=true)
+@maude(analysis="ltl", goal="(ramp in vision == 0) -> [] ((door. 1 invoked) -> (doorOpen in door == 1))", timeBound=0)
 main reactor AircraftDoor {
     controller	= new Controller();
     vision		= new Vision();

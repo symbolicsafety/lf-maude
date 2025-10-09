@@ -4,7 +4,7 @@
  * https://www.scala-lang.org/old/node/54 See
  * https://shamsimam.github.io/papers/2014-agere-savina.pdf.
  *
- * Ping introduces a 1 nsec delay using a logical action to break the
+ * Ping introduces a 1 msec delay using a logical action to break the
  * causality loop.
  *
  * To get a sense, some (informal) results for 1,000,000 ping-pongs on my Mac:
@@ -27,7 +27,7 @@ reactor Ping {
     input receive: int
     output send: int
     state pingsLeft: int = 10
-    logical action serve(1 nsec)
+    logical action serve(1 msec)
 
     reaction(startup) -> serve {=
         lf_schedule(serve, 0);
@@ -57,7 +57,9 @@ reactor Pong {
     =}
 }
 
-@property(name="no_two_consecutive_pings", tactic="bmc", spec="G[0, 4 nsec](PingPong_ping_reaction_1 ==> X(!PingPong_ping_reaction_1))", expect=false)
+@maude(analysis="ltl", goal="[] (ping.2 invoked -> O ! (ping.2 invoked))", timeBound=4)
+
+//@property(name="no_two_consecutive_pings", tactic="bmc", spec="G[0, 4 msec](PingPong_ping_reaction_1 ==> X(!PingPong_ping_reaction_1))", expect=false)
 main reactor PingPong {
     ping = new Ping()
     pong = new Pong()

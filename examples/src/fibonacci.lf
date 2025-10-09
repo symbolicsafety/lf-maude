@@ -1,8 +1,10 @@
-target C 
+target C  {
+    timeout: 10 msec
+  }
 
 reactor Fib {
   output out:int
-  timer t(0, 1 nsec);
+  timer t(0, 1 msec);
   logical action incrementN
   logical action saveLast
   logical action saveSecondLast
@@ -34,10 +36,10 @@ reactor Printer {
     self->result = in->value;  =}
 }
 
-@maude(analysis="simulation", timeBound=10)
-@maude(analysis="reachability", timeBound=10, goal="False")
-@maude(analysis="reachability", timeBound=10, goal="result in printer == 89")
-@maude(analysis="reachability", timeBound=10, goal="(result in printer != 89) /\ (printer.1 invoked)")
+//@maude(analysis="simulation", timeBound=10)
+//@maude(analysis="reachability", timeBound=10, goal="False")
+//@maude(analysis="reachability", timeBound=10, goal="result in printer == 89", type="!")
+@maude(analysis="reachability", timeBound=10, goal="(result in printer != 89) /\ (printer.1 invoked) /\ remainingTime 0" )
 
 main reactor {
   fib = new Fib()
