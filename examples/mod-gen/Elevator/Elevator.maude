@@ -1,0 +1,182 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod ELEVATOR is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op Elevator : -> ReactorId [ctor] .
+    op c : -> ReactorId [ctor] .
+    op s : -> ReactorId [ctor] .
+    op c.sv.Floor : -> RVarId [ctor] .
+    op c.sv.DoorIsOpen : -> RVarId [ctor] .
+    op c.sv.StopPressed : -> RVarId [ctor] .
+    op c.sv.direction : -> RVarId [ctor] .
+    op s.sv.direction : -> RVarId [ctor] .
+    op s.sv.doorStatus : -> RVarId [ctor] .
+    op c.in.Call1 : -> RPortId [ctor] .
+    op c.in.Call2 : -> RPortId [ctor] .
+    op c.in.Stop : -> RPortId [ctor] .
+    op c.in.ReachFloor : -> RPortId [ctor] .
+    op c.in.DoorStatus : -> RPortId [ctor] .
+    op c.out.MotorUp : -> RPortId [ctor] .
+    op c.out.MotorDown : -> RPortId [ctor] .
+    op c.out.DoorCommand : -> RPortId [ctor] .
+    op s.in.MotorUp : -> RPortId [ctor] .
+    op s.in.MotorDown : -> RPortId [ctor] .
+    op s.in.DoorCommand : -> RPortId [ctor] .
+    op s.out.Call1 : -> RPortId [ctor] .
+    op s.out.Call2 : -> RPortId [ctor] .
+    op s.out.Stop : -> RPortId [ctor] .
+    op s.out.DoorStatus : -> RPortId [ctor] .
+    op s.out.ReachFloor : -> RPortId [ctor] .
+    op s.t.Call1Pressed : -> TimerId [ctor] .
+    op s.t.Call2Pressed : -> TimerId [ctor] .
+    op s.t.StopPressed : -> TimerId [ctor] .
+    op s.la.MotorDone : -> RActionId [ctor] .
+    op s.la.CheckDoor : -> RActionId [ctor] .
+    op s.la.ResetDirection : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < c : Reactor |
+            inports : 
+                < c.in.Call1 : Port | value : [0] >
+                < c.in.Call2 : Port | value : [0] >
+                < c.in.Stop : Port | value : [0] >
+                < c.in.ReachFloor : Port | value : [0] >
+                < c.in.DoorStatus : Port | value : [0] >,
+            outports : 
+                < c.out.MotorUp : Port | value : [0] >
+                < c.out.MotorDown : Port | value : [0] >
+                < c.out.DoorCommand : Port | value : [0] >,
+            state : 
+                ( c.sv.Floor |-> [0] );
+                ( c.sv.DoorIsOpen |-> [0] );
+                ( c.sv.StopPressed |-> [0] );
+                ( c.sv.direction |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (c.in.Call1) --> (c.out.MotorDown ; c.out.DoorCommand) do {
+                    if (((( ! (c.sv.StopPressed === [1])) ) && (( ! (c.sv.DoorIsOpen === [1])) )) && ((c.sv.Floor ==/= [1]))) then ((c.out.DoorCommand <- [0]) ;
+                    (c.out.MotorDown <- [1])) fi
+                })
+                (reaction when (c.in.Call2) --> (c.out.MotorUp ; c.out.DoorCommand) do {
+                    if (((( ! (c.sv.StopPressed === [1])) ) && (( ! (c.sv.DoorIsOpen === [1])) )) && ((c.sv.Floor ==/= [2]))) then ((c.out.DoorCommand <- [0]) ;
+                    (c.out.MotorUp <- [1])) fi
+                })
+                (reaction when (c.in.Stop) --> (c.out.DoorCommand) do {
+                    if ((c.sv.StopPressed === [0])) then ((c.sv.StopPressed := [1]) ;
+                    (c.out.DoorCommand <- [1])) else ((c.sv.StopPressed := [0]) ;
+                    (c.out.DoorCommand <- [0])) fi
+                })
+                (reaction when (c.in.ReachFloor) --> (c.out.DoorCommand) do {
+                    (c.sv.Floor := c.in.ReachFloor) ;
+                    (c.out.DoorCommand <- [1])
+                })
+                (reaction when (c.in.DoorStatus) do {
+                    (c.sv.DoorIsOpen := c.in.DoorStatus)
+                })
+        >
+        < s : Reactor |
+            inports : 
+                < s.in.MotorUp : Port | value : [0] >
+                < s.in.MotorDown : Port | value : [0] >
+                < s.in.DoorCommand : Port | value : [0] >,
+            outports : 
+                < s.out.Call1 : Port | value : [0] >
+                < s.out.Call2 : Port | value : [0] >
+                < s.out.Stop : Port | value : [0] >
+                < s.out.DoorStatus : Port | value : [0] >
+                < s.out.ReachFloor : Port | value : [0] >,
+            state : 
+                ( s.sv.direction |-> [0] );
+                ( s.sv.doorStatus |-> [0] ),
+            timers : 
+                < s.t.Call1Pressed : Timer | offset : 0, period : 15000000 >
+                < s.t.Call2Pressed : Timer | offset : 5000000, period : 15000000 >
+                < s.t.StopPressed : Timer | offset : 10000000, period : 15000000 >,
+            actions : 
+                < s.la.MotorDone : LogicalAction | minDelay : 4000000, minSpacing : 0, policy : defer, payload : [0] >
+                < s.la.CheckDoor : LogicalAction | minDelay : 2000000, minSpacing : 0, policy : defer, payload : [0] >
+                < s.la.ResetDirection : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (s.t.Call1Pressed) --> (s.out.Call1) do {
+                    (s.out.Call1 <- [1])
+                })
+                (reaction when (s.t.Call2Pressed) --> (s.out.Call2) do {
+                    (s.out.Call2 <- [1])
+                })
+                (reaction when (s.t.StopPressed) --> (s.out.Stop) do {
+                    (s.out.Stop <- [1])
+                })
+                (reaction when (s.in.MotorUp ; s.in.MotorDown) --> (s.la.MotorDone) do {
+                    if (((isPresent(s.in.MotorUp))) && (( ! (isPresent(s.in.MotorDown))) )) then ((s.sv.direction := [1]) ;
+                    schedule(s.la.MotorDone, [0], [0])) else (if (((isPresent(s.in.MotorDown))) && (( ! (isPresent(s.in.MotorUp))) )) then ((s.sv.direction := [-1]) ;
+                    schedule(s.la.MotorDone, [0], [0])) fi) fi
+                })
+                (reaction when (s.la.MotorDone) --> (s.out.ReachFloor ; s.la.ResetDirection) do {
+                    if ((s.sv.direction === [1])) then ((s.out.ReachFloor <- [2])) else (if ((s.sv.direction === [-1])) then ((s.out.ReachFloor <- [1])) fi) fi ;
+                    schedule(s.la.ResetDirection, [0], [0])
+                })
+                (reaction when (s.la.ResetDirection) do {
+                    (s.sv.direction := [0])
+                })
+                (reaction when (s.in.DoorCommand) --> (s.la.CheckDoor) do {
+                    (s.sv.doorStatus := s.in.DoorCommand) ;
+                    schedule(s.la.CheckDoor, [0], [0])
+                })
+                (reaction when (s.la.CheckDoor) --> (s.out.DoorStatus) do {
+                    (s.out.DoorStatus <- s.sv.doorStatus)
+                })
+        >
+    (c : c.out.MotorUp --> s : s.in.MotorUp)
+    (c : c.out.MotorDown --> s : s.in.MotorDown)
+    (c : c.out.DoorCommand --> s : s.in.DoorCommand)
+    (s : s.out.Call1 --> c : c.in.Call1)
+    (s : s.out.Call2 --> c : c.in.Call2)
+    (s : s.out.Stop --> c : c.in.Stop)
+    (s : s.out.DoorStatus --> c : c.in.DoorStatus)
+    (s : s.out.ReachFloor --> c : c.in.ReachFloor)
+    .
+endom
+
+omod TEST-ELEVATOR is
+    including ELEVATOR .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-ELEVATOR is
+    including TEST-ELEVATOR .
+    including LF-PROP-EXT .
+    including SEARCH-GOAL .
+endom
+
+omod MODELCHECKER-ELEVATOR is
+    including TEST-ELEVATOR .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-ELEVATOR is
+    including TEST-ELEVATOR .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-ELEVATOR : modelCheck(initSystem timeBound 15000000 , (([] (((((((((s . 4) invoked )) /\ (((( (@ s.sv.direction in s) ==/= @ [0] )))))))->((((((( (@ s.sv.doorStatus in s) === @ [0] )))) /\ (((( (@ c.sv.StopPressed in c) === @ [0] )))))))))))) ) .
+
+quit

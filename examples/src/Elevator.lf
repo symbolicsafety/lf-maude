@@ -177,16 +177,16 @@ reactor Simulator {
     input MotorDown:int
     input DoorCommand:int
 
-    timer Call1Pressed(0, 15 sec)
-    timer Call2Pressed(5 sec, 15 sec)
-    timer StopPressed(10 sec, 15 sec)
+    timer Call1Pressed(0, 15 msec)
+    timer Call2Pressed(5 msec, 15 msec)
+    timer StopPressed(10 msec, 15 msec)
 
-    logical action MotorDone(4 sec)
-    logical action CheckDoor(2 sec)
+    logical action MotorDone(4 msec)
+    logical action CheckDoor(2 msec)
     logical action ResetDirection
 
-    state direction:int(0)  // 1 = UP, -1 = DOWN, 0 = NOT MOVING
-    state doorStatus:int(0) // 1 = OPEN, 0 = CLOSED
+    state direction:int = 0  // 1 = UP, -1 = DOWN, 0 = NOT MOVING
+    state doorStatus:int = 0 // 1 = OPEN, 0 = CLOSED
 
     reaction(Call1Pressed) -> Call1 {=
         lf_set(Call1, 1);
@@ -239,7 +239,8 @@ reactor Simulator {
     =}
 }
 
-@property(name="moves_when_safe", tactic="bmc", spec="G[0, 15 sec]((Elevator_s_reaction_3 && (Elevator_s_direction != 0)) ==> (Elevator_s_doorStatus == 0 && Elevator_c_StopPressed == 0))", CT=15, expect=true)
+@maude(analysis="ltl", goal="[](((s.4) invoked /\ (direction in s != 0)) -> ((doorStatus in s == 0) /\ (StopPressed in c == 0)))", timeBound=15)
+//@property(name="moves_when_safe", tactic="bmc", spec="G[0, 15 sec]((Elevator_s_reaction_3 && (Elevator_s_direction != 0)) ==> (Elevator_s_doorStatus == 0 && Elevator_c_StopPressed == 0))", CT=15, expect=true)
 main reactor {
     c = new Control()
     s = new Simulator()    
