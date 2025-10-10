@@ -4,6 +4,7 @@ omod LF-PROP-BASE is
 
   subsort ClockedSystem < State .
 
+  var SYSTEM : GlobalSystem .
   var REST : Configuration .
   var O : Oid .
   var REACTORID : ReactorId .
@@ -40,15 +41,15 @@ omod LF-PROP-BASE is
      |=  RID invoked = true .
 
   --- Default false case
-  eq STATE:State |= P:Prop = false [owise] .
+  eq SYSTEM |= P:Prop = false [owise] .
 
   --- New Oct10
   op remainingTime_ : TimeInf -> Prop .
-  eq STATE:State timeBound TI |= remainingTime TI' = (TI == TI') .
+  eq SYSTEM timeBound TI |= remainingTime TI' = (TI == TI') .
 
   --- Extend to timed/time-bounded cases
-  eq STATE:State   in time TI |= P:Prop = STATE:State |= P:Prop [owise] .
-  eq STATE:State timeBound TI |= P:Prop = STATE:State |= P:Prop [owise] .
+  eq SYSTEM   in time TI |= P:Prop = SYSTEM |= P:Prop [owise] .
+  eq SYSTEM timeBound TI |= P:Prop = SYSTEM |= P:Prop [owise] .
 endom
 
 
