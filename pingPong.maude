@@ -44,7 +44,7 @@ in dynamics
       
       (ping : send --> pong : receive)
        pong : send --> ping : receive .
-endom)
+endtom)
 
 (tomod TEST-PINGPONG is
   including PINGPONG .
@@ -71,6 +71,7 @@ endtom)
 
 (tomod CHECK-PINGPONG is
   including TEST-PINGPONG .
+  including TCTL-MODEL-CHECKER  .
   including UNBOUNDED-ANALYSIS-DYNAMICS .
 
   op reaction_invoked : ReactionId -> Prop [ctor] .
