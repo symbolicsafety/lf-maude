@@ -40,6 +40,7 @@ reactor _TrafficLight {
             if (pedestrian->is_present) {
                 if (self->count >= 60) {
                     lf_set(sigY, 1);
+                    self->_mode = 2;
                     lf_schedule(resetCount, 0);
                 } else {
                     self->count += 1;
