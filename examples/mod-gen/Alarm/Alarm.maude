@@ -75,6 +75,6 @@ omod SIMULATION-ALARM is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-ALARM : modelCheck(initSystem timeBound 2000000 , (([] (((((((c . 1) invoked )))))->((<> (((((c . 2) invoked ))))))))) ) .
+red in MODELCHECKER-ALARM : modelCheck(initSystem timeBound 2000000 , ([] (((c . 1) invoked ) -> <> ((c . 2) invoked ))) ) .
 
 quit

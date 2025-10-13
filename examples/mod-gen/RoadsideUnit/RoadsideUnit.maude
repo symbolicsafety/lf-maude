@@ -169,6 +169,6 @@ omod SIMULATION-ROADSIDEUNIT is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-ROADSIDEUNIT : modelCheck(initSystem timeBound 10000000 , (([] (((~ (((( (@ v1.in.grant in v1) === @ [1] )) /\ (( (@ v2.in.grant in v2) === @ [1] ))))))))) ) .
+red in MODELCHECKER-ROADSIDEUNIT : modelCheck(initSystem timeBound 10000000 , ([] (~ (( (@ v1.in.grant in v1) === @ [1] ) /\ ( (@ v2.in.grant in v2) === @ [1] )))) ) .
 
 quit

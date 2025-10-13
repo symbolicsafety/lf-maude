@@ -136,6 +136,6 @@ omod SIMULATION-SUBWAY is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-SUBWAY : modelCheck(initSystem timeBound 11000000 , ((<> (((((u . 4) invoked )))))) ) .
+red in MODELCHECKER-SUBWAY : modelCheck(initSystem timeBound 11000000 , (<> ((u . 4) invoked )) ) .
 
 quit

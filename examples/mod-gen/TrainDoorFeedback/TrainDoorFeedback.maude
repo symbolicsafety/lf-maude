@@ -163,6 +163,6 @@ omod SIMULATION-TRAINDOORFEEDBACK is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-TRAINDOORFEEDBACK : modelCheck(initSystem timeBound 1000000 , (((((~ (((((t . 1) invoked ))))))) U (((((d . 1) invoked )))))) ) .
+red in MODELCHECKER-TRAINDOORFEEDBACK : modelCheck(initSystem timeBound 1000000 , ((~ ((t . 1) invoked )) U ((d . 1) invoked )) ) .
 
 quit

@@ -162,8 +162,6 @@ omod SIMULATION-RING is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-RING : modelCheck(initSystem timeBound 10000000 , ((<> (((((s . 3) invoked )))))) ) .
-
-red in MODELCHECKER-RING : modelCheck(initSystem in time 0, <> ((s . 3) invoked)) .
+red in MODELCHECKER-RING : modelCheck(initSystem timeBound 10000000 , (<> ((s . 3) invoked )) ) .
 
 quit

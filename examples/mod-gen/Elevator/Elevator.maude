@@ -177,6 +177,6 @@ omod SIMULATION-ELEVATOR is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-ELEVATOR : modelCheck(initSystem timeBound 15000000 , (([] (((((((((s . 4) invoked )) /\ (((( (@ s.sv.direction in s) ==/= @ [0] )))))))->((((((( (@ s.sv.doorStatus in s) === @ [0] )))) /\ (((( (@ c.sv.StopPressed in c) === @ [0] )))))))))))) ) .
+red in MODELCHECKER-ELEVATOR : modelCheck(initSystem timeBound 15000000 , ([] ((((s . 4) invoked  /\ (( (@ s.sv.direction in s) ==/= @ [0] ))) -> ((( (@ s.sv.doorStatus in s) === @ [0] )) /\ (( (@ c.sv.StopPressed in c) === @ [0] )))))) ) .
 
 quit

@@ -99,6 +99,6 @@ omod SIMULATION-AIRCRAFTDOOR is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-AIRCRAFTDOOR : modelCheck(initSystem timeBound 0 , ((((( (@ vision.sv.ramp in vision) === @ [0] )))))->(([] (((((((door . 1) invoked )))))->((((( (@ door.sv.doorOpen in door) === @ [1] )))))))) ) .
+red in MODELCHECKER-AIRCRAFTDOOR : modelCheck(initSystem timeBound 0 , ((( (@ vision.sv.ramp in vision) === @ [0] )) -> [] (((door . 1) invoked ) -> (( (@ door.sv.doorOpen in door) === @ [1] )))) ) .
 
 quit

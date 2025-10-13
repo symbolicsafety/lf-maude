@@ -96,6 +96,6 @@ omod SIMULATION-SAFESEND is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-SAFESEND : modelCheck(initSystem timeBound 1000000 , ((<> (((((c . 2) invoked )))))) ) .
+red in MODELCHECKER-SAFESEND : modelCheck(initSystem timeBound 1000000 , (<> ((c . 2) invoked )) ) .
 
 quit

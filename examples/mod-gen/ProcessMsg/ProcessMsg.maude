@@ -87,6 +87,6 @@ omod SIMULATION-PROCESSMSG is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-PROCESSMSG : initSystem timeBound 5000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ task.sv.panic in task) === @ [1] )) /\ (remainingTime 0)) .
+search [1] in ANALYSIS-PROCESSMSG : initSystem timeBound 5000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= (( (@ task.sv.panic in task) === @ [1] ) /\ remainingTime 0) .
 
 quit

@@ -234,6 +234,6 @@ omod SIMULATION-PIPE is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-PIPE : modelCheck(initSystem timeBound 1000000 , (([] (~ (((((( (@ node1.sv.count in node1) <= @ [1] )))) /\ (((( (@ node2.sv.count in node2) <= @ [1] )))) /\ (((( (@ node3.sv.count in node3) <= @ [1] )))) /\ (((( (@ node4.sv.count in node4) <= @ [1] )))) /\ (((( (@ node5.sv.count in node5) <= @ [1] ))))))))) ) .
+red in MODELCHECKER-PIPE : modelCheck(initSystem timeBound 1000000 , ([] ~ ((( (@ node1.sv.count in node1) <= @ [1] )) /\ (( (@ node2.sv.count in node2) <= @ [1] )) /\ (( (@ node3.sv.count in node3) <= @ [1] )) /\ (( (@ node4.sv.count in node4) <= @ [1] )) /\ (( (@ node5.sv.count in node5) <= @ [1] )))) ) .
 
 quit

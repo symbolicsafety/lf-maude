@@ -171,16 +171,16 @@ endom
 
 rew [51] in SIMULATION-ADASMODEL : initSystem timeBound INF .
 
-search [1] in ANALYSIS-ADASMODEL : initSystem timeBound 55000000 =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((( (@ b.sv.brakesApplied in b) === @ [1] ))) .
+search [1] in ANALYSIS-ADASMODEL : initSystem timeBound 55000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= (( (@ b.sv.brakesApplied in b) === @ [1] )) .
 
-search [1] in ANALYSIS-ADASMODEL : initSystem timeBound 55000000 =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= (((event(p, p.pa.a) inQueue))) .
+search [1] in ANALYSIS-ADASMODEL : initSystem timeBound 55000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((event(p, p.pa.a) inQueue)) .
 
-red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound 55000000 , ((<> (((( (@ b.sv.brakesApplied in b) === @ [1] )))))) ) .
+red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound 55000000 , (<> (( (@ b.sv.brakesApplied in b) === @ [1] ))) ) .
 
-red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound INF , (([] (((((((l . 1) invoked )))))->((((<> (((( (@ b.sv.brakesApplied in b) === @ [1] ))))))))))) ) .
+red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound INF , ([] (((l . 1) invoked ) -> (<> (( (@ b.sv.brakesApplied in b) === @ [1] ))))) ) .
 
-red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound INF , (([] (((((((l . 1) invoked )) /\ (( (@ v.sv.requestStop in v) === @ [1] )))))->((((<> (( (@ b.sv.brakesApplied in b) === @ [1] ))))))))) ) .
+red in MODELCHECKER-ADASMODEL : modelCheck(initSystem timeBound INF , ([] (((l . 1) invoked  /\ ( (@ v.sv.requestStop in v) === @ [1] )) -> (<> ( (@ b.sv.brakesApplied in b) === @ [1] )))) ) .
 
-search [1] in ANALYSIS-ADASMODEL : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((((((p . 1) invoked )))) /\ (((( (@ b.sv.brakesApplied in b) ==/= @ [1] ))))) .
+search [1] in ANALYSIS-ADASMODEL : initSystem timeBound INF =>* CS:ClockedSystem  such that CS:ClockedSystem |= (((p . 1) invoked ) /\ (( (@ b.sv.brakesApplied in b) ==/= @ [1] ))) .
 
 quit

@@ -100,6 +100,6 @@ omod SIMULATION-TRAINDOOR is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-TRAINDOOR : modelCheck(initSystem timeBound 1000000 , (((((~ (((((t . 1) invoked ))))))) U (((((d . 1) invoked )))))) ) .
+red in MODELCHECKER-TRAINDOOR : modelCheck(initSystem timeBound 1000000 , ((~ ((t . 1) invoked )) U ((d . 1) invoked )) ) .
 
 quit

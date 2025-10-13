@@ -99,6 +99,6 @@ omod SIMULATION-PINGPONG is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-PINGPONG : modelCheck(initSystem timeBound 4000000 , (([] (((((ping . 2) invoked )))->((O (~ (((((ping . 2) invoked )))))))))) ) .
+red in MODELCHECKER-PINGPONG : modelCheck(initSystem timeBound 4000000 , ([] ((ping . 2) invoked  -> O ~ ((ping . 2) invoked ))) ) .
 
 quit

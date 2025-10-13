@@ -208,8 +208,8 @@ omod SIMULATION-RAILROAD is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-RAILROAD : modelCheck(initSystem timeBound 5000000 , (([] (((~ (((( (@ trainw.sv.mode in trainw) === @ [2] )) /\ (( (@ traine.sv.mode in traine) === @ [2] ))))))))) ) .
+red in MODELCHECKER-RAILROAD : modelCheck(initSystem timeBound 5000000 , ([] (~ (( (@ trainw.sv.mode in trainw) === @ [2] ) /\ ( (@ traine.sv.mode in traine) === @ [2] )))) ) .
 
-search [1] in ANALYSIS-RAILROAD : initSystem timeBound INF =>* {C:Configuration} timeBound TI:TimeInf such that {C:Configuration} |= ((( (@ trainw.sv.mode in trainw) === @ [2] )) /\ (( (@ traine.sv.mode in traine) === @ [2] ))) .
+search [1] in ANALYSIS-RAILROAD : initSystem timeBound INF =>* CS:ClockedSystem  such that CS:ClockedSystem |= (( (@ trainw.sv.mode in trainw) === @ [2] ) /\ ( (@ traine.sv.mode in traine) === @ [2] )) .
 
 quit

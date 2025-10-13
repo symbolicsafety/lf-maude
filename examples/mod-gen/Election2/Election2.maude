@@ -128,6 +128,6 @@ omod SIMULATION-ELECTION2 is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-ELECTION2 : modelCheck(initSystem timeBound 20000000 , ((<> ((((((((( @ i0.sv.elected in i0) ))))+((((( @ i1.sv.elected in i1) ))))+((((( @ i2.sv.elected in i2) ))))) === (((((@ [1])))))))))) ) .
+red in MODELCHECKER-ELECTION2 : modelCheck(initSystem timeBound 20000000 , (<> ((( @ i0.sv.elected in i0) +( @ i1.sv.elected in i1) +( @ i2.sv.elected in i2) ) === (@ [1]))) ) .
 
 quit

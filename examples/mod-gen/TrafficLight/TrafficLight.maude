@@ -46,6 +46,7 @@ omod TRAFFICLIGHT is
                     if ((t.sv.mode === [0])) then (if ((t.sv.count >= [60])) then ((t.out.sigG <- [1]) ;
                     schedule(t.la.resetCount, [0], [0]) ;
                     (t.sv.mode := [1])) else ((t.sv.count := (t.sv.count + [1]))) fi) else (if ((t.sv.mode === [1])) then (if ((isPresent(t.in.pedestrian))) then (if ((t.sv.count >= [60])) then ((t.out.sigY <- [1]) ;
+                    (t.sv.mode := [2]) ;
                     schedule(t.la.resetCount, [0], [0])) else ((t.sv.count := (t.sv.count + [1]))) fi) else ((t.sv.count := (t.sv.count + [1]))) fi) else (if ((t.sv.mode === [2])) then (if ((t.sv.count >= [5])) then ((t.out.sigR <- [1]) ;
                     schedule(t.la.resetCount, [0], [0])) else ((t.sv.count := (t.sv.count + [1]))) fi) else (if ((t.sv.count >= [60])) then ((t.out.sigY <- [1]) ;
                     schedule(t.la.resetCount, [0], [0])) else ((t.sv.count := (t.sv.count + [1]))) fi) fi) fi) fi
@@ -106,6 +107,6 @@ omod SIMULATION-TRAFFICLIGHT is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-TRAFFICLIGHT : modelCheck(initSystem timeBound 5000000 , ((<> (((( (@ t.sv.mode in t) === @ [1] )))))) ) .
+red in MODELCHECKER-TRAFFICLIGHT : modelCheck(initSystem timeBound 5000000 , (<> (( (@ t.sv.mode in t) === @ [1] ))) ) .
 
 quit
