@@ -39,7 +39,7 @@ omod ABS-DYNAMICS-WITHOUT-TICK is
                       REACTORS-AND-CONNECTIONS, QUEUE)
    = addInitialTimers(< REACTORID : Reactor | timers : TIMERS >
                       REACTORS-AND-CONNECTIONS,
-                      schedule(event(REACTORID, TIMERID, zeroVal, trueVal), T, QUEUE)) .
+                      schedule(event(REACTORID, TIMERID, zeroVal), T, QUEUE)) .
   eq addInitialTimers(REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 
 
@@ -51,7 +51,7 @@ omod ABS-DYNAMICS-WITHOUT-TICK is
                 REACTORS-AND-CONNECTIONS, QUEUE)
    = addStartup(ACTIONID, 
                 < REACTORID : Reactor | actions : CONF >
-                REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL, trueVal), zero, QUEUE)) .
+                REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), zero, QUEUE)) .
   eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 endom
 

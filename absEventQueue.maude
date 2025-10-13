@@ -20,13 +20,7 @@ fmod EVENT is
 
   --- Single events.  It may also have a constraint. 
   sort Event .
-  op event : ReactorId ActionTrigger Value BoolValue -> Event [ctor] .
-
-
-  --- for shorthand
-  op event : ReactorId ActionTrigger Value ~> Event .
-  eq event(R:ReactorId, A:ActionTrigger, V:Value)
-   = event(R:ReactorId, A:ActionTrigger, V:Value, trueVal) .
+  op event : ReactorId ActionTrigger Value -> Event [ctor] .
 endfm
 
 
@@ -66,10 +60,6 @@ fmod TAGGED-EVENTS is
   subsort Event < Events .
   op noEvent : -> Events [ctor] .
   op __ : Events Events -> Events [assoc comm id: noEvent ctor] .
-
-  --- remove an event with a false constraint
-  ceq event(R:ReactorId, A:ActionTrigger, V:Value, CONST:BoolValue)
-    = noEvent if CONST:BoolValue == falseVal .
 endfm
 
 

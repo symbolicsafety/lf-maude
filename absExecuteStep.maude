@@ -207,7 +207,7 @@ omod ABS-EXECUTE-REACTION is
       executeReactionBody(
         < REACTOR : Reactor | outports : CONF < PORTID : Port | value : 
             eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS) > >,
-        RB, event(REACTOR, PORTID, eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS), trueVal) OUTPUTS, 
+        RB, event(REACTOR, PORTID, eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS)) OUTPUTS, 
         QUEUE, TSTATUS, CONST) .
 
   --- The constraint for the event is true
@@ -224,7 +224,7 @@ omod ABS-EXECUTE-REACTION is
         schedule(
             event(REACTOR, ACTIONID, 
                 eval(EXP, VALUATION, 
-                     INPORTS CONF < ACTIONID : Action | >, TSTATUS), trueVal), 
+                     INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
             toTime(eval([T] + REXP, VALUATION, 
                         INPORTS CONF < ACTIONID : Action | >, TSTATUS)), 
             QUEUE), TSTATUS, CONST) .
@@ -292,32 +292,32 @@ omod ABS-EXECUTE-STEP is
 
   eq addEventsToPorts(noEvent, NETWORK, CONST') = {NETWORK, CONST'} .
 
-  eq addEventsToPorts(event(REACTORID, PORTID, VAL, CONST) EVENTS,
+  eq addEventsToPorts(event(REACTORID, PORTID, VAL) EVENTS,
                       NETWORK < REACTORID : Reactor |
                                  inports : PORTS < PORTID : Port | > >, CONST')
    =
      addEventsToPorts(EVENTS, 
                       NETWORK < REACTORID : Reactor |
                                  inports : PORTS < PORTID : Port | value : VAL > >,
-                      CONST' && CONST) .
+                      CONST') .
 
-  eq addEventsToPorts(event(REACTORID, ACTIONID, VAL, CONST) EVENTS,
+  eq addEventsToPorts(event(REACTORID, ACTIONID, VAL) EVENTS,
                       NETWORK < REACTORID : Reactor |
                                  actions : ACTIONS < ACTIONID : Action | > >, CONST')
    =
      addEventsToPorts(EVENTS, 
                       NETWORK < REACTORID : Reactor |
                                  actions : ACTIONS < ACTIONID : Action | payload : VAL > >,
-                      CONST' && CONST) .
+                      CONST') .
 
-  eq addEventsToPorts(event(REACTORID, TIMERID, VAL, CONST) EVENTS,
+  eq addEventsToPorts(event(REACTORID, TIMERID, VAL) EVENTS,
                       NETWORK < REACTORID : Reactor |
                                  timers : TIMERS < TIMERID : Timer | > >, CONST')
    =
      addEventsToPorts(EVENTS, 
                       NETWORK < REACTORID : Reactor |
                                  timers : TIMERS < TIMERID : Timer | > >,
-                      CONST' && CONST) .
+                      CONST') .
 
  
   ---
@@ -333,14 +333,14 @@ omod ABS-EXECUTE-STEP is
   ---
   op scheduleDelayedInputs : Events Configuration EQueue -> EQueue .
   
-  eq scheduleDelayedInputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
+  eq scheduleDelayedInputs(event(REACTORID, PORTID, VAL) EVENTS,
          NETWORK
          (REACTORID : PORTID -- T --> REACTORID2 : PORTID2),
          QUEUE)
    =
-     scheduleDelayedInputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
+     scheduleDelayedInputs(event(REACTORID, PORTID, VAL) EVENTS,
          NETWORK,
-         schedule(event(REACTORID2, PORTID2, VAL, CONST), T, QUEUE)) .
+         schedule(event(REACTORID2, PORTID2, VAL), T, QUEUE)) .
   
   eq scheduleDelayedInputs(EVENTS, NETWORK, QUEUE) = QUEUE [owise] .
   
@@ -348,13 +348,13 @@ omod ABS-EXECUTE-STEP is
   ---
   op propagateImmediateOutputs : Events Configuration -> Configuration .
   
-  ceq propagateImmediateOutputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
+  ceq propagateImmediateOutputs(event(REACTORID, PORTID, VAL) EVENTS,
          NETWORK
          < REACTORID2 : Reactor | 
              inports : INPORTS < PORTID2 : Port | value : OLD-VAL > >
          (REACTORID : PORTID --> REACTORID2 : PORTID2))
    =
-     propagateImmediateOutputs(event(REACTORID, PORTID, VAL, CONST) EVENTS,
+     propagateImmediateOutputs(event(REACTORID, PORTID, VAL) EVENTS,
          NETWORK        
          < REACTORID2 : Reactor | 
              inports : INPORTS < PORTID2 : Port | value : VAL > >
@@ -372,13 +372,13 @@ omod ABS-EXECUTE-STEP is
   eq updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TSTATUS) > GRAPH,
                  REACTORID1, OS, 
                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
-                 event(REACTORID1, PORTID1, VAL, CONST) EVENTS)
+                 event(REACTORID1, PORTID1, VAL) EVENTS)
    =
      updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> present) ; TSTATUS),
                                                 status : present > GRAPH,
                  REACTORID1, OS, 
                  NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
-                 event(REACTORID1, PORTID1, VAL, CONST) EVENTS) .
+                 event(REACTORID1, PORTID1, VAL) EVENTS) .
   
   --- negative case 1; updated complex setting:
   ceq updateGraph(< (REACTORID2 . N) : APGNode | 
@@ -429,7 +429,7 @@ omod ABS-EXECUTE-STEP is
   
   op _presentIn_ : ReactionId Events -> Bool .
   
-  eq (REACTORID . OUTPORTID) presentIn event(REACTORID, OUTPORTID, VAL, CONST) EVENTS = true .
+  eq (REACTORID . OUTPORTID) presentIn event(REACTORID, OUTPORTID, VAL) EVENTS = true .
   eq (REACTORID . OUTPORTID) presentIn EVENTS = false [owise] .
 
   ---Kyungmin: termination condition without owise

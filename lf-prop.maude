@@ -29,7 +29,7 @@ omod LF-PROP-BASE is
   op event(_,_)inQueue : ReactorId ActionTrigger -> Prop [ctor] .
 
   eq {REST
-      < O : EventQueue | queue : (EQ1 :: ((event(REACTORID,AT,VAL,[true]) EVENTS) at TAG) :: EQ2) >}
+      < O : EventQueue | queue : (EQ1 :: ((event(REACTORID,AT,VAL) EVENTS) at TAG) :: EQ2) >}
      |=  event(REACTORID, AT) inQueue = true .
 
 

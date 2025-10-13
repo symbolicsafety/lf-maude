@@ -66,7 +66,6 @@ omod RUNTIME-APG is
   var TRIGGER : ActionTrigger .
   var TRIGGERS : OidSet .
   var VAL : Value .
-  var CONST : BoolValue .
   vars PRE SUCC REACTIONIDS NEW-SUCCESSORS : ReactionIdSet .
   vars O O1 O2 PORTID PORTID1 PORTID2 : PortId .
   vars OS OS1 OS2 : OidSet .
@@ -83,7 +82,7 @@ omod RUNTIME-APG is
   --- initializeAPG(setOfEvents, main-LF-network, graphToBuild) -> Graph
   op initializeAPG : Events Configuration Configuration -> Configuration .
 
-  eq initializeAPG(event(REACTOR, TRIGGER, VAL, CONST) EVENTS,
+  eq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
                    NETWORK
                    < REACTOR : Reactor | 
                        reactions : (RL1
@@ -93,7 +92,7 @@ omod RUNTIME-APG is
                    < (REACTOR . N) : APGNode | 
                        triggers : ((TRIGGER |-> unknown) ; TRIGGER-STATUS) >)
   =
-    initializeAPG(event(REACTOR, TRIGGER, VAL, CONST) EVENTS,
+    initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
                    NETWORK
                    < REACTOR : Reactor |  >,
                    GRAPH 
@@ -101,7 +100,7 @@ omod RUNTIME-APG is
                        triggers : ((TRIGGER |-> present) ; TRIGGER-STATUS) >) .
   
 
-  ceq initializeAPG(event(REACTOR, TRIGGER, VAL, CONST) EVENTS,
+  ceq initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
                     NETWORK
                     < REACTOR : Reactor | 
                         reactions : (RL1
@@ -109,7 +108,7 @@ omod RUNTIME-APG is
                                      RL2) >,
                     GRAPH)
     =
-      initializeAPG(event(REACTOR, TRIGGER, VAL, CONST) EVENTS,
+      initializeAPG(event(REACTOR, TRIGGER, VAL) EVENTS,
                     NETWORK
                     < REACTOR : Reactor | >,
                     GRAPH

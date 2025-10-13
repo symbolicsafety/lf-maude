@@ -89,7 +89,7 @@ omod PHYSICAL-ACTIONS is
      < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) >
      < SYM : SymInfra | constraint : CONST && CONST' && [TI ge T], tickApplicable : true >
    if {VAL,CONST'} := genSymVal(PV, (RI . AI), NC) 
-   /\ EVENT := event(RI, AI, VAL, trueVal) 
+   /\ EVENT := event(RI, AI, VAL) 
    /\ smtCheck(CONST && CONST' && [TI ge T]) .
 
 
