@@ -12,7 +12,13 @@ reactor Task {
 }
 
 // @property(name="correctness", tactic="bmc", spec="G[2 msec](ProcessSync_task_tm_synchronization_processing_counter == 3)", expect=true)
-@maude(analysis="reachability", timeBound=2, goal="(tm_synchronization_processing_counter in task == 3) /\ remainingTime = 0")
+
+// a counterexample found
+@maude(analysis="reachability", timeBound=2, goal="(tm_synchronization_processing_counter in task != 3) /\ remainingTime 0")
+
+// no counterexample found
+@maude(analysis="reachability", timeBound=2, goal="(tm_synchronization_processing_counter in task != 3) /\ (! (event(task, t)inQueue )) /\ remainingTime 0")
+
 main reactor {
     task = new Task()
 }

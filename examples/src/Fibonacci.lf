@@ -39,7 +39,8 @@ reactor Printer {
 //@maude(analysis="simulation", timeBound=10)
 //@maude(analysis="reachability", timeBound=10, goal="False")
 //@maude(analysis="reachability", timeBound=10, goal="result in printer == 89", type="!")
-@maude(analysis="reachability", timeBound=10, goal="(result in printer != 89) /\ (printer.1 invoked) /\ remainingTime 0" )
+//@property(name="correctness", tactic="bmc", spec="G[10 msec](Fibonacci_printer_reaction_0 ==> Fibonacci_printer_result == 89)", expect=true)
+@maude(analysis="reachability", timeBound=10, goal="(printer.1 invoked) /\ (result in printer != 89) /\ remainingTime 0" )
 
 main reactor {
   fib = new Fib()

@@ -115,8 +115,10 @@ omod SIMULATION-TRAINDOOR_V3 is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-rew [10] in SIMULATION-TRAINDOOR_V3 : initSystem timeBound INF .
+search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound INF =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ d.sv.locked in d) === @ [true] )) /\ (( (@ d.sv.isOpen in d) === @ [true] ))) .
 
-search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound INF =>* CS:ClockedSystem  such that CS:ClockedSystem |= (( (@ d.sv.locked in d) === @ [true] )) .
+search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound 150000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ d.sv.locked in d) === @ [false] )) /\ ((d . 2) invoked )) .
+
+red in MODELCHECKER-TRAINDOOR_V3 : modelCheck(initSystem timeBound INF , (<> ((( (@ d.sv.locked in d) === @ [false] )) /\ (((d . 2) invoked )))) ) .
 
 quit

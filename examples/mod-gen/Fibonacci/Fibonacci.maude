@@ -5,7 +5,7 @@ omod FIBONACCI is
     including LF-REPR .
     protecting LF-VALUE-TIME .
 
-    op fibonacci : -> ReactorId [ctor] .
+    op Fibonacci : -> ReactorId [ctor] .
     op fib : -> ReactorId [ctor] .
     op printer : -> ReactorId [ctor] .
     op fib.sv.N : -> RVarId [ctor] .
@@ -107,6 +107,6 @@ omod SIMULATION-FIBONACCI is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ printer.sv.result in printer) ==/= @ [89] )) /\ ((printer . 1) invoked ) /\ remainingTime 0) .
+search [1] in ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= (((printer . 1) invoked ) /\ (( (@ printer.sv.result in printer) === @ [89] )) /\ remainingTime 0) .
 
 quit

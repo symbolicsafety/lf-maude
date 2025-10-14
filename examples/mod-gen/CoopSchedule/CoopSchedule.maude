@@ -33,7 +33,7 @@ omod COOPSCHEDULE is
                 < trigger.out.out : Port | value : [0] >,
             state : empty,
             timers : 
-                < trigger.t.t : Timer | offset : 0, period : 1000 >,
+                < trigger.t.t : Timer | offset : 0, period : 1000000 >,
             actions : none,
             reactions : 
                 (reaction when (trigger.t.t) --> (trigger.out.out) do {
@@ -148,6 +148,6 @@ omod SIMULATION-COOPSCHEDULE is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-COOPSCHEDULE : initSystem timeBound 1000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( @ task1.sv.counter in task1) +( @ task2.sv.counter in task2) +( @ task3.sv.counter in task3) +( @ task4.sv.counter in task4) +( @ task5.sv.counter in task5) ) < (@ [15])) .
+search [1] in ANALYSIS-COOPSCHEDULE : initSystem timeBound 1000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( @ task1.sv.counter in task1) +( @ task2.sv.counter in task2) +( @ task3.sv.counter in task3) +( @ task4.sv.counter in task4) +( @ task5.sv.counter in task5) ) >= (@ [15])) .
 
 quit

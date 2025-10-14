@@ -63,6 +63,8 @@ omod SIMULATION-PROCESSSYNC is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ task.sv.tmsynchronizationprocessingcounter in task) === @ [3] )) /\ remainingTime 0) .
+search [1] in ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ task.sv.tmsynchronizationprocessingcounter in task) ==/= @ [3] )) /\ remainingTime 0) .
+
+search [1] in ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ task.sv.tmsynchronizationprocessingcounter in task) ==/= @ [3] )) /\ (~ ((event(task, task.t.t) inQueue))) /\ remainingTime 0) .
 
 quit

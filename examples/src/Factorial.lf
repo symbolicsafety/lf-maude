@@ -36,6 +36,7 @@ reactor Printer {
 }
 
 //@property(name="correctness", tactic="bmc", spec="G[10 msec](Factorial_printer_reaction_0 ==> Factorial_printer_result == 3628800)", expect=true)
+@maude(analysis="reachability", timeBound=10, goal="(printer.1 invoked) /\ (result in printer != 3628800) /\ remainingTime 0")
 main reactor {
     factorial = new _Factorial()
     printer = new Printer()
