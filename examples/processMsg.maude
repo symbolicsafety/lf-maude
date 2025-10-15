@@ -77,48 +77,14 @@ search initSystem in time 0 =>* { REST:Configuration
     < task : Reactor | AS:AttributeSet,
 	                   state : (panic |-> [N:Nat]) ; RS:ReactorState >
 } in time 5
-    such that N:Nat =/= 1 .
+    such that N:Nat == 1 .
 
-***(    Result:
-search in TIME-BOUNDED-PROCESS-MSG : initSystem in time 0 =>* {REST:Configuration < task : Reactor | AS:AttributeSet, state : (RS:ReactorState ; panic |-> [N:Nat]) >}  in time 5 such
-    that N:Nat =/= 1 = true .
+***(    
+Result:
 
-Solution 1 (state 15)
-states: 16  rewrites: 985 in 1ms cpu (0ms real) (985000 rewrites/second)
-REST:Configuration --> < env : Environment | physicalActions : none > < queue : EventQueue | queue : event(task, t, [0]) at tag(0, 0) > < rxns : Invoked | reactions : (
-    none).ReactionIdSet > task : out --> task : in
-AS:AttributeSet --> inports : < in : Port | value : [4] >, outports : < out : Port | value : [4] >, reactions : (reaction 1 when startup --> none do{messageSent := [0]} reaction 2
-    when t --> out do{out <- messageSent} reaction 3 when in --> updateMessage do{if in ==/= messageSent then panic := [1] fi ; schedule(updateMessage, [0], [0]) ; counter := (counter
-    + [1])} reaction 4 when updateMessage --> none do{messageSent := (messageSent + [1])}), timers : < t : Timer | period : 1, offset : 0 >, actions : (< updateMessage : LogicalAction
-    | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >)
-RS:ReactorState --> (messageSent |-> [5]) ; counter |-> [5]
-N:Nat --> 0
+search in TIME-BOUNDED-PROCESS-MSG : initSystem in time 0 =>* {REST:Configuration < task : Reactor | AS:AttributeSet, state : (RS:ReactorState ; panic |-> [N:Nat]) >}  in time 5 such that N:Nat == 1 = true .
 
-Solution 2 (state 16)
-states: 17  rewrites: 1114 in 1ms cpu (0ms real) (1114000 rewrites/second)
-REST:Configuration --> < env : Environment | physicalActions : none > < queue : EventQueue | queue : ((event(task, updateMessage, [0]) at tag(0, 1)) :: event(task, t, [0]) at tag(1,
-    0)) > < rxns : Invoked | reactions : ((task . 2) ; (task . 3)) > task : out --> task : in
-AS:AttributeSet --> inports : < in : Port | value : [5] >, outports : < out : Port | value : [5] >, reactions : (reaction 1 when startup --> none do{messageSent := [0]} reaction 2
-    when t --> out do{out <- messageSent} reaction 3 when in --> updateMessage do{if in ==/= messageSent then panic := [1] fi ; schedule(updateMessage, [0], [0]) ; counter := (counter
-    + [1])} reaction 4 when updateMessage --> none do{messageSent := (messageSent + [1])}), timers : < t : Timer | period : 1, offset : 0 >, actions : (< updateMessage : LogicalAction
-    | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >)
-RS:ReactorState --> (messageSent |-> [5]) ; counter |-> [6]
-N:Nat --> 0
-
-Solution 3 (state 17)
-states: 18  rewrites: 1158 in 1ms cpu (0ms real) (1158000 rewrites/second)
-REST:Configuration --> < env : Environment | physicalActions : none > < queue : EventQueue | queue : event(task, t, [0]) at tag(1, 0) > < rxns : Invoked | reactions : (task . 4) >
-    task : out --> task : in
-AS:AttributeSet --> inports : < in : Port | value : [5] >, outports : < out : Port | value : [5] >, reactions : (reaction 1 when startup --> none do{messageSent := [0]} reaction 2
-    when t --> out do{out <- messageSent} reaction 3 when in --> updateMessage do{if in ==/= messageSent then panic := [1] fi ; schedule(updateMessage, [0], [0]) ; counter := (counter
-    + [1])} reaction 4 when updateMessage --> none do{messageSent := (messageSent + [1])}), timers : < t : Timer | period : 1, offset : 0 >, actions : (< updateMessage : LogicalAction
-    | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >)
-RS:ReactorState --> (messageSent |-> [6]) ; counter |-> [6]
-N:Nat --> 0
-
-No more solutions.
-states: 18  rewrites: 1175 in 1ms cpu (0ms real) (1175000 rewrites/second)
+No solution.
+states: 18  rewrites: 1410 in 0ms cpu (0ms real) (1415662 rewrites/second)
 
 )***
-
-
