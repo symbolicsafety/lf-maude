@@ -69,7 +69,7 @@ such that smtCheck(CONST) .
 search [1] 
     initSystem in time 0 
 =>* 
-    {< queue : EventQueue | queue : ((event(pedal, a, RV, BV) EVENTS) at TAG) ;; EQ >
+    {< queue : EventQueue | queue : ((event(pedal, a, RV) EVENTS) at TAG) ;; EQ >
      < sym : SymInfra | constraint : CONST, AS' > REST}
   in time T
 such that smtCheck(CONST) .
@@ -78,7 +78,7 @@ such that smtCheck(CONST) .
 search [1] 
     initSystem in time 0 
 =>* 
-    {< queue : EventQueue | queue : ((event(pedal, a, RV, BV) EVENTS) at TAG) ;; EQ >
+    {< queue : EventQueue | queue : ((event(pedal, a, RV) EVENTS) at TAG) ;; EQ >
      < sym : SymInfra | constraint : CONST, AS' > REST}
   in time T
 such that smtCheck(CONST && ([T] === [13])) .

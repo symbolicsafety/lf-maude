@@ -74,3 +74,52 @@ search  [1]
 such that smtCheck(CONST && [T > 25]) 
        /\ SCR := hrsim(qe(CONST && [T > 25])) .
 
+---(
+
+search [1] in SIMULATE-TRAIN : initSystem in time 0 =>* {REST < door : Reactor | AS, state : (RS ; hasBeenLocked |-> [(false).Bool]) > < sym :
+    SymInfra | AS', constraint : CONST >}  in time T such that smtCheck(CONST && [T > (25).NzNat]) = true /\ SCR := hrsim(qe(CONST && [T > (
+    25).NzNat])) .
+
+Solution 1 (state 173214)
+states: 173215  rewrites: 384952673 in 332321ms cpu (342200ms real) (1158372 rewrites/second)
+REST --> < controller : Reactor | inports : none, outports : (< close : Port | value : [(true).Bool] > < lock : Port | value : [(true).Bool] >
+    < unlock : Port | value : [(false).Bool] > < open : Port | value : [(false).Bool] >), state : empty, reactions : (reaction 1 when startup
+    --> none do{skip} reaction 2 when external --> close ; lock ; unlock ; open do{(close <- [(true).Bool]) ; lock <- [(true).Bool]}), timers
+    : < external : Timer | period : 10, offset : 0 >, actions : < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer,
+    payload : [(false).Bool] > > < env : Environment | physicalActions : < door . extOpen : PhysAct | clock : (r(tv(8)) + -1 * r(tv(6))),
+    counter : 3, possibleValues : bool, minSpace : r(p1) > > < queue : EventQueue | queue : event(controller, external, [(0).Zero]) at tag(10
+    + r(tv(5)) + -1 * r(tv(8)), 0) > < rxns : Invoked | reactions : (none).ReactionIdSet > (controller : close -- r(p2) --> door : close) (
+    controller : lock -- 5 --> door : lock) (controller : unlock -- 4 --> door : unlock) controller : open -- 7 --> door : open
+AS --> inports : (< close : Port | value : [(true).Bool] > < lock : Port | value : [(true).Bool] > < unlock : Port | value : [(false).Bool] >
+    < open : Port | value : [(false).Bool] >), outports : none, reactions : (reaction 1 when close --> none do{isOpen := [(false).Bool]}
+    reaction 2 when lock --> none do{if isOpen === [(false).Bool] then (locked := [(true).Bool]) ; hasBeenLocked := [(true).Bool] fi} reaction
+    3 when unlock --> none do{locked := [(false).Bool]} reaction 4 when open ; extOpen --> none do{if locked === [(false).Bool] then isOpen :=
+    [(true).Bool] fi}), timers : none, actions : < extOpen : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [b(pv(
+    door . extOpen, 2))] >
+RS --> (isOpen |-> [(true).Bool]) ; locked |-> [(false).Bool]
+AS' --> counter : 9, tickApplicable : false
+CONST --> [(0).Zero < r(tv(0)) and (0).Zero < (5).NzNat + (-1).NzInt * r(tv(0)) and (0).Zero < (10).NzNat + (-1).NzInt * r(tv(0)) and (0).Zero
+    < (5).NzNat + r(tv(2)) + (-1).NzInt * r(tv(3)) and (0).Zero < (5).NzNat + r(tv(5)) + (-1).NzInt * r(tv(6)) and (0).Zero < (10).NzNat + r(
+    tv(2)) + (-1).NzInt * r(tv(3)) and (0).Zero < (10).NzNat + r(tv(5)) + (-1).NzInt * r(tv(6)) and r(p2) < (5).NzNat and r(p2) < (10).NzNat
+    and r(tv(0)) < r(tv(1)) and r(tv(1)) < r(tv(2)) and r(tv(2)) < r(tv(3)) and r(tv(3)) < r(tv(4)) and r(tv(4)) < r(tv(5)) and r(tv(5)) < r(
+    tv(6)) and r(tv(6)) < r(tv(7)) and r(tv(7)) < r(tv(8)) and (0).Zero <= (5).NzNat + (-1).NzInt * r(tv(1)) and (0).Zero <= (10).NzNat + (
+    -1).NzInt * r(tv(2)) and (0).Zero <= r(p2) + (-1).NzInt * r(tv(0)) and (0).Zero <= (5).NzNat + r(tv(2)) + (-1).NzInt * r(tv(4)) and (
+    0).Zero <= (5).NzNat + r(tv(5)) + (-1).NzInt * r(tv(7)) and (0).Zero <= (10).NzNat + r(tv(2)) + (-1).NzInt * r(tv(5)) and (0).Zero <= r(
+    p2) + r(tv(2)) + (-1).NzInt * r(tv(3)) and (0).Zero <= r(p2) + r(tv(5)) + (-1).NzInt * r(tv(6)) and r(p2) <= (5).NzNat and r(p1) <= r(tv(
+    3)) + (-1).NzInt * r(tv(0)) and r(p1) <= r(tv(6)) + (-1).NzInt * r(tv(3)) and r(tv(0)) <= (5).NzNat and r(tv(0)) <= (10).NzNat and r(tv(
+    0)) <= (27).NzNat and r(tv(0)) <= r(p2) and r(tv(1)) <= (5).NzNat and r(tv(1)) <= (10).NzNat and r(tv(1)) <= (27).NzNat and r(tv(2)) <= (
+    10).NzNat and r(tv(2)) <= (27).NzNat and r(tv(3)) <= (27).NzNat and r(tv(4)) <= (27).NzNat and r(tv(4)) <= (5).NzNat + r(tv(2)) and r(tv(
+    4)) <= (10).NzNat + r(tv(2)) and r(tv(5)) <= (27).NzNat and r(tv(5)) <= (10).NzNat + r(tv(2)) and r(tv(6)) <= (27).NzNat and r(tv(7)) <= (
+    27).NzNat and r(tv(7)) <= (5).NzNat + r(tv(5)) and r(tv(7)) <= (10).NzNat + r(tv(5)) and r(tv(8)) <= (27).NzNat and r(tv(8)) <= (10).NzNat
+    + r(tv(5)) and r(tv(3)) + (-1).NzInt * r(tv(2)) <= (5).NzNat and r(tv(3)) + (-1).NzInt * r(tv(2)) <= (10).NzNat and r(tv(3)) + (-1).NzInt
+    * r(tv(2)) <= r(p2) and r(tv(6)) + (-1).NzInt * r(tv(5)) <= (5).NzNat and r(tv(6)) + (-1).NzInt * r(tv(5)) <= (10).NzNat and r(tv(6)) + (
+    -1).NzInt * r(tv(5)) <= r(p2) and r(p2) > (0).Zero and r(p1) > (4).NzNat and (0).Zero >= (5).NzNat + (-1).NzInt * r(tv(1)) and (0).Zero >=
+    (10).NzNat + (-1).NzInt * r(tv(2)) and (0).Zero >= r(p2) + (-1).NzInt * r(tv(0)) and (0).Zero >= (5).NzNat + r(tv(2)) + (-1).NzInt * r(tv(
+    4)) and (0).Zero >= (5).NzNat + r(tv(5)) + (-1).NzInt * r(tv(7)) and (0).Zero >= (10).NzNat + r(tv(2)) + (-1).NzInt * r(tv(5)) and (
+    0).Zero >= r(p2) + r(tv(2)) + (-1).NzInt * r(tv(3)) and (0).Zero >= r(p2) + r(tv(5)) + (-1).NzInt * r(tv(6))]
+T --> r(tv(8))
+SCR --> (4).NzNat + (-1).NzInt * r(p1) < (0).Zero and (-5).NzInt + r(p2) < (0).Zero and (-10).NzInt + r(p2) < (0).Zero and (-1).NzInt * r(p2)
+    < (0).Zero and (-5).NzInt + r(p2) <= (0).Zero and (-7).NzInt + r(p2) <= (0).Zero and (-10).NzInt + r(p2) <= (0).Zero and (-10).NzInt + r(
+    p1) <= (0).Zero and (-17).NzInt + r(p2) <= (0).Zero and (-27).NzInt + r(p2) <= (0).Zero
+
+)---
