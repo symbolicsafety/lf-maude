@@ -1,0 +1,127 @@
+
+omod RING is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops received : -> IVarId [ctor] .
+  ops node1 node2 node3 node4 node5 source : -> ReactorId [ctor] .
+  ops in out : -> IPortId [ctor] .
+  ops startup start : -> IActionId [ctor] .
+  op init : -> Configuration .
+
+  eq init
+   = < source : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : received |-> [0],
+	      timers : none,
+	      actions : < start : LogicalAction | minDelay : 1, 
+                                                    minSpacing : 0, 
+                                                    policy : defer, 
+                                                    payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        (reaction when startup --> start do { (received := [0]) ; schedule(start,[0],[0]) })
+	        (reaction when start --> out do { out <- received })
+             reaction when in do { (received := in) ; schedule(start,[0],[0]) } 
+      >
+            
+      < node1 : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : empty,
+	      timers : none,
+	      actions : none,
+	      reactions : reaction when in --> out do { out <- (in + [1]) } 
+      > 
+            
+      < node2 : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : empty,
+	      timers : none,
+	      actions : none,
+	      reactions : reaction when in --> out do { out <- (in + [1]) } 
+      > 
+      
+      < node3 : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : empty,
+	      timers : none,
+	      actions : none,
+	      reactions : reaction when in --> out do { out <- (in + [1]) } 
+      > 
+      
+      < node4 : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : empty,
+	      timers : none,
+	      actions : none,
+	      reactions : reaction when in --> out do { out <- (in + [1]) } 
+      > 
+      
+      < node5 : Reactor |
+          inports : < in : Port | value : [0] >,
+	      outports : < out : Port | value : [0] >,
+	      state : empty,
+	      timers : none,
+	      actions : none,
+	      reactions : reaction when in --> out do { out <- (in + [1]) } 
+      > 
+      
+      (source : out -- 1 --> node1 : in)
+      (node1 : out -- 1 --> node2 : in)
+      (node2 : out -- 1 --> node3 : in)
+      (node3 : out -- 1 --> node4 : in)
+      (node4 : out -- 1 --> node5 : in)
+       node5 : out -- 1 --> source : in .
+endom
+
+omod TEST-RING is
+  including RING .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+***( the main property in the LF repository is
+
+spec="F[0, 10 nsec](Ring_s_reaction_2)", expect=true
+
+)***
+
+omod TIME-BOUNDED-RING is
+  including TEST-RING .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 10 .
+endom  
+
+
+
+omod MODEL-CHECK-RING is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-RING .
+  including LF-PROP .
+endom
+
+red modelCheck(initSystem in time 0, <> ((source . 3) invoked)) .
+
+***(    Result:
+reduce in MODEL-CHECK-RING : modelCheck(initSystem in time 0, <> reaction source . 3 invoked) .
+rewrites: 566 in 1ms cpu (0ms real) (566000 rewrites/second)
+result Bool: true
+)***

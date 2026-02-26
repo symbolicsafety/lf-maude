@@ -1,0 +1,230 @@
+*** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
+
+--- No hierarchical models
+--- No physical time, like LF-verif paper
+--- 
+
+---Kyungmin: 
+---  1) refactored to remove unnecessary dependencies
+---  2) TimeValue is removed, as it is not used
+
+
+fmod LF-ABS-VALUE-TIME is
+  protecting TIME .
+
+  --- Kyungmin: Now, value sorts are declared empty, along with 
+  ---   some additional operators. These sorts and operators 
+  ---   must be instantiated later.
+
+  sorts IntValue BoolValue Value .
+  subsort IntValue BoolValue < Value .
+
+  ops trueVal falseVal : -> BoolValue .
+  op zeroVal : -> IntValue .
+
+  --- type conversion
+  op [_] : Time ~> IntValue .
+  op [_] : Bool ~> BoolValue .
+
+  op toTime : IntValue ~> Time .
+endfm
+
+
+fmod LF-EXPR is
+  protecting LF-ABS-VALUE-TIME .
+  protecting VAR-ID .
+  protecting ACTION-TRIGGER .
+
+  sort IntExpr BoolExpr Expr .
+  subsort Value IntExpr BoolExpr < Expr .
+
+  subsort IntValue < IntExpr .
+  subsort BoolValue < BoolExpr .
+
+  ops _<_ _>_ _<=_ _>=_ : IntExpr IntExpr ->   BoolExpr [ctor] .
+  op _===_ : Expr Expr -> BoolExpr [ctor] .
+
+***(
+  op [_] : PortId -> Expr [ctor] .   --- only input ports can be called for value
+  op [_] : IPortId -> IntExpr [ctor] .
+  op [_] : BPortId -> BoolExpr [ctor] .
+
+  op [_] : ActionId -> Expr [ctor] .
+  op [_] : IActionId -> IntExpr [ctor] .
+  op [_] : BActionId -> BoolExpr [ctor] .
+)***
+
+  subsorts IPortId IVarId IActionId < IntExpr .
+  subsorts BPortId BVarId BActionId < BoolExpr .
+  op _+_ : IntExpr IntExpr -> IntExpr .
+  op _*_ : IntExpr IntExpr -> IntExpr .
+  op _-_ : IntExpr IntExpr -> IntExpr . *** Added for PingPong example to countdown pingsLeft
+
+  *** NEW IN TBILISI:
+  op isPresent : ActionTrigger -> BoolExpr [ctor] .  
+  op _==/=_ : Expr Expr -> BoolExpr [ctor] .
+  op !_ : BoolExpr -> BoolExpr [ctor] .
+  ops _&&_ _||_ : BoolExpr BoolExpr -> BoolExpr [ctor assoc comm] .
+endfm
+
+
+fmod REACTION-BODY is
+  protecting LF-EXPR .
+
+  sort ReactionBody .
+  op skip : -> ReactionBody [ctor] .
+  op _;_ : ReactionBody ReactionBody -> ReactionBody [ctor assoc id: skip] .
+  op _:=_ : VarId Expr -> ReactionBody [ctor] .
+  op if_then_fi : BoolExpr ReactionBody -> ReactionBody [ctor] .
+  op if_then_else_fi : BoolExpr ReactionBody ReactionBody -> ReactionBody [ctor] .
+  op while_do_done : BoolExpr ReactionBody -> ReactionBody [ctor] .
+  op _<-_ : PortId Expr ->  ReactionBody [ctor] .   
+  op schedule : ActionId IntExpr Expr -> ReactionBody [ctor] .  --- ???????
+  --- schedule(action, extra time, value)
+endfm
+
+
+omod PORT is
+  protecting PORT-ID .
+  protecting LF-ABS-VALUE-TIME .
+
+  class Port | value : Value .
+
+  subsort PortId < Oid .
+endom
+
+
+omod ACTION is
+  protecting LF-ABS-VALUE-TIME .
+
+  class Action | minDelay : Time, 
+                 minSpacing : Time, 
+                 policy : ActionPolicy,
+                 payload : Value .
+
+  class PhysicalAction .
+  class LogicalAction .
+  subclasses PhysicalAction LogicalAction < Action .
+  --- unclear whether payload needed for all.  Subclass instead?
+
+  sort ActionPolicy .
+  ops defer drop replace : -> ActionPolicy [ctor] .
+endom
+
+
+omod PERIODIC-OBJ is
+  protecting TIME-INF .
+
+  class PeriodicObj | period : TimeInf .
+endom
+
+
+omod TIMER is
+  extending PERIODIC-OBJ .
+
+  class Timer | offset : Time, period : TimeInf .
+  subclass Timer < PeriodicObj .
+endom
+
+
+omod REACTION is
+  protecting REACTION-ID .
+  protecting REACTION-BODY .
+
+  var O : Oid .   
+  var OS : OidSet .
+  var RB : ReactionBody .
+
+  sort Reaction .
+  op reaction when_-->_do`{_`} : OidSet OidSet ReactionBody -> Reaction [ctor] .
+  op reaction when_do`{_`} : OidSet ReactionBody -> Reaction .
+  eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
+
+  --- for more complex, journal paper, setting:
+  op reaction_when_-->_do`{_`} : Nat OidSet OidSet ReactionBody -> Reaction [ctor] .
+
+  sort OidSet . 
+  subsort Oid < OidSet .
+  op none : -> OidSet [ctor] .
+  op _;_ : OidSet OidSet -> OidSet [ctor assoc comm id: none] .
+
+  sort ReactionIdSet .
+  subsorts ReactionId < ReactionIdSet < OidSet .
+  op none : -> ReactionIdSet [ctor] .
+  op _;_ : ReactionIdSet ReactionIdSet -> ReactionIdSet [ctor assoc comm id: none] .
+
+  op _in_ : Oid OidSet -> Bool .
+  eq O in O ; OS = true .
+  eq O in OS = false [owise] .
+endom
+
+
+omod REACTOR is
+  protecting VAR-ID .
+  protecting LF-ABS-VALUE-TIME .
+  protecting REACTION .
+  
+  class Reactor | inports : Configuration,
+                  outports : Configuration, 
+                  state : ReactorState,
+                  reactions : ReactionList,
+                  timers : Configuration,
+                  actions : Configuration .
+
+  subsorts  ReactorId ReactionId ActionTrigger < Oid .
+
+  sort ReactorState .
+  op empty : -> ReactorState [ctor] .
+  op _|->_ : VarId Value -> ReactorState [ctor] .
+  op _;_ : ReactorState ReactorState -> ReactorState [ctor assoc comm id: empty] .
+
+  sorts ReactionList .
+  subsort Reaction < ReactionList .
+  op nil : -> ReactionList . 
+  op __ : ReactionList ReactionList -> ReactionList [ctor assoc id: nil] .
+
+
+  var RB : ReactionBody .
+  var RL : ReactionList .
+  var N : Nat .
+  var REST : Configuration .
+  vars OS OS2 : OidSet .
+  var REACTORID : ReactorId .
+
+
+  op addIndices : ReactionList Nat -> ReactionList .
+  eq addIndices(nil, N) = nil .
+  eq addIndices((reaction when OS --> OS2 do {RB}) RL, N)
+   = (reaction N when OS --> OS2 do {RB}) addIndices(RL, s N) .
+
+  op addReactionIndices : Configuration -> Configuration .
+  eq addReactionIndices(< REACTORID : Reactor | reactions : RL > REST)
+   = < REACTORID : Reactor | reactions : addIndices(RL, 1) > addReactionIndices(REST) . 
+  eq addReactionIndices(REST) = REST [owise] .
+
+  *** Remember to add indices to reactions ASAP in the more complex setting!
+
+endom
+
+
+omod CONNECTION is
+  protecting TIME .
+  protecting PORT-ID .
+  protecting REACTOR-ID .
+
+  sort Connection .
+  subsort Connection < Configuration .
+
+  op _:_-->_:_ : ReactorId PortId ReactorId PortId -> Connection [ctor] .
+  op _:_--_-->_:_ : ReactorId PortId Time ReactorId PortId -> Connection [ctor] .
+endom
+
+
+--- only import for client modules
+omod LF-REPR is
+  protecting PORT .
+  protecting TIMER .
+  protecting ACTION .
+  protecting REACTOR .
+  protecting CONNECTION .
+endom

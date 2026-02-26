@@ -1,0 +1,42 @@
+
+fmod LF-VALUE-TIME is
+  including LF-ABS-VALUE-TIME .
+  including LF-EXPR .
+  protecting INT .
+  protecting NAT-TIME-DOMAIN-WITH-INF .
+
+  op [_] : Int -> IntValue [ctor] .
+  op [_] : Bool -> BoolValue [ctor] .
+
+  vars B1 B2 : Bool .
+  vars I1 I2 : Int .
+  var N : Nat .
+
+  --- abstract values and operations
+  eq trueVal  = [true] .
+  eq falseVal = [false] .
+  eq zeroVal  = [0] .
+
+  eq toTime([N]) = N .
+
+  --- value operations
+  eq [I1] +  [I2] = [I1 +  I2] .
+  eq [I1] *  [I2] = [I1 *  I2] .
+  eq [I1] -  [I2] = [I1 -  I2] .
+
+  eq [I1] <  [I2] = [I1 <  I2] .
+  eq [I1] <= [I2] = [I1 <= I2] .
+  eq [I1] >  [I2] = [I1 >  I2] .
+  eq [I1] >= [I2] = [I1 >= I2] .
+
+  eq [I1] === [I2] = [I1 == I2] .
+  eq [B1] === [B2] = [B1 == B2] .
+
+  eq [I1] ==/= [I2] = [I1 =/= I2] .
+  eq [B1] ==/= [B2] = [B1 =/= B2] .
+
+  eq ! [B1] = [not B1] .
+
+  eq [B1] && [B2] = [B1 and B2] .
+  eq [B1] || [B2] = [B1 or  B2] .
+endfm

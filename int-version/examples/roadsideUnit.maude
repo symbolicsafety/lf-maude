@@ -1,0 +1,138 @@
+
+omod RSU is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops durationOfUse assigned availableTime constWait currentTime sdone1 sdone2 : -> IVarId [ctor] .
+  ops vehicle1 vehicle2 rsu : -> ReactorId [ctor] .
+  ops grant done request grant1 done1 request1 grant2 done2 request2 : -> IPortId [ctor] .
+  ops startup finish issueGrant1 issueGrant2 : -> IActionId [ctor] .
+  op init : -> Configuration .
+
+  eq init
+   = < vehicle1 : Reactor |
+          inports : < grant : Port | value : [0] >,
+	      outports : < done : Port | value : [0] >
+	                 < request : Port | value : [0] >,
+	      state : durationOfUse |-> [1],
+	      timers : none,
+	      actions : < finish : LogicalAction | minDelay : 5, 
+                                               minSpacing : 0, 
+                                               policy : defer, 
+                                               payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        (reaction when startup --> request do { request <- [1] })
+	        (reaction when grant --> finish do { schedule(finish,[0],[0]) })
+             reaction when finish --> done do { done <- [1] } 
+      >
+      
+      < vehicle2 : Reactor |
+          inports : < grant : Port | value : [0] >,
+	      outports : < done : Port | value : [0] >
+	                 < request : Port | value : [0] >,
+	      state : durationOfUse |-> [1],
+	      timers : none,
+	      actions : < finish : LogicalAction | minDelay : 5, 
+                                               minSpacing : 0, 
+                                               policy : defer, 
+                                               payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+	      reactions :
+	        (reaction when startup --> request do { request <- [1] })
+	        (reaction when grant --> finish do { schedule(finish,[0],[0]) })
+             reaction when finish --> done do { done <- [1] } 
+      >
+      
+      < rsu : Reactor |
+          inports : < request1 : Port | value : [0] >
+                    < request2 : Port | value : [0] >
+                    < done1 : Port | value : [0] >
+                    < done2 : Port | value : [0] >,
+	      outports : < grant1 : Port | value : [0] >
+	                 < grant2 : Port | value : [0] >,
+	      state : (assigned |-> [0]) ; (availableTime |-> [0]) ;
+	              (constWait |-> [0]) ; (currentTime |-> [0]) ;
+	              (sdone1 |-> [0]) ; (sdone2 |-> [0]),
+	      timers : none,
+	      actions : < issueGrant1 : LogicalAction | minDelay : 0, 
+                                                    minSpacing : 0, 
+                                                    policy : defer, 
+                                                    payload : [0] >
+                    < issueGrant2 : LogicalAction | minDelay : 0, 
+                                                    minSpacing : 0, 
+                                                    policy : defer, 
+                                                    payload : [0] >,
+	      reactions : 
+	        (reaction when startup do { (constWait := [1]) ; (currentTime := [0]) })
+	        (reaction when request1 ; request2 --> issueGrant1 ; issueGrant2 do {
+	            if (currentTime > availableTime) then
+	                ((if (isPresent(request1)) then schedule(issueGrant1,[0],[0])
+	                else schedule(issueGrant2,[0],[0]) fi) ; 
+	                (availableTime := (availableTime + currentTime) + constWait))
+	            fi
+	        })
+	        (reaction when issueGrant1 --> grant1 do { grant1 <- [1] })
+	        (reaction when issueGrant2 --> grant2 do { grant2 <- [1] })
+	         reaction when done1 ; done2 do {
+	            if (isPresent(done1)) then (sdone1 := [1]) 
+	            else (sdone2 := [1]) fi
+	         }
+      > 
+      
+      (vehicle1 : request --> rsu : request1)
+      (vehicle2 : request --> rsu : request2)
+      (vehicle1 : done --> rsu : done1)
+      (vehicle2 : done --> rsu : done2)
+      (rsu : grant1 --> vehicle1 : grant)
+       rsu : grant2 --> vehicle2 : grant .
+endom
+
+omod TEST-RSU is
+  including RSU .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+***( the main property in the LF repository is
+
+spec="G[0, 10 sec](!(RoadsideUnit_v1_grant == 1 && RoadsideUnit_v2_grant == 1))", expect=true
+
+)***
+
+omod TIME-BOUNDED-RSU is
+  including TEST-RSU .
+  including TIME-BOUNDED-DYNAMICS .
+  eq timeBound = 10 .
+endom  
+
+
+omod MODEL-CHECK-RSU is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-RSU .
+  including LF-PROP .
+endom
+
+red modelCheck(initSystem in time 0, [] (~ (grant in vehicle1 == [1] /\ grant in vehicle2 == [1]))) .
+
+***(    Result:
+reduce in MODEL-CHECK-RSU : modelCheck(initSystem in time 0, []~ inport grant is 1) .
+rewrites: 191 in 0ms cpu (0ms real) (~ rewrites/second)
+result Bool: true
+)***

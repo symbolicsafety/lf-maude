@@ -1,0 +1,341 @@
+omod LF-PROP-BASE is
+  pr SATISFACTION .
+  pr UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
+
+  subsort ClockedSystem < State .
+
+  var SYSTEM : GlobalSystem .
+  var REST : Configuration .
+  var O : Oid .
+  var REACTORID : ReactorId .
+  var AT : ActionTrigger .
+  var VAL : Value .
+  var T : Time .
+  vars TI TI' : TimeInf .
+  var RID : ReactionId .
+  var RIDS : ReactionIdSet .
+  vars EQ1 EQ2 : EQueue .
+  var EVENT : Event .
+  var EVENTS : Events .
+  var TAG : Tag .
+
+  --- An event is in the event queue:
+  op _inQueue : Event -> Prop [ctor] .
+
+  eq {REST
+      < O : EventQueue | queue : (EQ1 :: ((EVENT EVENTS) at TAG) :: EQ2) >}
+     |=  EVENT inQueue = true .
+
+  op event(_,_)inQueue : ReactorId ActionTrigger -> Prop [ctor] .
+
+  eq {REST
+      < O : EventQueue | queue : (EQ1 :: ((event(REACTORID,AT,VAL) EVENTS) at TAG) :: EQ2) >}
+     |=  event(REACTORID, AT) inQueue = true .
+
+
+  --- NEW Feb25: a reaction is/was invoken in this/last step:
+  op _invoked : ReactionId -> Prop [ctor] .
+
+  eq {REST
+      < O : Invoked | reactions : (RID ; RIDS) >}
+     |=  RID invoked = true .
+
+  --- Default false case
+  eq SYSTEM |= P:Prop = false [owise] .
+
+  --- New Oct10
+  op remainingTime_ : TimeInf -> Prop .
+  eq SYSTEM timeBound TI |= remainingTime TI' = (TI == TI') .
+
+  --- Extend to timed/time-bounded cases
+  eq SYSTEM   in time TI |= P:Prop = SYSTEM |= P:Prop [owise] .
+  eq SYSTEM timeBound TI |= P:Prop = SYSTEM |= P:Prop [owise] .
+endom
+
+
+
+omod LF-PROP is
+  including LF-PROP-BASE .
+
+  var REST INPORTS : Configuration .
+  var REACTORID : ReactorId .
+  var VAR : VarId .
+  var VAL VAL' : Value .
+  var IVAR : IVarId .
+  var IVAL IVAL' : IntValue .
+  var RS : ReactorState .
+  var PI : PortId .
+  var IPI : IPortId .
+
+  --- generic atomic proposition:
+
+  op _in_==_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_!=_ : VarId ReactorId Value -> Prop [ctor] .
+  op _in_<=_ : IVarId ReactorId IntValue -> Prop [ctor] .
+  op _in_<_  : IVarId ReactorId IntValue -> Prop [ctor] .
+  op _in_>=_ : IVarId ReactorId IntValue -> Prop [ctor] .
+  op _in_>_  : IVarId ReactorId IntValue -> Prop [ctor] .
+
+  op _in_==_ : PortId ReactorId Value -> Prop [ctor] .
+  op _in_!=_ : PortId ReactorId Value -> Prop [ctor] .
+  op _in_<=_ : IPortId ReactorId IntValue -> Prop [ctor] .
+  op _in_<_  : IPortId ReactorId IntValue -> Prop [ctor] .
+  op _in_>=_ : IPortId ReactorId IntValue -> Prop [ctor] .
+  op _in_>_  : IPortId ReactorId IntValue -> Prop [ctor] .
+
+  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID == VAL = true . 
+
+  eq {REST < REACTORID : Reactor | state : (VAR |-> VAL) ; RS >}
+     |= VAR in REACTORID != VAL' = (VAL =/= VAL') .
+
+  eq {REST < REACTORID : Reactor | state : (IVAR |-> IVAL) ; RS >}
+     |= IVAR in REACTORID <= IVAL' = (IVAL <= IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (IVAR |-> IVAL) ; RS >}
+     |= IVAR in REACTORID < IVAL' = (IVAL < IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (IVAR |-> IVAL) ; RS >}
+     |= IVAR in REACTORID >= IVAL' = (IVAL >= IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | state : (IVAR |-> IVAL) ; RS >}
+     |= IVAR in REACTORID > IVAL' = (IVAL > IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
+     |= PI in REACTORID == VAL = true . 
+
+  eq {REST < REACTORID : Reactor | inports : < PI : Port | value : VAL > INPORTS >}
+     |= PI in REACTORID != VAL' = (VAL =/= VAL') . 
+
+  eq {REST < REACTORID : Reactor | inports : < IPI : Port | value : IVAL > INPORTS >}
+     |= IPI in REACTORID <= IVAL' = (IVAL <= IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < IPI : Port | value : IVAL > INPORTS >}
+     |= IPI in REACTORID < IVAL' = (IVAL < IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < IPI : Port | value : IVAL > INPORTS >}
+     |= IPI in REACTORID >= IVAL' = (IVAL >= IVAL') == [true] . 
+
+  eq {REST < REACTORID : Reactor | inports : < IPI : Port | value : IVAL > INPORTS >}
+     |= IPI in REACTORID > IVAL' = (IVAL > IVAL') == [true] . 
+endom
+
+
+
+omod LF-PROP-EXT is
+  including LF-PROP-BASE .
+
+  --- We now support all LF expressions, except isPresent.
+
+  var REST ACTIONS INPORTS : Configuration .
+  var VALUATION : ReactorState .
+  var REACTORID : ReactorId .
+  var PORTID : PortId .
+  var ACTIONID : ActionId .
+  var VAR : VarId .
+  vars EXP EXP' : Expr .
+  vars IEXP1 IEXP2 : IntExpr .
+  var VAL : Value .
+  var BP : BPropExpr .
+  vars RP1 RP2 : RPropExpr .
+  vars EP EP' : PropExpr .
+
+--- syntax
+  sort RPropExpr BPropExpr PropExpr .
+  subsort RPropExpr BPropExpr < PropExpr .
+  subsort BPropExpr < Prop .
+
+  ops _===_ _==/=_ : PropExpr PropExpr -> BPropExpr [ctor] .
+  ops _<_ _>_ _<=_ _>=_ : RPropExpr RPropExpr -> BPropExpr [ctor] .
+  ops _+_ _*_ _-_ : RPropExpr RPropExpr -> RPropExpr [gather (E e)] . 
+
+  op @_ : Value -> PropExpr [ctor] .
+  op @_ : BoolValue -> BPropExpr [ctor] .
+  op @_ : IntValue -> RPropExpr [ctor] .
+
+  op @_in_ : Expr ReactorId -> PropExpr [ctor] .
+  op @_in_ : BoolExpr ReactorId -> BPropExpr [ctor] .
+  op @_in_ : IntExpr ReactorId -> RPropExpr [ctor] .
+
+  eq @ VAL in REACTORID = @ VAL .
+
+--- normalization
+  op normalize : PropExpr ~> PropExpr [memo] .
+
+  eq normalize(@ IEXP1 + IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) + normalize(@ IEXP2 in REACTORID) .
+  eq normalize(@ IEXP1 * IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) * normalize(@ IEXP2 in REACTORID) .
+  eq normalize(@ IEXP1 - IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) - normalize(@ IEXP2 in REACTORID) .
+
+  eq normalize(@ IEXP1 < IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) < normalize(@ IEXP2 in REACTORID) .
+  eq normalize(@ IEXP1 <= IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) <= normalize(@ IEXP2 in REACTORID) .
+  eq normalize(@ IEXP1 > IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) > normalize(@ IEXP2 in REACTORID) .
+  eq normalize(@ IEXP1 > IEXP2 in REACTORID) 
+   = normalize(@ IEXP1 in REACTORID) >= normalize(@ IEXP2 in REACTORID) .
+
+  eq normalize(@ EXP === EXP' in REACTORID) 
+   = normalize(@ EXP in REACTORID) === normalize(@ EXP' in REACTORID) .
+  eq normalize(@ EXP ==/= EXP' in REACTORID) 
+   = normalize(@ EXP in REACTORID) ==/= normalize(@ EXP' in REACTORID) .
+
+  eq normalize(EP) = EP [owise] .
+
+--- semantics
+  eq {REST} |= BP = ([[normalize(BP)]] REST) == [true] .
+
+  op [[_]]_ : PropExpr Configuration ~> Value .
+  op [[_]]_ : RPropExpr Configuration ~> IntValue .
+  op [[_]]_ : BPropExpr Configuration ~> BoolValue .
+
+  eq [[@ VAL]] REST = VAL .
+
+  eq [[@ PORTID in REACTORID]] REST
+     < REACTORID : Reactor | 
+         inports : < PORTID : Port | value : VAL > INPORTS > = VAL .
+
+  eq [[@ ACTIONID in REACTORID]] REST
+     < REACTORID : Reactor | 
+         actions : < ACTIONID : Action | payload : VAL > ACTIONS > = VAL .
+
+  eq [[@ VAR in REACTORID]] REST
+     < REACTORID : Reactor | state : (VAR |-> VAL) ; VALUATION > = VAL .
+
+  eq [[RP1 + RP2]] REST = [[RP1]] REST + [[RP2]] REST .
+  eq [[RP1 * RP2]] REST = [[RP1]] REST * [[RP2]] REST .
+  eq [[RP1 - RP2]] REST = [[RP1]] REST - [[RP2]] REST .
+
+  eq [[RP1 <  RP2]] REST = [[RP1]] REST <  [[RP2]] REST .
+  eq [[RP1 <= RP2]] REST = [[RP1]] REST <= [[RP2]] REST .
+  eq [[RP1 >  RP2]] REST = [[RP1]] REST >  [[RP2]] REST .
+  eq [[RP1 >= RP2]] REST = [[RP1]] REST >= [[RP2]] REST .
+
+  eq [[EP ===  EP']] REST = [[EP]] REST ===  [[EP']] REST .
+  eq [[EP ==/= EP']] REST = [[EP]] REST ==/= [[EP']] REST .
+endom
+
+
+
+fmod BOOLEAN-FORMULA is
+  protecting BOOL .
+  sort BoolFormula .
+
+  ops True False : -> BoolFormula [ctor format (g o)] .
+  op ~_ : BoolFormula -> BoolFormula [ctor prec 53 format (r o d)] .
+  op _/\_ : BoolFormula BoolFormula -> BoolFormula [comm ctor gather (E e) prec 55 format (d r o d)] .
+  op _\/_ : BoolFormula BoolFormula -> BoolFormula [comm ctor gather (E e) prec 59 format (d r o d)] .
+
+  op _->_ : BoolFormula BoolFormula -> BoolFormula [gather (e E) prec 65 format (d r o d)] .
+  op _<->_ : BoolFormula BoolFormula -> BoolFormula [prec 65 format (d r o d)] .
+
+  vars F G : BoolFormula .
+
+  eq F -> G = ~ F \/ G .
+  eq F <-> G = (F -> G) /\ (G -> F) .
+
+  *** negative normal form
+  eq ~ True = False .
+  eq ~ False = True .
+  eq ~ ~ F = F .
+  eq ~ (F \/ G) = ~ F /\ ~ G .
+  eq ~ (F /\ G) = ~ F \/ ~ G .
+endfm
+
+
+
+fmod SEARCH-GOAL is
+  pr SATISFACTION .
+  pr BOOLEAN-FORMULA .
+  
+  subsort Prop < BoolFormula .
+  op _|=_ : State BoolFormula ~> Bool [frozen] .
+  
+  var STATE : State .
+  vars F G : BoolFormula .
+
+  eq STATE |= True  = true .
+  eq STATE |= False = false .
+
+  eq STATE |= (~ F) = not (STATE |= F) .
+  eq STATE |= (F /\ G) = (STATE |= F) and (STATE |= G) .
+  eq STATE |= (F \/ G) = (STATE |= F) or  (STATE |= G) .
+endfm
+
+
+
+omod LF-OUTPUT-REPR is
+  including LF-PROP .
+  including UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
+
+--- simplified counter example information
+  sort OutputItem .
+  op time:_ : Time -> OutputItem [ctor format(b o d)] .
+  op invoked:_ : ReactionIdSet -> OutputItem [ctor prec 124 format(b o d)] .
+  op queue:_ : EQueue -> OutputItem [ctor prec 124 format(b o d)] .
+  op inports:_ : Map{Oid,Value} -> OutputItem [ctor prec 124 format(b o d)] .
+  op state:_ : ReactorState -> OutputItem [ctor prec 124 format(b o d)] .
+  op _:`[_`] : ReactorId OutputItemSet -> OutputItem [ctor format(r o d n++i d --)] .
+
+  sort OutputItemSet .
+  subsort OutputItem < OutputItemSet .
+  op none : -> OutputItemSet [ctor] .
+  op __ : OutputItemSet OutputItemSet -> OutputItemSet [ctor comm assoc id: none format(d ni d) prec 126] .
+
+  sort Map{Oid,Value} .
+  subsort ReactorState < Map{Oid,Value} .
+  op _|->_ : Oid Value -> Map{Oid,Value} [ctor] .
+  op _;_ : Map{Oid,Value} Map{Oid,Value} -> Map{Oid,Value} [ctor ditto] .
+
+  var O : Oid .
+  var RIS : ReactionIdSet .
+  var EQ : EQueue .
+  var PORTS REST : Configuration .
+  var VALUATION : ReactorState .
+  var VAL : Value .
+  var T : Time .
+  var TI : TimeInf .
+  var OIS : OutputItemSet .
+
+--- simplify
+  op simplify : ClockedSystem ~> OutputItemSet .
+  eq simplify({REST} in time T  timeBound TI) = (time: T) simplify(REST) .
+  eq simplify({REST} in time INF timeBound TI) = simplify(REST) .
+  eq simplify({REST} timeBound TI) = simplify(REST) .
+  eq simplify({REST} in time T) = (time: T) simplify(REST) .
+  eq simplify({REST} in time INF) = simplify(REST) .
+  eq simplify({REST}) = simplify(REST) .
+
+  op simplify : Configuration ~> OutputItemSet .
+  eq simplify(< O : Invoked | reactions : RIS > REST) 
+   = (invoked: RIS) simplify(REST) .
+  eq simplify(< O : EventQueue | queue : EQ > REST) 
+   = (queue: EQ) simplify(REST) .
+  eq simplify(< O : Reactor | inports : PORTS, state : VALUATION > REST)
+   = (O : [inports: simplifyPorts(PORTS) state: VALUATION]) simplify(REST) .
+  eq simplify(REST) = none [owise] .
+
+  op simplifyPorts : Configuration ~> Map{Oid,Value} .
+  eq simplifyPorts(< O : Port | value : VAL > PORTS)
+   = (O |-> VAL) ; simplifyPorts(PORTS) .
+  eq simplifyPorts(none) = empty .
+endom
+
+
+
+omod LF-OUTPUT-COUNTEREXAMPLE is
+  including LF-OUTPUT-REPR .
+  including MODEL-CHECKER .
+
+  var STATE : State .
+  var RN : RuleName .
+
+  --- new counterexample transition
+  op `{_`}===[_]===> : OutputItemSet RuleName -> Transition [ctor format(n ++i d n -- d d d d)] .
+
+  eq {STATE, RN} = {simplify(STATE)}===[RN]===> .
+endom
+

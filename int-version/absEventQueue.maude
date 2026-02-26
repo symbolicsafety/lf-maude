@@ -1,0 +1,101 @@
+
+*** Try to model event queues ...
+--- Event: input port + "tag" + value
+---     Note: we like to count "down" so the tag
+---       is not absolute time, but remaining time.
+--- Note also: we need super-dense time, although we use
+---       natural numbers as time domain.
+
+
+--- Note: also actions need to be scheduled and put into event queue.
+---   we guess
+
+--- Note: an event may has an addition constraint (always true for the
+---   concrete case). 
+
+fmod EVENT is
+  protecting REACTOR-ID .
+  protecting ACTION-TRIGGER .
+  protecting LF-ABS-VALUE-TIME .
+
+  --- Single events.  It may also have a constraint. 
+  sort Event .
+  op event : ReactorId ActionTrigger Value -> Event [ctor] .
+endfm
+
+
+---NOTE: currently not used
+fmod TIMED-EVENT is
+  protecting TIME .
+  protecting EVENT .
+
+  sort TimedEvent .   --- ???
+  op _inTime_ : Event Time -> TimedEvent [ctor] .   ---  needed?
+endfm
+
+
+fmod TAG is
+  protecting NAT .
+  protecting TIME .
+
+  vars T1 T2 : Time .
+  vars MS1 MS2 : Nat .
+ 
+  sort Tag .    --- Superdense time
+  op tag : Time Nat -> Tag [ctor] .
+
+  op _<_ : Tag Tag -> Bool .
+  eq tag(T1, MS1) < tag(T2, MS2) = T1 lt T2 or ((T1 equals T2) and MS1 < MS2) .
+endfm
+
+
+fmod TAGGED-EVENTS is
+  protecting EVENT .
+  protecting TAG .
+
+  sort TaggedEvents .
+  op _at_ : Events Tag -> TaggedEvents [ctor] .
+
+  sort Events . 
+  subsort Event < Events .
+  op noEvent : -> Events [ctor] .
+  op __ : Events Events -> Events [assoc comm id: noEvent ctor] .
+endfm
+
+
+omod ABS-EVENT-QUEUE is
+  protecting TAGGED-EVENTS .
+
+  --- At the moment, we do NOT deal with hierarchical
+  --- models, so that an input port is uniquely identified by
+  --- reactorId . portId
+
+  class EventQueue | queue : EQueue .  --- class according to majority vote
+
+  --- the cons constructor for EQueue is not defined here!
+  sort EQueue .
+  subsort TaggedEvents < EQueue .
+  op empty : -> EQueue [ctor] .
+
+  var T : Time .
+  var EVENTS : Events .
+  var QUEUE : EQueue .
+
+  ---NOTE: not declared here!
+  op insert : TaggedEvents EQueue -> EQueue .
+
+  --- note events could also be 'actions'
+  --- NOTE: these are our educated guesses ....
+  --- NOTE: assume that the second argument is always a concrete value!
+  op schedule : Events Time EQueue -> EQueue .
+  ceq schedule(EVENTS, T, QUEUE)  = insert(EVENTS at tag(T, 0), QUEUE) 
+   if T gt zero .
+  
+  ceq schedule(EVENTS, T, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) 
+   if T equals zero .
+endom
+
+
+
+
+

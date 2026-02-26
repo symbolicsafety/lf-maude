@@ -1,0 +1,90 @@
+
+omod PROCESS-MSG is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+
+  ops messageSent counter panic : -> IVarId [ctor] .
+  ops task : -> ReactorId [ctor] .
+  ops in out : -> IPortId [ctor] .
+  ops updateMessage startup : -> IActionId [ctor] .
+  op t  : -> TimerId [ctor] .
+
+  op init : -> Configuration .
+
+  eq init
+   = < task : Reactor |
+          inports : < in : Port | value : [0] >,
+          outports : < out : Port | value : [0] >,
+          state : (messageSent |-> [0]) ; (counter |-> [0]) ; (panic |-> [0]),
+          timers : < t : Timer | offset : 0, period : 1 >,
+          actions : < updateMessage : LogicalAction | minDelay : 0, 
+                                                  minSpacing : 0, 
+                                                  policy : defer, 
+                                                  payload : [0] >
+                    < startup : LogicalAction | minDelay : 0, 
+                                                minSpacing : 0, 
+                                                policy : defer, 
+                                                payload : [0] >,
+          reactions :
+            (reaction when startup do {messageSent := [0]})
+            (reaction when t --> out do {out <- messageSent})
+            (reaction when in --> updateMessage do { 
+                if (in ==/= messageSent) then (panic := [1]) fi ;
+                schedule(updateMessage, [0], [0]) ;
+                (counter := counter + [1])
+             })
+             reaction when updateMessage do {messageSent := messageSent + [1]} >
+
+   (task : out --> task : in) .
+
+endom
+
+omod TEST-PROCESS-MSG is
+  including PROCESS-MSG .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+      {< env : Environment | physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+
+omod TIME-BOUNDED-PROCESS-MSG is
+  including TEST-PROCESS-MSG .
+  including TIME-BOUNDED-DYNAMICS  .
+  eq timeBound = 5 .
+endom  
+
+rew initSystem in time 0 .
+
+
+***(  Property given in LF benchmarks repository:
+
+spec="G[5 nsec](ProcessMsg_task_panic != 1)", expect=true
+
+)***
+
+--- Notice G[5], and not G[0,5]!  We can of course use Real-Time Maude's Timed CTL model
+--- checker, but an easy solution here is to do an invariant check when the system clock shows 5:
+
+--- search for breach of invariant when system clock is 5:
+search initSystem in time 0 =>* { REST:Configuration
+    < task : Reactor | AS:AttributeSet,
+	                   state : (panic |-> [N:Nat]) ; RS:ReactorState >
+} in time 5
+    such that N:Nat == 1 .
+
+***(    
+Result:
+
+search in TIME-BOUNDED-PROCESS-MSG : initSystem in time 0 =>* {REST:Configuration < task : Reactor | AS:AttributeSet, state : (RS:ReactorState ; panic |-> [N:Nat]) >}  in time 5 such that N:Nat == 1 = true .
+
+No solution.
+states: 18  rewrites: 1410 in 0ms cpu (0ms real) (1415662 rewrites/second)
+
+)***

@@ -1,0 +1,122 @@
+
+in superSimpleEx.maude
+
+omod TEST-TRAIN is
+  including TRAINDOOR-V3-DEBUG .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : < (controller . external) : PhysAct |
+	                           leftOfPeriod : 0,
+				   period : 10, --- 10 is correct
+				   possibleValues : [false],
+				   timeNonDet : false >
+                             < (door . extOpen) : PhysAct |
+	                           leftOfPeriod : 0,
+				   period : 2,   --- should be 11
+ 				   possibleValues : ([true]),
+				   timeNonDet : false >    ---- should be true
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : empty >} .
+                              
+     
+endom
+
+red initSystem .
+
+
+
+omod SIMULATE-TRAIN is
+  including TEST-TRAIN .
+  including SIMULATION-DYNAMICS .
+endom  
+
+
+
+rew [100] initSystem .
+
+
+eof
+
+red generateAPG(event(controller, external, [true]) event(door, extOpen, [true]),
+                addReactionIndices(init)) .
+
+
+eof
+
+---(
+search [1] initSystem =>*
+             {REST:Configuration
+	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} in time T:Time .
+)---
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < door : Reactor | state : (counter1 |-> [4]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} in time T:Time .
+
+eof
+
+omod UNCLOCKED-TRAIN is
+  including TEST-TRAIN .
+  including UNBOUNDED-ANALYSIS-DYNAMICS  .
+endom  
+
+
+rew [33] initSystem .
+
+
+search [1] initSystem =>*
+             {REST:Configuration
+	      < door : Reactor | state : (locked |-> [true]) ; RS2:ReactorState,
+	                          ATTS2:AttributeSet >} .
+
+
+
+omod MODEL-CHECK-TRAIN3 is
+  including MODEL-CHECKER .
+  including UNCLOCKED-TRAIN .
+  including LF-PROP .
+endom
+
+
+--- red modelCheck(initSystem, <> (locked in door == [true])) .
+
+--- red modelCheck(initSystem, <> (locked in door == [true])) .
+--- gives counterexample, as Marjan said it would.
+--- however, it seems to be the trivial counterxample,
+--- where the external button, to start the train, is never pushed.
+
+--- What we need is to say that if an event is inf often in the queue,
+--- then the door should eventually be opened
+
+--- If the external event that starts the train is
+--- infinitely often in the queue, then it must be guaranteed
+--- that the door is locked:
+
+red modelCheck(initSystem,
+               (((~ event(controller, external, [false]) inQueue) W
+	       (locked in door == [true]))
+	       /\ ([] <> (event(controller, external, [true]) inQueue)))
+	       ->  <> (locked in door == [true])) .
+
+
+--- Holds when period of extOpen is 11 and external is NOT timeNonDet.
+--- Does not hold when external is timeNonDet.
+
+--- What about if period of extOpen is 2, then ...
+
+--- Note that the simpler property will not hold even with good
+--- parameters, since we may have many false external events:
+
+red modelCheck(initSystem,
+                ([] <> (event(controller, external, [true]) inQueue))
+	       ->  <> (locked in door == [true])) .
+
+
