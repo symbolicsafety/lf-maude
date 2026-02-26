@@ -153,40 +153,17 @@ omod LF-PROP-EXT is
   op @_ : BoolValue -> BPropExpr [ctor] .
   op @_ : IntValue -> IPropExpr [ctor] .
 
-  op @_in_ : Expr ReactorId -> PropExpr [ctor] .
-  op @_in_ : BoolExpr ReactorId -> BPropExpr [ctor] .
-  op @_in_ : IntExpr ReactorId -> IPropExpr [ctor] .
+  op @_in_ : VarId ReactorId -> PropExpr [ctor] .
+  op @_in_ : BVarId ReactorId -> BPropExpr [ctor] .
+  op @_in_ : IVarId ReactorId -> IPropExpr [ctor] .
 
-  eq @ VAL in REACTORID = @ VAL .
+  op @_in_ : PortId ReactorId -> PropExpr [ctor] .
+  op @_in_ : BPortId ReactorId -> BPropExpr [ctor] .
+  op @_in_ : IPortId ReactorId -> IPropExpr [ctor] .
 
---- normalization
-  op normalize : PropExpr ~> PropExpr [memo] .
-
-  eq normalize(@ IEXP1 + IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) + normalize(@ IEXP2 in REACTORID) .
-  eq normalize(@ IEXP1 * IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) * normalize(@ IEXP2 in REACTORID) .
-  eq normalize(@ IEXP1 - IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) - normalize(@ IEXP2 in REACTORID) .
-
-  eq normalize(@ IEXP1 < IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) < normalize(@ IEXP2 in REACTORID) .
-  eq normalize(@ IEXP1 <= IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) <= normalize(@ IEXP2 in REACTORID) .
-  eq normalize(@ IEXP1 > IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) > normalize(@ IEXP2 in REACTORID) .
-  eq normalize(@ IEXP1 > IEXP2 in REACTORID) 
-   = normalize(@ IEXP1 in REACTORID) >= normalize(@ IEXP2 in REACTORID) .
-
-  eq normalize(@ EXP === EXP' in REACTORID) 
-   = normalize(@ EXP in REACTORID) === normalize(@ EXP' in REACTORID) .
-  eq normalize(@ EXP ==/= EXP' in REACTORID) 
-   = normalize(@ EXP in REACTORID) ==/= normalize(@ EXP' in REACTORID) .
-
-  eq normalize(EP) = EP [owise] .
 
 --- semantics
-  eq {REST} |= BP = ([[normalize(BP)]] REST) == [true] .
+  eq {REST} |= BP = ([[BP]] REST) == [true] .
 
   op [[_]]_ : PropExpr Configuration ~> Value .
   op [[_]]_ : IPropExpr Configuration ~> IntValue .
@@ -197,10 +174,6 @@ omod LF-PROP-EXT is
   eq [[@ PORTID in REACTORID]] REST
      < REACTORID : Reactor | 
          inports : < PORTID : Port | value : VAL > INPORTS > = VAL .
-
-  eq [[@ ACTIONID in REACTORID]] REST
-     < REACTORID : Reactor | 
-         actions : < ACTIONID : Action | payload : VAL > ACTIONS > = VAL .
 
   eq [[@ VAR in REACTORID]] REST
      < REACTORID : Reactor | state : (VAR |-> VAL) ; VALUATION > = VAL .

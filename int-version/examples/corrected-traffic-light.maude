@@ -127,7 +127,9 @@ search initSystem =>* {none} .   --- benchmarking
 omod MODEL-CHECK-TRAFFIC-LIGHT is
   including MODEL-CHECKER .
   including TIME-BOUNDED-TRAFFIC-LIGHT .
-  including LF-PROP .
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+
 endom
 
 red modelCheck(initSystem in time 0,
@@ -142,8 +144,8 @@ red modelCheck(initSystem in time 0,
 omod UNBOUNDED-MODEL-CHECK-TRAFFIC-LIGHT is
   including MODEL-CHECKER .
   including UNBOUNDED-TRAFFIC-LIGHT .
-  including LF-PROP .
-
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
 endom
 
 *** The traffic light is infinitely often in RED AND infinitely often in GREEN!!!

@@ -94,7 +94,8 @@ endom
 omod MODEL-CHECK-PINGPONG is
   including MODEL-CHECKER .
   including CHECK-PINGPONG .
-  including LF-PROP .
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
 endom
 
 red modelCheck(initSystem, [] (((ping . 2) invoked) => O(~ ((ping . 2) invoked)))) .

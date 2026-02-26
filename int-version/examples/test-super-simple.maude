@@ -82,7 +82,9 @@ search [1] initSystem =>*
 omod MODEL-CHECK-TRAIN3 is
   including MODEL-CHECKER .
   including UNCLOCKED-TRAIN .
-  including LF-PROP .
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+
 endom
 
 

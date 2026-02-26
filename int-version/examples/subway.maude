@@ -108,7 +108,9 @@ endom
 omod MODEL-CHECK-SUBWAY is
   including MODEL-CHECKER .
   including TIME-BOUNDED-SUBWAY .
-  including LF-PROP .
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+
 endom
 
 red modelCheck(initSystem in time 0, <> ((ums . 4) invoked)) .

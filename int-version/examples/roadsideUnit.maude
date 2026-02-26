@@ -126,7 +126,9 @@ endom
 omod MODEL-CHECK-RSU is
   including MODEL-CHECKER .
   including TIME-BOUNDED-RSU .
-  including LF-PROP .
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+
 endom
 
 red modelCheck(initSystem in time 0, [] (~ (grant in vehicle1 == [1] /\ grant in vehicle2 == [1]))) .

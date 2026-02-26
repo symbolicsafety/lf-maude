@@ -77,7 +77,8 @@ endom
 omod MODEL-CHECK-TRAINDOOR is
   including MODEL-CHECKER .
   including TIME-BOUNDED-TRAINDOOR .
-  including LF-PROP .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+  including LF-PROP-EXT .
 endom
 
 

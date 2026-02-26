@@ -128,7 +128,8 @@ omod FIG7 is
  omod MODEL-CHECK-ADAS is
    including MODEL-CHECKER .
    including UNCLOCKED-FIG7 .
-   including LF-PROP .
+   including LF-PROP-EXT .
+   including LF-OUTPUT-COUNTEREXAMPLE .
 endom
 
 red modelCheck(initSystem, <> [] (s in x == [3])) .

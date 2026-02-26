@@ -46,7 +46,9 @@ search [1] initSystem in time 0  =>*
 omod MODEL-CHECK-ADAS is
   including MODEL-CHECKER .
   including TIME-BOUNDED-ADAS .
-  including LF-PROP .
+  including LF-PROP-EXT .
+  including LF-OUTPUT-COUNTEREXAMPLE .
+
 endom
 
 
