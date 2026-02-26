@@ -137,25 +137,25 @@ omod LF-PROP-EXT is
   vars IEXP1 IEXP2 : IntExpr .
   var VAL : Value .
   var BP : BPropExpr .
-  vars RP1 RP2 : RPropExpr .
+  vars IP1 IP2 : IPropExpr .
   vars EP EP' : PropExpr .
 
 --- syntax
-  sort RPropExpr BPropExpr PropExpr .
-  subsort RPropExpr BPropExpr < PropExpr .
+  sort IPropExpr BPropExpr PropExpr .
+  subsort IPropExpr BPropExpr < PropExpr .
   subsort BPropExpr < Prop .
 
   ops _===_ _==/=_ : PropExpr PropExpr -> BPropExpr [ctor] .
-  ops _<_ _>_ _<=_ _>=_ : RPropExpr RPropExpr -> BPropExpr [ctor] .
-  ops _+_ _*_ _-_ : RPropExpr RPropExpr -> RPropExpr [gather (E e)] . 
+  ops _<_ _>_ _<=_ _>=_ : IPropExpr IPropExpr -> BPropExpr [ctor] .
+  ops _+_ _*_ _-_ : IPropExpr IPropExpr -> IPropExpr [gather (E e)] . 
 
   op @_ : Value -> PropExpr [ctor] .
   op @_ : BoolValue -> BPropExpr [ctor] .
-  op @_ : IntValue -> RPropExpr [ctor] .
+  op @_ : IntValue -> IPropExpr [ctor] .
 
   op @_in_ : Expr ReactorId -> PropExpr [ctor] .
   op @_in_ : BoolExpr ReactorId -> BPropExpr [ctor] .
-  op @_in_ : IntExpr ReactorId -> RPropExpr [ctor] .
+  op @_in_ : IntExpr ReactorId -> IPropExpr [ctor] .
 
   eq @ VAL in REACTORID = @ VAL .
 
@@ -189,7 +189,7 @@ omod LF-PROP-EXT is
   eq {REST} |= BP = ([[normalize(BP)]] REST) == [true] .
 
   op [[_]]_ : PropExpr Configuration ~> Value .
-  op [[_]]_ : RPropExpr Configuration ~> IntValue .
+  op [[_]]_ : IPropExpr Configuration ~> IntValue .
   op [[_]]_ : BPropExpr Configuration ~> BoolValue .
 
   eq [[@ VAL]] REST = VAL .
@@ -205,14 +205,14 @@ omod LF-PROP-EXT is
   eq [[@ VAR in REACTORID]] REST
      < REACTORID : Reactor | state : (VAR |-> VAL) ; VALUATION > = VAL .
 
-  eq [[RP1 + RP2]] REST = [[RP1]] REST + [[RP2]] REST .
-  eq [[RP1 * RP2]] REST = [[RP1]] REST * [[RP2]] REST .
-  eq [[RP1 - RP2]] REST = [[RP1]] REST - [[RP2]] REST .
+  eq [[IP1 + IP2]] REST = [[IP1]] REST + [[IP2]] REST .
+  eq [[IP1 * IP2]] REST = [[IP1]] REST * [[IP2]] REST .
+  eq [[IP1 - IP2]] REST = [[IP1]] REST - [[IP2]] REST .
 
-  eq [[RP1 <  RP2]] REST = [[RP1]] REST <  [[RP2]] REST .
-  eq [[RP1 <= RP2]] REST = [[RP1]] REST <= [[RP2]] REST .
-  eq [[RP1 >  RP2]] REST = [[RP1]] REST >  [[RP2]] REST .
-  eq [[RP1 >= RP2]] REST = [[RP1]] REST >= [[RP2]] REST .
+  eq [[IP1 <  IP2]] REST = [[IP1]] REST <  [[IP2]] REST .
+  eq [[IP1 <= IP2]] REST = [[IP1]] REST <= [[IP2]] REST .
+  eq [[IP1 >  IP2]] REST = [[IP1]] REST >  [[IP2]] REST .
+  eq [[IP1 >= IP2]] REST = [[IP1]] REST >= [[IP2]] REST .
 
   eq [[EP ===  EP']] REST = [[EP]] REST ===  [[EP']] REST .
   eq [[EP ==/= EP']] REST = [[EP]] REST ==/= [[EP']] REST .
