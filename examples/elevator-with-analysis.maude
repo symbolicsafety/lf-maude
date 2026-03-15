@@ -319,7 +319,7 @@ Maude>
 --- so that could explain the undesired result.  Or, the spec, which seems a little bit messy, could
 --- have a flaw ...
 
-eof
+---eof
 
 search [1] initSystem =>*
              {REST:Configuration

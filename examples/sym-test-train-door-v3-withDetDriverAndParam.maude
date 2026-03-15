@@ -1,4 +1,4 @@
-in TrainDoor_v3-withDetDriverAndParam.maude
+in sym-TrainDoor_v3-withDetDriverAndParam.maude
 
 omod TEST-TRAIN-V3-DET-DRIVER is
   including TRAINDOOR-V3-DET-DRIVER .

@@ -41,13 +41,13 @@ endom
 rew [100] initSystem .
 
 
-eof
+---eof
 
 red generateAPG(event(controller, external, [true]) event(door, extOpen, [true]),
                 addReactionIndices(init)) .
 
 
-eof
+---eof
 
 ---(
 search [1] initSystem =>*
@@ -61,7 +61,7 @@ search [1] initSystem =>*
 	      < door : Reactor | state : (counter1 |-> [4]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} in time T:Time .
 
-eof
+---eof
 
 omod UNCLOCKED-TRAIN is
   including TEST-TRAIN .

@@ -226,5 +226,4 @@ red modelCheck(initSystem timeBound 1,
           (@ counter in task1)) < @ [21])) .
 
 
-eof
 

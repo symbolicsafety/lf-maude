@@ -1,5 +1,5 @@
 
-in ADAS-with-camera-and-param.maude
+in sym-ADAS-with-camera-and-param.maude
 
 
 omod TEST-ADAS is

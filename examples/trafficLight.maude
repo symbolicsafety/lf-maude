@@ -84,7 +84,7 @@ endom
 
 rew [100] initSystem .
 
-eof
+---eof
 
 *** Comment: In the LF page, they admit that there is a bug: the variable
 ***   mode is never changed.  Therefore we also improve the example
