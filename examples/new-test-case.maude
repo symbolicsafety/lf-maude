@@ -1,0 +1,71 @@
+omod TEST-UPDATEGRAPH is
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops stvar : -> RVarId [ctor] .
+  ops lidar intermediate target : -> ReactorId [ctor] .
+  op t : -> TimerId [ctor] .
+  ops in out in1 in2 out1 out2 : -> RPortId [ctor] .
+  op init : -> Configuration .
+
+  eq init = 
+    < lidar : Reactor |
+      inports : none,
+      outports : < out1 : Port | value : [0] >
+                 < out2 : Port | value : [0] > ,
+      state : empty,
+      timers : < t : Timer | offset : 0, period : 34 >,
+      actions : none,
+      reactions : 
+        reaction when t --> (out1 ; out2) do {  
+                                               (out2 <- [11]) }
+    >
+    < intermediate : Reactor | 
+      inports : < in1 : Port | value : [0] >
+                < in2 : Port | value : [0] >,
+      outports : < out : Port | value : [1] >,
+      state : empty,
+      timers : none,
+      actions : none,
+      reactions : 
+        (reaction when in1 --> out do {(out <- [12])})
+        reaction when in2 --> out do {(out <- [15])}
+    >
+    < target : Reactor |
+      inports : < in : Port | value : [0] >,
+      state : (stvar |-> [0]),
+      timers : none,
+      actions : none,
+      reactions : 
+        reaction when in do { stvar := in }
+    >
+
+  (lidar : out1 --> intermediate : in1)
+  (lidar : out2 --> intermediate : in2)
+  intermediate : out --> target : in .
+
+endom
+
+
+omod TEST-NEWGRAPH is
+  including TEST-UPDATEGRAPH .
+  including DYNAMICS-WITHOUT-TICK .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+           physicalActions : none
+       >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addInitialTimers(init, empty) >
+       < rxns : Invoked | reactions : none >} .
+endom
+
+red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .
+
+
+
+rew [91] initSystem .
