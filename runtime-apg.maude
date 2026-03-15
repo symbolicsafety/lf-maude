@@ -206,12 +206,16 @@ omod RUNTIME-APG is
                       NETWORK
                       < REACTOR : Reactor | 
                           reactions : RL1 (reaction N when TRIGGERS --> O ; OS do {RB}) RL2 >),
-              NETWORK < REACTOR : Reactor | >) 
-    if NEW-SUCCESSORS := triggeredBy(REACTOR2, O2, NETWORK < REACTOR : Reactor | >) .
+              NETWORK < REACTOR : Reactor | >
+              (REACTOR : O --> REACTOR2 : O2))
+    if NEW-SUCCESSORS := triggeredBy(REACTOR2, O2, NETWORK < REACTOR : Reactor | >) /\
+      not NEW-SUCCESSORS subsetOf SUCC .
   
   eq addDeps(GRAPH, NETWORK) = GRAPH [owise] .
   
-  
+  op _subsetOf_ : ReactionIdSet ReactionIdSet -> Bool .
+  eq SUCC subsetOf SUCC ; PRE = true .
+  eq SUCC subsetOf PRE = false [owise] .
   
   op triggeredBy : ReactorId ActionTrigger Configuration -> ReactionIdSet .
   
