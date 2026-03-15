@@ -1,0 +1,35 @@
+target C
+
+reactor Over {
+  output y: int
+  state s: int = 0
+  timer t1(100 msec, 100 msec)
+  timer t2(200 msec, 200 msec)
+
+  reaction(t1) -> y {=
+    self->s += 1;
+    lf_set(y, self->s);
+  =}
+
+  reaction(t2) -> y {=
+    self->s -= 2;
+    lf_set(y, self->s);
+  =}
+}
+
+reactor Tar{
+    input in: int;
+    state svar: int = 8;
+
+    reaction(in) {= 
+      self -> svar = in -> value;
+    =}
+  }
+
+@maude(analysis="simulation", rewrites=53)
+main reactor overwriting {
+    o = new Over();
+    tar = new Tar();
+
+    o.y -> tar.in;
+  }

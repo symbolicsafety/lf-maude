@@ -362,7 +362,20 @@ omod ABS-EXECUTE-STEP is
      if OLD-VAL =/= VAL .    
   
   eq propagateImmediateOutputs(EVENTS, NETWORK) = NETWORK [owise] .
-  
+
+op unknownCanWrite : ReactorId PortId Configuration Configuration -> Bool .
+eq unknownCanWrite(REACTORID, PORTID,
+                                        GRAPH
+                                        < REACTORID . N : APGNode | status : unknown >,
+                                        NETWORK
+                            < REACTORID : Reactor | reactions : (RL1 (reaction N when OS1 --> (PORTID ; OS2) do {RB}) RL2) >) = true .
+
+eq unknownCanWrite(REACTORID, PORTID,
+                                        GRAPH
+                                        < REACTORID . N : APGNode | status : present >,
+                                        NETWORK
+                            < REACTORID : Reactor | reactions : (RL1 (reaction N when OS1 --> (PORTID ; OS2) do {RB}) RL2) >) = true .
+eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
   
   --- updateGraph(graph, executed reactor, output ports of reaction, network, actual outputs)
   op updateGraph : Configuration ReactorId OidSet Configuration Events -> Configuration .
@@ -396,11 +409,16 @@ omod ABS-EXECUTE-STEP is
                   REACTORID1, (PORTID1 ; OS),
                   NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2),
                   EVENTS)
-     if not (REACTORID1 . PORTID1) presentIn EVENTS .
+     if not (REACTORID1 . PORTID1) presentIn EVENTS and 
+     not unknownCanWrite(REACTORID1, PORTID1, < (REACTORID2 . N) : APGNode | 
+                      triggers : ((PORTID2 |-> unknown) ; TSTATUS),
+                      status : STATUS > GRAPH,
+                      NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2)
+     ) .
   
   --- NEW version!
   --- transitive negative case
-  eq updateGraph(< (REACTORID2 . N2) : APGNode | 
+  ceq updateGraph(< (REACTORID2 . N2) : APGNode | 
                      triggers : ((PORTID2 |-> unknown) ; TSTATUS),
                      status : STATUS > 
                  < (REACTORID3 . N3) : APGNode | status : absent > GRAPH,
@@ -422,7 +440,17 @@ omod ABS-EXECUTE-STEP is
                  NETWORK
                  < REACTORID3 : Reactor | >
                  (REACTORID3 : PORTID3 --> REACTORID2 : PORTID2),
-                 EVENTS) .
+                 EVENTS) 
+     if not unknownCanWrite(REACTORID3, PORTID3, < (REACTORID2 . N2) : APGNode | 
+                     triggers : ((PORTID2 |-> unknown) ; TSTATUS),
+                     status : STATUS > 
+                 < (REACTORID3 . N3) : APGNode | status : absent > GRAPH,
+                NETWORK
+                 < REACTORID3 : Reactor | 
+                     reactions : (RL1 (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB}) RL2) > 
+                 (REACTORID3 : PORTID3 --> REACTORID2 : PORTID2)
+    ) .
+
   
   eq updateGraph(GRAPH, REACTORID1, OS, NETWORK, EVENTS) = GRAPH  [owise] .
   
