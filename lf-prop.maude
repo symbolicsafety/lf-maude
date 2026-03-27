@@ -266,7 +266,6 @@ fmod SEARCH-GOAL is
 endfm
 
 
-
 omod LF-OUTPUT-REPR is
   including LF-PROP .
   including UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
@@ -325,6 +324,60 @@ omod LF-OUTPUT-REPR is
 endom
 
 
+omod LF-SEARCH-COMMAND is
+  pr META-LEVEL .
+  pr SEARCH-GOAL .
+  pr LF-OUTPUT-REPR .
+
+  var M : Module .
+  var Q : Qid .
+  var CS : ClockedSystem .
+  var BF : BoolFormula .
+  var T : Term .
+  var TY : Type .
+  var RULE : Rule .
+  var TRACE : Trace .
+
+  op search`in_:_=>*_ : Qid ClockedSystem BoolFormula -> SearchOutput .
+  op search`in_:_=>!_ : Qid ClockedSystem BoolFormula -> SearchOutput .
+
+  eq search in Q : CS =>* BF = searchCommand(upModule(Q,false), CS, BF, '*) .
+  eq search in Q : CS =>! BF = searchCommand(upModule(Q,false), CS, BF, '!) .
+
+
+  op searchCommand : Module ClockedSystem BoolFormula Qid -> SearchOutput .
+  ceq searchCommand(M, CS, BF, Q) = trace {simplify(CS)} outputTrace(TRACE)
+   if TRACE := metaSearchPath(M, upTerm(CS), '##CS##:ClockedSystem, 
+                          '_|=_['##CS##:ClockedSystem, upTerm(BF)] = 'true.Bool,
+                          Q, unbounded, 1) .
+  eq searchCommand(M, CS, BF, Q) = No Solution [owise] .
+
+
+  sort SearchOutput .
+  op No`Solution : -> SearchOutput [ctor format (nss d d)] .
+  op trace{_}_ : OutputItemSet TraceOutput -> SearchOutput [ctor format (d nss++ ++s s n-- --) prec 124] .
+
+  sorts TraceOutput TraceStepOutput .
+  subsort TraceStepOutput < TraceOutput .
+  op nil : -> TraceOutput [ctor] .
+  op __ : TraceOutput TraceOutput -> TraceOutput [ctor assoc id: nil format (d n d) prec 123] .
+  op =[_]=>{_} : Qid OutputItemSet -> TraceStepOutput [ctor format (d d d d ++ nss s s --) prec 122] .   --- initial
+
+  sort ClockedSystem? .
+  subsort ClockedSystem < ClockedSystem? .
+  op error : -> ClockedSystem? [ctor] .
+
+  op outputTrace : Trace ~> TraceOutput .
+  eq outputTrace(nil)  = nil .
+  eq outputTrace({T,TY,RULE} TRACE) 
+   = =[getLabel(RULE)]=> {simplify(downTerm(T,error))} outputTrace(TRACE) .
+
+  op getLabel : Rule ~> Qid .
+  eq getLabel(rl LHS:Term => RHS:Term [label(Q) ATTS:AttrSet] .) = Q .
+  eq getLabel(crl LHS:Term => RHS:Term if CD:Condition [label(Q) ATTS:AttrSet] .) = Q .
+endom
+
+
 
 omod LF-OUTPUT-COUNTEREXAMPLE is
   including LF-OUTPUT-REPR .
@@ -332,10 +385,15 @@ omod LF-OUTPUT-COUNTEREXAMPLE is
 
   var STATE : State .
   var RN : RuleName .
+  vars TL TL' : TransitionList .
 
   --- new counterexample transition
-  op `{_`}===[_]===> : OutputItemSet RuleName -> Transition [ctor format(n ++i d n -- d d d d)] .
+  op `{_`}===[_]===> : OutputItemSet RuleName -> Transition [ctor format(ni ++s s n -- s s d d)] .
 
   eq {STATE, RN} = {simplify(STATE)}===[RN]===> .
+
+  --- new counterexample symbol
+  op counterexample_begin`loop_end`loop : TransitionList TransitionList -> ModelCheckResult [ctor format(n ++i n d i in d --)] .
+  eq counterexample(TL, TL') = counterexample TL begin loop TL' end loop .
 endom
 
