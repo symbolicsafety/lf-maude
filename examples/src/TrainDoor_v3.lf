@@ -48,7 +48,7 @@ reactor Door {
 @maude(analysis="reachability", timeBound=150, goal="(locked in d == false) /\ (d.2 invoked)")
 //@maude(analysis="ltl", goal="<>(locked in d == true)")
 //@maude(analysis="ltl", goal="(((~ (event(c, external, false) inQueue)) W (locked in d == true))) /\ ([] (<> (event(c, external, true) inQueue))) -> <>(locked in d == true)")
-@maude(analysis="ltl", goal="<> ((locked in d == false) /\ ((d.2) invoked))")
+@maude(analysis="ltl", goal="<> ((locked in d == false) /\ (d.2 invoked))")
 
 main reactor {
   c = new Controller()

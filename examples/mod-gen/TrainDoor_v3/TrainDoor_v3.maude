@@ -119,6 +119,6 @@ search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound INF =>* CS:ClockedSys
 
 search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound 150000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ d.sv.locked in d) === @ [false] )) /\ ((d . 2) invoked )) .
 
-red in MODELCHECKER-TRAINDOOR_V3 : modelCheck(initSystem timeBound INF , (<> ((( (@ d.sv.locked in d) === @ [false] )) /\ (((d . 2) invoked )))) ) .
+red in MODELCHECKER-TRAINDOOR_V3 : modelCheck(initSystem timeBound INF , (<> ((( (@ d.sv.locked in d) === @ [false] )) /\ ((d . 2) invoked ))) ) .
 
 quit
