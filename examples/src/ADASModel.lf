@@ -67,10 +67,9 @@ reactor Dashboard {
 
 @maudePhysAct(name="a", inReactor="p", vals="69, 71", period=5, timeNonDet=true)
 @maude(analysis="simulation", rewrites=51)
-@maude(analysis="reachability", timeBound=55, goal="brakesApplied in b == 1")
-@maude(analysis="reachability", timeBound=55, goal="event(p, a) inQueue")
+@maude(analysis="reachability", timeBound=5, goal="brakesApplied in b == 1")
 @maude(analysis="ltl", timeBound=55, goal="<>(brakesApplied in b == 1)")
-@maude(analysis="ltl",  goal="[] ((l.1 invoked) -> (<> (brakesApplied in b == 1)))")
+@maude(analysis="ltl", timeBound=54, goal="<>(brakesApplied in b == 1)")
 @maude(analysis="ltl",  goal="[]((l.1 invoked /\ requestStop in v == 1) -> (<> brakesApplied in b == 1))")
 @maude(analysis="reachability",  goal="(p.1 invoked) /\ (brakesApplied in b != 1)")
 
