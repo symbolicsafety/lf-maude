@@ -48,7 +48,7 @@ endom
 omod ANALYSIS-PROCESSSYNC is
     including TEST-PROCESSSYNC .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-PROCESSSYNC is
@@ -63,8 +63,8 @@ omod SIMULATION-PROCESSSYNC is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ task.sv.tmsynchronizationprocessingcounter in task) ==/= @ [3] )) /\ remainingTime 0) .
+red in ANALYSIS-PROCESSSYNC : search in 'ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* ((( (@ task.sv.tmsynchronizationprocessingcounter in task) ==/= @ [3] )) /\ remainingTime 0) .
 
-search [1] in ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ task.sv.tmsynchronizationprocessingcounter in task) ==/= @ [3] )) /\ (~ ((event(task, task.t.t) inQueue))) /\ remainingTime 0) .
+red in ANALYSIS-PROCESSSYNC : search in 'ANALYSIS-PROCESSSYNC : initSystem timeBound 2000000 =>* ((( (@ task.sv.tmsynchronizationprocessingcounter in task) ==/= @ [3] )) /\ (~ ((event(task, task.t.t) inQueue))) /\ remainingTime 0) .
 
 quit

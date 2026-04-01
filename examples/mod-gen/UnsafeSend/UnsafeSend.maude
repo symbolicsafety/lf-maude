@@ -81,7 +81,7 @@ endom
 omod ANALYSIS-UNSAFESEND is
     including TEST-UNSAFESEND .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-UNSAFESEND is

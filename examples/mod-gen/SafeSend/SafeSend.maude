@@ -81,7 +81,7 @@ endom
 omod ANALYSIS-SAFESEND is
     including TEST-SAFESEND .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-SAFESEND is

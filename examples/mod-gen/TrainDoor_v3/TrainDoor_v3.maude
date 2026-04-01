@@ -100,7 +100,7 @@ endom
 omod ANALYSIS-TRAINDOOR_V3 is
     including TEST-TRAINDOOR_V3 .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-TRAINDOOR_V3 is
@@ -115,9 +115,9 @@ omod SIMULATION-TRAINDOOR_V3 is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound INF =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ d.sv.locked in d) === @ [true] )) /\ (( (@ d.sv.isOpen in d) === @ [true] ))) .
+red in ANALYSIS-TRAINDOOR_V3 : search in 'ANALYSIS-TRAINDOOR_V3 : initSystem timeBound INF =>* ((( (@ d.sv.locked in d) === @ [true] )) /\ (( (@ d.sv.isOpen in d) === @ [true] ))) .
 
-search [1] in ANALYSIS-TRAINDOOR_V3 : initSystem timeBound 150000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= ((( (@ d.sv.locked in d) === @ [false] )) /\ ((d . 2) invoked )) .
+red in ANALYSIS-TRAINDOOR_V3 : search in 'ANALYSIS-TRAINDOOR_V3 : initSystem timeBound 150000000 =>* ((( (@ d.sv.locked in d) === @ [false] )) /\ ((d . 2) invoked )) .
 
 red in MODELCHECKER-TRAINDOOR_V3 : modelCheck(initSystem timeBound INF , (<> ((( (@ d.sv.locked in d) === @ [false] )) /\ ((d . 2) invoked ))) ) .
 

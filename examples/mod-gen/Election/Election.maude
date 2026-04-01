@@ -128,7 +128,7 @@ endom
 omod ANALYSIS-ELECTION is
     including TEST-ELECTION .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-ELECTION is

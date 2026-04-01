@@ -84,7 +84,7 @@ endom
 omod ANALYSIS-PINGPONG is
     including TEST-PINGPONG .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-PINGPONG is

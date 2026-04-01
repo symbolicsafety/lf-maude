@@ -84,7 +84,7 @@ endom
 omod ANALYSIS-AIRCRAFTDOOR is
     including TEST-AIRCRAFTDOOR .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-AIRCRAFTDOOR is

@@ -60,7 +60,7 @@ endom
 omod ANALYSIS-ALARM is
     including TEST-ALARM .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-ALARM is

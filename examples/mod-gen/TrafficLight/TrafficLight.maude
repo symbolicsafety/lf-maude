@@ -92,7 +92,7 @@ endom
 omod ANALYSIS-TRAFFICLIGHT is
     including TEST-TRAFFICLIGHT .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-TRAFFICLIGHT is

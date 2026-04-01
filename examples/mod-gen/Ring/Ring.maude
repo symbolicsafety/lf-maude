@@ -147,7 +147,7 @@ endom
 omod ANALYSIS-RING is
     including TEST-RING .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-RING is

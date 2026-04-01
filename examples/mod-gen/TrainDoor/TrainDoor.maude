@@ -85,7 +85,7 @@ endom
 omod ANALYSIS-TRAINDOOR is
     including TEST-TRAINDOOR .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-TRAINDOOR is

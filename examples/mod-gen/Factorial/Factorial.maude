@@ -80,7 +80,7 @@ endom
 omod ANALYSIS-FACTORIAL is
     including TEST-FACTORIAL .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-FACTORIAL is
@@ -95,6 +95,6 @@ omod SIMULATION-FACTORIAL is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-FACTORIAL : initSystem timeBound 10000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= (((printer . 1) invoked ) /\ (( (@ printer.sv.result in printer) ==/= @ [3628800] )) /\ remainingTime 0) .
+red in ANALYSIS-FACTORIAL : search in 'ANALYSIS-FACTORIAL : initSystem timeBound 10000000 =>* (((printer . 1) invoked ) /\ (( (@ printer.sv.result in printer) ==/= @ [3628800] )) /\ remainingTime 0) .
 
 quit

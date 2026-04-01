@@ -72,7 +72,7 @@ endom
 omod ANALYSIS-PROCESSMSG is
     including TEST-PROCESSMSG .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-PROCESSMSG is
@@ -87,6 +87,6 @@ omod SIMULATION-PROCESSMSG is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-PROCESSMSG : initSystem timeBound 5000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= (( (@ task.sv.panic in task) === @ [1] ) /\ remainingTime 0) .
+red in ANALYSIS-PROCESSMSG : search in 'ANALYSIS-PROCESSMSG : initSystem timeBound 5000000 =>* (( (@ task.sv.panic in task) === @ [1] ) /\ remainingTime 0) .
 
 quit

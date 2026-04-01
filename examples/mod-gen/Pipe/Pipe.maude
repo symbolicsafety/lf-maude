@@ -219,7 +219,7 @@ endom
 omod ANALYSIS-PIPE is
     including TEST-PIPE .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-PIPE is

@@ -92,7 +92,7 @@ endom
 omod ANALYSIS-FIBONACCI is
     including TEST-FIBONACCI .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-FIBONACCI is
@@ -107,6 +107,6 @@ omod SIMULATION-FIBONACCI is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-search [1] in ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>* CS:ClockedSystem  such that CS:ClockedSystem |= (((printer . 1) invoked ) /\ (( (@ printer.sv.result in printer) ==/= @ [89] )) /\ remainingTime 0) .
+red in ANALYSIS-FIBONACCI : search in 'ANALYSIS-FIBONACCI : initSystem timeBound 10000000 =>* (((printer . 1) invoked ) /\ (( (@ printer.sv.result in printer) ==/= @ [89] )) /\ remainingTime 0) .
 
 quit

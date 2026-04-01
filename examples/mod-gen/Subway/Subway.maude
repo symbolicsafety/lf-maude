@@ -121,7 +121,7 @@ endom
 omod ANALYSIS-SUBWAY is
     including TEST-SUBWAY .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-SUBWAY is

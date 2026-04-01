@@ -162,7 +162,7 @@ endom
 omod ANALYSIS-ELEVATOR is
     including TEST-ELEVATOR .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-ELEVATOR is

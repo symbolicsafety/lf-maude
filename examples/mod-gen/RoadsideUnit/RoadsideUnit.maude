@@ -154,7 +154,7 @@ endom
 omod ANALYSIS-ROADSIDEUNIT is
     including TEST-ROADSIDEUNIT .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-ROADSIDEUNIT is

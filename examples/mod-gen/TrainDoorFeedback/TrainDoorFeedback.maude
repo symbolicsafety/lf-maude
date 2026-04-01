@@ -148,7 +148,7 @@ endom
 omod ANALYSIS-TRAINDOORFEEDBACK is
     including TEST-TRAINDOORFEEDBACK .
     including LF-PROP-EXT .
-    including SEARCH-GOAL .
+    including LF-SEARCH-COMMAND .
 endom
 
 omod MODELCHECKER-TRAINDOORFEEDBACK is
