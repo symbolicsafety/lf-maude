@@ -335,6 +335,7 @@ omod LF-SEARCH-COMMAND is
   var BF : BoolFormula .
   var T : Term .
   var TY : Type .
+  var SUB : Substitution .
   var RULE : Rule .
   var TRACE : Trace .
 
@@ -346,8 +347,12 @@ omod LF-SEARCH-COMMAND is
 
 
   op searchCommand : Module ClockedSystem BoolFormula Qid -> SearchOutput .
-  ceq searchCommand(M, CS, BF, Q) = trace {simplify(CS)} outputTrace(TRACE)
+  ceq searchCommand(M, CS, BF, Q) 
+    = trace outputTrace(TRACE) {simplify(downTerm(T,error))} 
    if TRACE := metaSearchPath(M, upTerm(CS), '##CS##:ClockedSystem, 
+                          '_|=_['##CS##:ClockedSystem, upTerm(BF)] = 'true.Bool,
+                          Q, unbounded, 0)
+   /\ {T,TY,SUB} := metaSearch(M, upTerm(CS), '##CS##:ClockedSystem, 
                           '_|=_['##CS##:ClockedSystem, upTerm(BF)] = 'true.Bool,
                           Q, unbounded, 0) .
   eq searchCommand(M, CS, BF, Q) = No Solution [owise] .
@@ -355,13 +360,13 @@ omod LF-SEARCH-COMMAND is
 
   sort SearchOutput .
   op No`Solution : -> SearchOutput [ctor format (nss d d)] .
-  op trace{_}_ : OutputItemSet TraceOutput -> SearchOutput [ctor format (d nss++ ++s s n-- --) prec 124] .
+  op trace_{_} : TraceOutput OutputItemSet -> SearchOutput [ctor format (d n++ n s s-- d) prec 124] .
 
   sorts TraceOutput TraceStepOutput .
   subsort TraceStepOutput < TraceOutput .
   op nil : -> TraceOutput [ctor] .
   op __ : TraceOutput TraceOutput -> TraceOutput [ctor assoc id: nil format (d n d) prec 123] .
-  op =[_]=>{_} : Qid OutputItemSet -> TraceStepOutput [ctor format (d d d d ++ nss s s --) prec 122] .   --- initial
+  op {_}=[_]=> : OutputItemSet Qid -> TraceStepOutput [ctor format (d s s n d d d d d) prec 122] .   --- initial
 
   sort ClockedSystem? .
   subsort ClockedSystem < ClockedSystem? .
@@ -370,7 +375,7 @@ omod LF-SEARCH-COMMAND is
   op outputTrace : Trace ~> TraceOutput .
   eq outputTrace(nil)  = nil .
   eq outputTrace({T,TY,RULE} TRACE) 
-   = =[getLabel(RULE)]=> {simplify(downTerm(T,error))} outputTrace(TRACE) .
+   = {simplify(downTerm(T,error))} =[getLabel(RULE)]=> outputTrace(TRACE) .
 
   op getLabel : Rule ~> Qid .
   eq getLabel(rl LHS:Term => RHS:Term [label(Q) ATTS:AttrSet] .) = Q .
