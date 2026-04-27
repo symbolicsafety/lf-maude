@@ -5,7 +5,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TZ=Etc/UTC
-ARG LF_MAUDE_URL="https://github.com/symbolicsafety/lf-maude/archive/refs/tags/lf-maude-v1.2.1.tar.gz"
+ARG LF_MAUDE_URL="https://github.com/symbolicsafety/lf-maude/archive/refs/tags/lf-maude-v1.2.2.tar.gz"
 ARG LF_MAUDE_SHA256=""
 ARG LFM_URL="https://github.com/symbolicsafety/lingua-franca-maude/releases/download/lfmc-v1.2/lf-mc-v1.2.tar.gz"
 ARG LFM_SHA256="sha256:232c719cbbb3a2e6a5ed8d4024b31939f77122fbaa527ecb39c4f289f2819b72"
@@ -79,7 +79,7 @@ RUN echo 'export LF_MAUDE_BASE=/opt/lf-maude' > /etc/profile.d/lf-maude-env.sh \
   && echo 'export PATH="$PATH:$LFM_BASE/bin:$LF_MAUDE_BASE/bin"' >> /etc/profile.d/lf-maude-env.sh \
   && chmod +x /etc/profile.d/lf-maude-env.sh
 
-LABEL org.opencontainers.image.title="lingua-franca-maude-v1.2.1" \
+LABEL org.opencontainers.image.title="lingua-franca-maude-v1.2" \
   org.opencontainers.image.description="Image includes lf-mc and lf-maude on Ubuntu 25.04" \
   org.opencontainers.image.source="https://github.com/symbolicsafety/lf-maude"
 
