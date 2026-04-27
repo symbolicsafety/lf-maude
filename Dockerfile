@@ -25,6 +25,7 @@ RUN apt-get update \
   cmake \
   curl \
   hyperfine \
+  jq \
   libstdc++6 \
   maude \
   openjdk-17-jre-headless \
@@ -69,6 +70,7 @@ ENV PATH="${PATH}:${LFM_BASE}/bin:${LF_MAUDE_BASE}/bin"
 
 RUN test -x "${LFM_BASE}/bin/lfc" \
   && lfc --version \
+  && jq --version \
   && command -v maude > /dev/null
 
 RUN echo 'export LF_MAUDE_BASE=/opt/lf-maude' > /etc/profile.d/lf-maude-env.sh \

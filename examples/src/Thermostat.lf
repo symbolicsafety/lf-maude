@@ -1,66 +1,69 @@
 /**
- * A thermostat model based on
+ * A thermostat modstatel based on
  * Lee & Seshia Chapter 3, Example 3.5.
  */
 target C
 
 reactor Environment {
-    input heatOn:int
-    output temperature:int
+    input heatIn:int
+    output tempout:int
     timer t(1 nsec, 10 msec)
-    state _heatOn:int
-    state _temperature:int
+    state heatOn:int
+    state temperature:int
     reaction(startup) {=
-        self->_temperature = 19;
+        self->temperature = 19;
     =}
-    reaction(t) -> temperature {=
-        if (self->_heatOn == 0) {
-            self->_temperature -= 1;
+    reaction(t) -> tempout {=
+        if (self->heatOn == 0) {
+            self->temperature -= 1;
         } 
         else {
-            self->_temperature += 1;
+            self->temperature += 1;
         }
-        lf_set(temperature, self->_temperature);
+        lf_set(tempout, self->temperature);
     =}
-    reaction(heatOn) {=
-        self->_heatOn = heatOn->value;
+    reaction(heatIn) {=
+        self->heatOn = heatIn->value;
     =}
 }
 
-reactor _Thermostat {
+reactor Thermostatt {
     input temperature:int
     output heatOn:int // 0 = OFF, 1 = ON
-    state _mode:int // 0 = COOLING, 1 = HEATING
-    logical action changeMode;
+    state modstate:int // 0 = COOLING, 1 = HEATING
+    logical action changemodstate;
     reaction(startup) {=
-        self->_mode = 0;
+        self->modstate = 0;
     =}
-    reaction(temperature) -> heatOn, changeMode {=
-        if (self->_mode == 0) {
+    reaction(temperature) -> heatOn, changemodstate {=
+        if (self->modstate == 0) {
             if (temperature->value <= 18) {
                 lf_set(heatOn, 1);
-                lf_schedule(changeMode, 0);
+                lf_schedule(changemodstate, 0);
             }
         }
-        else if (self->_mode == 0) {
+        else if (self->modstate == 0) {
             if (temperature->value >= 22) {
                 lf_set(heatOn, 0);
-                lf_schedule(changeMode, 0);
+                lf_schedule(changemodstate, 0);
             }
         }
     =}
-    reaction(changeMode) {=
-        if (self->_mode == 0)
-            self->_mode = 1;
+    reaction(changemodstate) {=
+        if (self->modstate == 0)
+            self->modstate = 1;
         else
-            self->_mode = 0;
+            self->modstate = 0;
     =}
 }
 
-// @property(name="correctness", tactic="bmc", spec="G[0, 20 msec](((Thermostat_t_temperature <= 18) ==> F[0](Thermostat_t__mode == 1))  &&  ((Thermostat_t_temperature >= 22) ==> F[0](Thermostat_t__mode == 0)))", expect=true)
+// @property(name="correctness", tactic="bmc", spec="G[0, 20 msec] (((Thermostat_t_temperature <= 18) ==> F[0](Thermostat_t__modstate == 1))  &&  ((Thermostat_t_temperature >= 22) ==> F[0](Thermostat_t__modstate == 0)))", expect=true)
+@maude(analysis="ltl", timeBound=20, goal="[](( temperature in t <= 18 ) -> ((modstate in t == 1) \/ O (modstate in t == 1))) /\
+[](( temperature in t >= 22 ) -> ((modstate in t == 0) \/ O (modstate in t == 0)))")
+// Conservative approximation of the preceding MTL property
 main reactor {
     e = new Environment()
-    t = new _Thermostat()
-    e.temperature -> t.temperature
-    t.heatOn -> e.heatOn
+    t = new Thermostatt()
+    e.tempout -> t.temperature
+    t.heatOn -> e.heatIn
 }
