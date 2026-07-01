@@ -121,8 +121,8 @@ omod ABS-EXECUTE-REACTION is
   var CONST : BoolValue .
   vars VAL VAL' : Value .
   var N : Nat .
-  var T : Time .
-  var TI : TimeInf .
+  vars T T1 : Time .
+  vars TI TI2 : TimeInf .
 
   --- executeReaction(reactor to be executed, reaction to be exe, its triggerstatus, queue)
   op executeReaction : Object Nat TriggerStatus EQueue -> ReactorOutputsFutureevents .
@@ -135,7 +135,7 @@ omod ABS-EXECUTE-REACTION is
   eq executeReaction(
        < REACTOR : Reactor | timers : TIMERS,  
                              reactions : REACTIONS1
-                                         (reaction N when TRIGGERIDS --> OS do {RB})
+                                         (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI2 )
                                          REACTIONS2 >,
        N, TSTATUS, QUEUE)
    =
@@ -254,7 +254,8 @@ omod ABS-EXECUTE-STEP is
   var STATUS : ExecutionStatus .
   vars VAL OLD-VAL : Value .
   vars CONST CONST' : BoolValue .
-  var T : Time .
+  vars T T1 : Time .
+  var TI : TimeInf .
   vars N N2 N3 : Nat .
 
 
@@ -368,13 +369,13 @@ eq unknownCanWrite(REACTORID, PORTID,
                                         GRAPH
                                         < REACTORID . N : APGNode | status : unknown >,
                                         NETWORK
-                            < REACTORID : Reactor | reactions : (RL1 (reaction N when OS1 --> (PORTID ; OS2) do {RB}) RL2) >) = true .
+                            < REACTORID : Reactor | reactions : (RL1 (reaction N when OS1 --> (PORTID ; OS2) do {RB} exTime T1 TI ) RL2) >) = true .
 
 eq unknownCanWrite(REACTORID, PORTID,
                                         GRAPH
                                         < REACTORID . N : APGNode | status : present >,
                                         NETWORK
-                            < REACTORID : Reactor | reactions : (RL1 (reaction N when OS1 --> (PORTID ; OS2) do {RB}) RL2) >) = true .
+                            < REACTORID : Reactor | reactions : (RL1 (reaction N when OS1 --> (PORTID ; OS2) do {RB} exTime T1 TI ) RL2) >) = true .
 eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
   
   --- updateGraph(graph, executed reactor, output ports of reaction, network, actual outputs)
@@ -425,7 +426,7 @@ eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
                  REACTORID1, OS, 
                  NETWORK
                  < REACTORID3 : Reactor | 
-                     reactions : (RL1 (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB}) RL2) > 
+                     reactions : (RL1 (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB} exTime T1 TI ) RL2) > 
                  (REACTORID3 : PORTID3 --> REACTORID2 : PORTID2),
                  EVENTS)
    =
@@ -447,7 +448,7 @@ eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
                  < (REACTORID3 . N3) : APGNode | status : absent > GRAPH,
                 NETWORK
                  < REACTORID3 : Reactor | 
-                     reactions : (RL1 (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB}) RL2) > 
+                     reactions : (RL1 (reaction N3 when OS1 --> (PORTID3 ; OS2) do {RB} exTime T1 TI ) RL2) > 
                  (REACTORID3 : PORTID3 --> REACTORID2 : PORTID2)
     ) .
 

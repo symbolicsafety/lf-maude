@@ -131,18 +131,34 @@ endom
 omod REACTION is
   protecting REACTION-ID .
   protecting REACTION-BODY .
+  protecting TIME-INF .
 
   var O : Oid .   
-  var OS : OidSet .
+  vars OS OS1 : OidSet .
   var RB : ReactionBody .
 
+  var T1 : Time .
+  var TI : TimeInf .
+
+  --- new execution timing information added. These represent physical execution time bounds
+  op minExtime : -> Time .
+  op maxExtime : -> TimeInf .
+  --- REMEMBER to instantiate these two values
+
   sort Reaction .
-  op reaction when_-->_do`{_`} : OidSet OidSet ReactionBody -> Reaction [ctor] .
+  op reaction when_-->_do`{_`} exTime__ : OidSet OidSet ReactionBody Time TimeInf -> Reaction [ctor] .
+  op reaction when_-->_do`{_`} : OidSet OidSet ReactionBody -> Reaction . 
+  eq reaction when OS --> OS1 do { RB } = reaction when OS --> OS1 do { RB } exTime minExtime maxExtime .
+
+  op reaction when_do`{_`} exTime__ : OidSet ReactionBody Time TimeInf -> Reaction .
+  eq reaction when OS do { RB } exTime T1 TI = reaction when OS --> none do { RB } exTime T1 TI .
+
   op reaction when_do`{_`} : OidSet ReactionBody -> Reaction .
   eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
 
-  --- for more complex, journal paper, setting:
-  op reaction_when_-->_do`{_`} : Nat OidSet OidSet ReactionBody -> Reaction [ctor] .
+  op reaction_when_-->_do`{_`} exTime__ : Nat OidSet OidSet ReactionBody Time TimeInf -> Reaction [ctor] .
+  --- add indices to reactions to identify them
+  --- op reaction_when_-->_do`{_`} : Nat OidSet OidSet ReactionBody -> Reaction .
 
   sort OidSet . 
   subsort Oid < OidSet .
@@ -191,12 +207,14 @@ omod REACTOR is
   var REST : Configuration .
   vars OS OS2 : OidSet .
   var REACTORID : ReactorId .
+  var T1 : Time .
+  var TI : TimeInf .
 
 
   op addIndices : ReactionList Nat -> ReactionList .
   eq addIndices(nil, N) = nil .
-  eq addIndices((reaction when OS --> OS2 do {RB}) RL, N)
-   = (reaction N when OS --> OS2 do {RB}) addIndices(RL, s N) .
+  eq addIndices((reaction when OS --> OS2 do {RB} exTime T1 TI ) RL, N)
+   = (reaction N when OS --> OS2 do {RB} exTime T1 TI ) addIndices(RL, s N) .
 
   op addReactionIndices : Configuration -> Configuration .
   eq addReactionIndices(< REACTORID : Reactor | reactions : RL > REST)

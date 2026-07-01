@@ -8,6 +8,9 @@ omod TEST-ADAS is
   including ADAS-WITH-CAMERA .
   including DYNAMICS-WITHOUT-TICK .
 
+  eq minExtime = 0 .
+  eq maxExtime = 0 .
+
   ops env queue rxns : -> Oid [ctor] .
 
   op initSystem : -> GlobalSystem .

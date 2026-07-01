@@ -41,6 +41,8 @@ omod EXECUTE-STEP is
   var RB : ReactionBody .
   vars CONST CONST' : BoolValue .
   var N : Nat .
+  var T1 : Time .
+  var TI : TimeInf .
 
   ceq executeStep(
         < (REACTORID . N) : APGNode | 
@@ -48,7 +50,7 @@ omod EXECUTE-STEP is
         GRAPH,
         NETWORK
         < REACTORID : Reactor | 
-            reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB}) REACTIONS2 >,
+            reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI ) REACTIONS2 >,
         QUEUE,
         INVOKED, CONST)
    =
@@ -62,7 +64,7 @@ omod EXECUTE-STEP is
    /\ allTriggersDecided(TSTATUS)  
    /\ result(OBJECT, OUTPUTS, RESULT-QUEUE, CONST') := 
          executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
-                                                 reaction N when TRIGGERIDS --> OS do {RB}
+                                                 (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI)
                                                  REACTIONS2 >, N, TSTATUS, QUEUE) .
 
  *** Comment out for debugging with APG graph:
