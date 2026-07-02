@@ -13,6 +13,7 @@
 fmod LF-ABS-VALUE-TIME is
   protecting TIME .
 
+
   --- Kyungmin: Now, value sorts are declared empty, along with 
   ---   some additional operators. These sorts and operators 
   ---   must be instantiated later.
@@ -61,7 +62,6 @@ fmod LF-EXPR is
   op _*_ : RatExpr RatExpr -> RatExpr .
   op _-_ : RatExpr RatExpr -> RatExpr . *** Added for PingPong example to countdown pingsLeft
 
-  *** NEW IN TBILISI:
   op isPresent : ActionTrigger -> BoolExpr [ctor] .  
   op _==/=_ : Expr Expr -> BoolExpr [ctor] .
   op !_ : BoolExpr -> BoolExpr [ctor] .
@@ -81,7 +81,7 @@ fmod REACTION-BODY is
   op while_do_done : BoolExpr ReactionBody -> ReactionBody [ctor] .
   op _<-_ : PortId Expr ->  ReactionBody [ctor] .   
   op schedule : ActionId RatExpr Expr -> ReactionBody [ctor] .  --- ???????
-  --- schedule(action, extra time, value)
+  --- schedule(action, delay, value)
 endfm
 
 
@@ -238,6 +238,13 @@ omod CONNECTION is
   op _:_--_-->_:_ : ReactorId PortId Time ReactorId PortId -> Connection [ctor] .
 endom
 
+omod LF-TIMELINES is
+  protecting TIME .
+
+  --- new for twotimelines version
+  op [physicalTime:_] : Time -> Object [ctor] .
+  op [logicalTime:_] : Time -> Object [ctor] .
+endom
 
 --- only import for client modules
 omod LF-REPR is
@@ -246,4 +253,5 @@ omod LF-REPR is
   protecting ACTION .
   protecting REACTOR .
   protecting CONNECTION .
+  protecting LF-TIMELINES .
 endom

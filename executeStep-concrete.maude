@@ -11,17 +11,18 @@ omod EXECUTE-REACTION is
   vars ACTIONS INPORTS : Configuration .
   var BEXP : BoolExpr .
   var CONST : BoolValue .
+  var LT : Time .
 
   --- the semantics of if-then-else-fi for the concrete case
   eq executeReactionBody(
         < REACTOR : Reactor | state :  VALUATION,
                               inports : INPORTS, actions : ACTIONS >,
-        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST)
+        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT)
    =                                         
       executeReactionBody(< REACTOR : Reactor | >,
         if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
         then (RB1 ; RB) else (RB2 ; RB) fi,  
-        OUTPUTS, QUEUE, TSTATUS, CONST) .
+        OUTPUTS, QUEUE, TSTATUS, CONST, LT) .
 endom
 
 
@@ -41,7 +42,7 @@ omod EXECUTE-STEP is
   var RB : ReactionBody .
   vars CONST CONST' : BoolValue .
   var N : Nat .
-  var T1 : Time .
+  vars T1 LT : Time .
   var TI : TimeInf .
 
   ceq executeStep(
@@ -52,23 +53,23 @@ omod EXECUTE-STEP is
         < REACTORID : Reactor | 
             reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI ) REACTIONS2 >,
         QUEUE,
-        INVOKED, CONST)
+        INVOKED, CONST, LT)
    =
       executeStep(
         < (REACTORID . N) : APGNode | status : executed >
         updateGraph(GRAPH, REACTORID, OS, NETWORK < REACTORID : Reactor | >, OUTPUTS),
         propagateImmediateOutputs(OUTPUTS, NETWORK OBJECT),    --- updated reactor
-        scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE),
-        INVOKED ; (REACTORID . N), CONST && CONST')
+        scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE, LT),
+        INVOKED ; (REACTORID . N), CONST && CONST', LT)
    if presetOK(PRE, GRAPH)   
    /\ allTriggersDecided(TSTATUS)  
    /\ result(OBJECT, OUTPUTS, RESULT-QUEUE, CONST') := 
          executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
                                                  (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI)
-                                                 REACTIONS2 >, N, TSTATUS, QUEUE) .
+                                                 REACTIONS2 >, N, TSTATUS, QUEUE, LT) .
 
  *** Comment out for debugging with APG graph:
- ceq executeStep(GRAPH, NETWORK, QUEUE, INVOKED, CONST) 
+ ceq executeStep(GRAPH, NETWORK, QUEUE, INVOKED, CONST, LT) 
    = networkQueueRxns(NETWORK, QUEUE, INVOKED, CONST) 
   if CONST == trueVal [owise] . --- for the concrete case, CONST must be true
 

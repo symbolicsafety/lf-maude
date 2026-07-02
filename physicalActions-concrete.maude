@@ -19,6 +19,7 @@
 omod PHYSICAL-ACTIONS is
   protecting ENVIRONMENTS .
   protecting LF-VALUE-TIME .
+  protecting LF-REPR .
   extending PERIODIC-OBJ .
 
   --- Dynamically, each physical action has:
@@ -52,7 +53,7 @@ omod PHYSICAL-ACTIONS is
   vars O O2 : Oid .
   var AI : ActionId .
   var RI : ReactorId .
-  var T : Time .
+  vars T PT : Time .
   var P : TimeInf .
   var V : Value .
   var VS : ValueSet .
@@ -81,8 +82,10 @@ omod PHYSICAL-ACTIONS is
 
   eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
      < O2 : EventQueue | queue : QUEUE >
+     [physicalTime: PT]
    =
      < O : Environment | physicalActions : CONF >
-     < O2 : EventQueue | queue : schedule(EVENT, zero, QUEUE) > .
+     < O2 : EventQueue | queue : schedule(EVENT, PT, QUEUE) > 
+     [physicalTime: PT] .
 endom
 

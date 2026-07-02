@@ -1,5 +1,6 @@
 
 omod DYNAMICS-WITHOUT-TICK is
+  including LF-REPR .
   including ABS-DYNAMICS-WITHOUT-TICK .
   including EXECUTE-STEP .
   including EVENT-QUEUE .
@@ -17,7 +18,7 @@ omod DYNAMICS-WITHOUT-TICK is
   var EVENTS : Events .
   var CONST : BoolValue .
   var TI : TimeInf .
-  vars T T1 T2 : Time .
+  vars T T1 T2 PT : Time .
   var N : Nat .
   var REST : Configuration .
   var REACTORID : ReactorId .
@@ -66,16 +67,19 @@ omod DYNAMICS-WITHOUT-TICK is
       {< E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
        < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
-       < RXNS : Invoked | >} 
+       < RXNS : Invoked | >
+       [physicalTime: PT] 
+       } 
     =>
       {< E : Environment | physicalActions : CONF1 >
        NEW-NETWORK
        < Q : EventQueue | queue : NEW-QUEUE >
-       < RXNS : Invoked | reactions : INVOKED >} 
-   if T equals zero
-   /\ smallestTimer(CONF1) gt zero
+       < RXNS : Invoked | reactions : INVOKED >
+       [physicalTime: PT]
+       } 
+   if PT ge T /\ smallestTimer(CONF1) gt zero
    /\ networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST) :=
-            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal) .
+            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal, T) .
 
   *** Note: condition ensures that physical actions are generated
   ***       before events are processed.
@@ -160,7 +164,7 @@ omod SIMULATION-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T1 T : Time .
+  vars T1 T PT : Time .
   vars E Q RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
@@ -171,15 +175,18 @@ omod SIMULATION-DYNAMICS is
     {< E : Environment | physicalActions : CONF1 >
      REACTORS-AND-CONNECTIONS
      < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
-     < RXNS : Invoked | >}
+     < RXNS : Invoked | >
+     [physicalTime: PT]
+     }
    =>
     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
      REACTORS-AND-CONNECTIONS
-     < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                :: decreaseTags(QUEUE, T) >
-     < RXNS : Invoked | reactions : none >}
+     < Q : EventQueue | >
+     < RXNS : Invoked | reactions : none >
+     [physicalTime: PT plus T]
+     }
     in time T
-   if T := minimum(T1, smallestTimer(CONF1))
+   if T := minimum(T1 monus PT, smallestTimer(CONF1))   --- should be nondet time increase, bounded by this value. But for now, we do the easy thing and assume that for each physical action, we have this timer.
    /\ T gt zero .
 
 
@@ -187,12 +194,16 @@ omod SIMULATION-DYNAMICS is
     {< E : Environment | physicalActions : CONF1 >
      REACTORS-AND-CONNECTIONS
      < Q : EventQueue | queue : empty >
-     < RXNS : Invoked | >}
+     < RXNS : Invoked | >
+     [physicalTime: PT]
+     }
    =>
     {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
      REACTORS-AND-CONNECTIONS
-     < Q : EventQueue | queue : empty >
-     < RXNS : Invoked | reactions : none >}
+     < Q : EventQueue | >
+     < RXNS : Invoked | reactions : none >
+    [physicalTime: PT plus T]
+    }
     in time T
    if T := smallestTimer(CONF1)
    /\ T gt zero
@@ -206,7 +217,7 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T T1 : Time .
+  vars T T1 PT : Time .
   vars E Q RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
@@ -217,14 +228,17 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
-      < RXNS : Invoked | >}
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      }
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >
-      < RXNS : Invoked | reactions : none >}
-   if T := minimum(T1, smallestTimer(CONF1))
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      }
+   if T := minimum(T1 monus PT, smallestTimer(CONF1))
    /\ T gt zero .
 
 
@@ -232,12 +246,16 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | >}
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      }
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | reactions : none >}
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      }
    if T := smallestTimer(CONF1)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T
@@ -255,7 +273,7 @@ omod TIME-BOUNDED-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T1 T T3 : Time .
+  vars T1 T T3 PT : Time .
   vars E Q RXNS : Oid .
   var N : Nat .
   var EVENTS : Events .
@@ -267,15 +285,18 @@ omod TIME-BOUNDED-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
-      < RXNS : Invoked | >} in time T3
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      } in time T3
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >
-      < RXNS : Invoked | reactions : none >}
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      }
      in time (T3 plus T)
-   if T := minimum(T1, smallestTimer(CONF1))
+   if T := minimum(T1 monus PT, smallestTimer(CONF1))
    /\ T gt zero
    /\ T3 plus T le timeBound .
 
@@ -284,12 +305,16 @@ omod TIME-BOUNDED-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | >} in time T3 
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      } in time T3 
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | reactions : none >}
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      }
      in time (T3 plus T)
    if T := smallestTimer(CONF1)
    /\ T gt zero
@@ -307,7 +332,7 @@ omod UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T T1 : Time .
+  vars T T1 PT : Time .
   var T2 : TimeInf .
   vars E Q RXNS : Oid .
   var N : Nat .
@@ -322,14 +347,17 @@ omod UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
-      < RXNS : Invoked | >} timeBound T2
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      } timeBound T2
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >
-      < RXNS : Invoked | reactions : none >} timeBound (T2 monus T)
-   if T := minimum(T1, smallestTimer(CONF1), T2)
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      } timeBound (T2 monus T)
+   if T := minimum(T1 monus PT, smallestTimer(CONF1), T2)
    /\ T gt zero .
 
 
@@ -337,12 +365,16 @@ omod UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | >} timeBound T2
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      } timeBound T2
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | reactions : none >} timeBound (T2 monus T)
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      } timeBound (T2 monus T)
    if T := minimum(smallestTimer(CONF1), T2)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T
@@ -358,7 +390,7 @@ omod TIMED-SIMULATION-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T T1 T3 : Time .
+  vars T T1 T3 PT : Time .
   vars TI2 TI : TimeInf .
   vars E Q RXNS : Oid .
   var N : Nat .
@@ -374,14 +406,17 @@ omod TIMED-SIMULATION-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : (EVENTS at tag(T1, N)) :: QUEUE >
-      < RXNS : Invoked | >} in time T3 timeBound TI2
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      } in time T3 timeBound TI2
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : (EVENTS at tag(T1 monus T, N))
-                                 :: decreaseTags(QUEUE, T) >
-      < RXNS : Invoked | reactions : none >} in time (T + T3) timeBound (TI2 monus T)
-   if T := minimum(T1, smallestTimer(CONF1), TI2)
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT + T]
+      } in time (T + T3) timeBound (TI2 monus T)
+   if T := minimum(T1 monus PT, smallestTimer(CONF1), TI2)
    /\ T gt zero .
 
 
@@ -389,12 +424,16 @@ omod TIMED-SIMULATION-DYNAMICS is
      {< E : Environment | physicalActions : CONF1 >
       REACTORS-AND-CONNECTIONS
       < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | >} in time T3 timeBound TI2
+      < RXNS : Invoked | >
+      [physicalTime: PT]
+      } in time T3 timeBound TI2
    =>
      {< E : Environment | physicalActions : decreaseTimers(CONF1, T) >
       REACTORS-AND-CONNECTIONS
-      < Q : EventQueue | queue : empty >
-      < RXNS : Invoked | reactions : none >} in time (T + T3) timeBound (TI2 monus T)
+      < Q : EventQueue | >
+      < RXNS : Invoked | reactions : none >
+      [physicalTime: PT plus T]
+      } in time (T + T3) timeBound (TI2 monus T)
    if T := minimum(smallestTimer(CONF1), TI2)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T

@@ -23,21 +23,23 @@ omod TEST-ADAS is
 				   timeNonDet : true > >
        addReactionIndices(init)
        < queue : EventQueue | queue : addInitialTimers(init, empty) >
-       < rxns : Invoked | reactions : none >} .      --- new Feb
+       < rxns : Invoked | reactions : none >
+       [physicalTime: 0]} .      --- new Feb
 endom
 
 red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .
 
 
 
-rew [51] initSystem .
 
 
 omod TIME-BOUNDED-ADAS is
   including TEST-ADAS .
   including TIME-BOUNDED-DYNAMICS  .
-  eq timeBound = 55 .
+  eq timeBound = 155 .
 endom  
+
+rew [5000] initSystem in time 0 .
 
 search [1] initSystem in time 0 =>* {REST:Configuration
                 < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
@@ -58,6 +60,7 @@ omod MODEL-CHECK-ADAS is
 endom
 
 
+---(
 red modelCheck(initSystem in time 0,
                <> (brakesApplied in brakes == [1])) .
 
@@ -88,6 +91,7 @@ red modelCheck(initSystem in time 0,
 red modelCheck(initSystem in time 0,
                [] (((lidar . 1) invoked /\ requestStop in adasProcessor == [1])
 	       -> <> @ brakesApplied in brakes === @ [1])) .
+)---
 
 --- Another inttesting property is that after the pedal has been pressed, the brakles are
 --- applied immediately.
