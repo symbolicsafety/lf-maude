@@ -19,7 +19,7 @@ omod DYNAMICS-WITHOUT-TICK is
   var CONST : BoolValue .
   var TI : TimeInf .
   vars T T1 T2 PT : Time .
-  var N : Nat .
+  var N NP : Nat .
   var REST : Configuration .
   var REACTORID : ReactorId .
   var VAR : VarId .
@@ -69,6 +69,7 @@ omod DYNAMICS-WITHOUT-TICK is
        < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
        < RXNS : Invoked | >
        [physicalTime: PT] 
+       [numberProcessors: NP]
        } 
     =>
       {< E : Environment | physicalActions : CONF1 >
@@ -76,10 +77,11 @@ omod DYNAMICS-WITHOUT-TICK is
        < Q : EventQueue | queue : NEW-QUEUE >
        < RXNS : Invoked | reactions : INVOKED >
        [physicalTime: PT]
+       [numberProcessors: NP]
        } 
    if PT ge T /\ smallestTimer(CONF1) gt zero
    /\ networkQueueRxns(NEW-NETWORK, NEW-QUEUE, INVOKED, CONST) :=
-            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal, T) .
+            executeStep(EVENTS, REACTORS-AND-CONNECTIONS, QUEUE, trueVal, T, PT, NP) .
 
   *** Note: condition ensures that physical actions are generated
   ***       before events are processed.
@@ -169,6 +171,7 @@ omod SIMULATION-DYNAMICS is
   var N : Nat .
   var EVENTS : Events .
   var QUEUE : EQueue .
+  var NETWORK : Configuration .
 
 
   crl [tick] :
@@ -189,6 +192,48 @@ omod SIMULATION-DYNAMICS is
    if T := minimum(T1 monus PT, smallestTimer(CONF1))   --- should be nondet time increase, bounded by this value. But for now, we do the easy thing and assume that for each physical action, we have this timer.
    /\ T gt zero .
 
+  crl [tickWhileExecuting] :
+  {
+    executeStep(
+      GRAPH,
+      NETWORK,
+      QUEUE,
+      INVOKED,
+      CONST,
+      LT,
+      PT,
+      N2
+    )
+  }
+  =>
+  {
+    executeStep(
+      GRAPH,
+      executeReactions(NETWORK, T),
+      QUEUE,
+      INVOKED,
+      CONST,
+      LT,
+      PT plus T,
+      N2
+    )
+  } in time T
+  if T gt zero /\ T le maxRemainingExecutionTime(GRAPH, NETWORK) /\ noIdling(GRAPH, N2) .
+
+
+  op maxRemainingExecutionTime : Configuration Configuration -> TimeInf .     --- GRAPH NETWORK
+  op noIdling : Configuration Nat -> Bool .
+
+  eq maxRemainingExecutionTime(none, NETWORK) = zero .
+  eq maxRemainingExecutionTime(< (REACTORID . N) : APGNode | execStatus : executing(T) > GRAPH,
+    NETWORK
+    < REACTORID : Reactor | 
+        reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI ) REACTIONS2 >,
+  ) =
+    min(TI monus T, maxRemainingExecutionTime(GRAPH, NETWORK < REACTORID : Reactor | > )) .
+
+  eq maxRemainingExecutionTime(GRAPH, NETWORK) = INF [owise] .
+
 
   crl [extraTickRuleForPhysActs] :
     {< E : Environment | physicalActions : CONF1 >
@@ -208,6 +253,9 @@ omod SIMULATION-DYNAMICS is
    if T := smallestTimer(CONF1)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T
+
+
+
 endom
 
 

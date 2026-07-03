@@ -11,18 +11,18 @@ omod EXECUTE-REACTION is
   vars ACTIONS INPORTS : Configuration .
   var BEXP : BoolExpr .
   var CONST : BoolValue .
-  var LT : Time .
+  vars LT PT : Time .
 
   --- the semantics of if-then-else-fi for the concrete case
   eq executeReactionBody(
         < REACTOR : Reactor | state :  VALUATION,
                               inports : INPORTS, actions : ACTIONS >,
-        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT)
+        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
    =                                         
       executeReactionBody(< REACTOR : Reactor | >,
         if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
         then (RB1 ; RB) else (RB2 ; RB) fi,  
-        OUTPUTS, QUEUE, TSTATUS, CONST, LT) .
+        OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) .
 endom
 
 
@@ -39,15 +39,81 @@ omod EXECUTE-STEP is
   vars REACTIONS1 REACTIONS2 : ReactionList .
   var OUTPUTS : Events .
   vars QUEUE RESULT-QUEUE : EQueue .
-  var RB : ReactionBody .
+  vars RB RB2 : ReactionBody .
   vars CONST CONST' : BoolValue .
-  var N : Nat .
-  vars T1 LT : Time .
-  var TI : TimeInf .
+  vars N N2 : Nat .
+  vars T T1 LT PT : Time .
+  vars TI TI1 : TimeInf .
 
+  --- This starts an execution of an enabled reaction. Notice: we perform all the statements in the reaction body already at the beginning
+  --- of the execution and we update the event queue and the ports accordingly. However, this should not impact the logic of the system
+  --- since other reactions that read these values will not be enabled until the status of this reaction is executed.
+  crl [startExecuteReaction] :
+    executeStep(
+            < (REACTORID . N) : APGNode | 
+                triggers : TSTATUS, status : present, pre : PRE > 
+            GRAPH,
+            NETWORK
+            < REACTORID : Reactor | 
+                reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >,
+            QUEUE,
+            INVOKED, CONST, LT, PT, s N2  --- last argument is the number of idle processors
+            )
+    =>
+      executeStep(
+        < (REACTORID . N) : APGNode | status : executing(zero) >
+        updateGraph(GRAPH, REACTORID, OS, NETWORK < REACTORID : Reactor | >, OUTPUTS),
+        propagateImmediateOutputs(OUTPUTS, NETWORK OBJECT),    --- updated reactor
+        scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE, LT),
+        INVOKED ; (REACTORID . N), CONST && CONST', LT, PT, N2
+      )
+    if presetOK(PRE, GRAPH)   
+    /\ allTriggersDecided(TSTATUS)  
+    /\ result(OBJECT, OUTPUTS, RESULT-QUEUE, CONST') := 
+         executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
+                                                 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1)
+                                                 REACTIONS2 >, N, TSTATUS, QUEUE, LT, PT) .
+
+--- Execution finished. We update the APG execution status accordingly and we free one processor.
+crl [finishExecuteReaction] :
+  executeStep(
+            < (REACTORID . N) : APGNode | status : executing(T) > 
+            GRAPH,
+            NETWORK
+            < REACTORID : Reactor | 
+                reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >,
+            QUEUE,
+            INVOKED, CONST, LT, PT, N2  --- last argument is the number of idle processors
+            )
+  =>
+  executeStep(
+            < (REACTORID . N) : APGNode | status : executed > 
+            GRAPH,
+            NETWORK
+            < REACTORID : Reactor | >,
+            QUEUE,
+            INVOKED, CONST, LT, PT, s N2  --- last argument is the number of idle processors
+            )
+  if T ge T1 /\ T le TI1 .
+
+  eq executeStep(
+            GRAPH,
+            NETWORK,
+            QUEUE,
+            INVOKED, CONST, LT, PT, N2
+        )
+  =
+       NETWORK
+       < Q : EventQueue | queue : QUEUE >
+       < RXNS : Invoked | reactions : INVOKED >
+       [physicalTime: PT]
+       [numberProcessors: N2]
+       if allFinished(GRAPH) .
+
+---(
   ceq executeStep(
         < (REACTORID . N) : APGNode | 
-            triggers : TSTATUS, status : present, pre : PRE > 
+            triggers : TSTATUS, status : present, pre : PRE, execStatus : executing(0) > 
         GRAPH,
         NETWORK
         < REACTORID : Reactor | 
@@ -66,12 +132,13 @@ omod EXECUTE-STEP is
    /\ result(OBJECT, OUTPUTS, RESULT-QUEUE, CONST') := 
          executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
                                                  (reaction N when TRIGGERIDS --> OS do {RB} exTime T1 TI)
-                                                 REACTIONS2 >, N, TSTATUS, QUEUE, LT) .
+                                                 REACTIONS2 >, N, TSTATUS, QUEUE, LT, PT) .
 
  *** Comment out for debugging with APG graph:
- ceq executeStep(GRAPH, NETWORK, QUEUE, INVOKED, CONST, LT) 
+ ceq executeStep(GRAPH, NETWORK, QUEUE, INVOKED, CONST, LT, PT) 
    = networkQueueRxns(NETWORK, QUEUE, INVOKED, CONST) 
   if CONST == trueVal [owise] . --- for the concrete case, CONST must be true
+)---
 
  --- non-owise version
 ---(

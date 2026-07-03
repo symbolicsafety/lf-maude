@@ -36,6 +36,7 @@ omod APG-NODE is
 
   sort ExecutionStatus .
   ops executed absent unknown present : -> ExecutionStatus [ctor] .
+  op executing : Time -> ExecutionStatus [ctor] .   --- new for two timelines
   
   --- notice that our new ReactionId are  r . i.
   
@@ -274,6 +275,17 @@ omod RUNTIME-APG is
   ---   = addDeps(initializeAPG(EVENTS, NETWORK), NETWORK)  .  *** just for debugging!
   
   *** Remember that the function addReactionIndices must be called before generateAPG is called!!!
+
+  --- two timelines update stuff
+  op allFinished : Configuration -> Bool .
+  eq allFinished(< (REACTOR . N) : APGNode | status : executing(T) > 
+        GRAPH) = false .
+  eq allFinished(< (REACTOR . N) : APGNode | status : unknown > 
+        GRAPH) = false .
+  eq allFinished(< (REACTOR . N) : APGNode | status : present > 
+        GRAPH) = false .
+
+  eq allFinished(GRAPH) = true [owise] .
 
 endom
 

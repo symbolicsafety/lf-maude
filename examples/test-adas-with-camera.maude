@@ -24,7 +24,9 @@ omod TEST-ADAS is
        addReactionIndices(init)
        < queue : EventQueue | queue : addInitialTimers(init, empty) >
        < rxns : Invoked | reactions : none >
-       [physicalTime: 0]} .      --- new Feb
+       [physicalTime: 0]
+       [numberProcessors: 1]
+       } .      --- new Feb
 endom
 
 red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .

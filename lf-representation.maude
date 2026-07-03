@@ -135,10 +135,10 @@ omod REACTION is
 
   var O : Oid .   
   vars OS OS1 : OidSet .
-  var RB : ReactionBody .
+  vars RB RB2 : ReactionBody .
 
   var T1 : Time .
-  var TI : TimeInf .
+  vars TI TI1 : TimeInf .
 
   --- new execution timing information added. These represent physical execution time bounds
   op minExtime : -> Time .
@@ -151,14 +151,26 @@ omod REACTION is
   eq reaction when OS --> OS1 do { RB } = reaction when OS --> OS1 do { RB } exTime minExtime maxExtime .
 
   op reaction when_do`{_`} exTime__ : OidSet ReactionBody Time TimeInf -> Reaction .
-  eq reaction when OS do { RB } exTime T1 TI = reaction when OS --> none do { RB } exTime T1 TI .
+  eq reaction when OS do { RB } exTime T1 TI1 = reaction when OS --> none do { RB } exTime T1 TI1 .
 
   op reaction when_do`{_`} : OidSet ReactionBody -> Reaction .
   eq reaction when OS do { RB } = reaction when OS --> none do { RB } .
 
   op reaction_when_-->_do`{_`} exTime__ : Nat OidSet OidSet ReactionBody Time TimeInf -> Reaction [ctor] .
+  op reaction_when_-->_do`{_`} deadline_`{_`} exTime__ : Nat OidSet OidSet ReactionBody TimeInf ReactionBody Time TimeInf -> Reaction [ctor] .
   --- add indices to reactions to identify them
   --- op reaction_when_-->_do`{_`} : Nat OidSet OidSet ReactionBody -> Reaction .
+
+  --- NEW for two-timelines: take into account deadlines.
+  --- missing deadline specification is modeled with deadline = infinity
+  op reaction when_-->_do`{_`} deadline_`{_`} exTime__ : OidSet OidSet ReactionBody TimeInf ReactionBody Time TimeInf -> Reaction [ctor] .
+  op reaction when_do`{_`} deadline_ `{_`} exTime__ : OidSet ReactionBody TimeInf ReactionBody Time TimeInf -> Reaction .
+
+  op reaction when_-->_do`{_`} deadline_`{_`} : OidSet OidSet ReactionBody TimeInf ReactionBody -> Reaction . 
+  eq reaction when OS do { RB } deadline TI { RB2 } exTime T1 TI1 = reaction when OS --> none do { RB } deadline TI { RB2 } exTime T1 TI1 .
+  eq reaction when OS --> OS1 do { RB } deadline TI { RB2 } = reaction when OS --> OS1 do { RB } deadline TI { RB2 } exTime minExtime maxExtime .
+
+  eq reaction when OS --> OS1 do { RB } exTime T1 TI1 = reaction when OS --> OS1 do { RB } deadline INF { skip } exTime T1 TI1 .
 
   sort OidSet . 
   subsort Oid < OidSet .
@@ -201,20 +213,20 @@ omod REACTOR is
   op __ : ReactionList ReactionList -> ReactionList [ctor assoc id: nil] .
 
 
-  var RB : ReactionBody .
+  vars RB RB2 : ReactionBody .
   var RL : ReactionList .
   var N : Nat .
   var REST : Configuration .
   vars OS OS2 : OidSet .
   var REACTORID : ReactorId .
   var T1 : Time .
-  var TI : TimeInf .
+  vars TI TI1 : TimeInf .
 
 
   op addIndices : ReactionList Nat -> ReactionList .
   eq addIndices(nil, N) = nil .
-  eq addIndices((reaction when OS --> OS2 do {RB} exTime T1 TI ) RL, N)
-   = (reaction N when OS --> OS2 do {RB} exTime T1 TI ) addIndices(RL, s N) .
+  eq addIndices((reaction when OS --> OS2 do {RB} deadline TI { RB2 } exTime T1 TI1 ) RL, N)
+   = (reaction N when OS --> OS2 do {RB} deadline TI { RB2 } exTime T1 TI1 ) addIndices(RL, s N) .
 
   op addReactionIndices : Configuration -> Configuration .
   eq addReactionIndices(< REACTORID : Reactor | reactions : RL > REST)
@@ -240,10 +252,13 @@ endom
 
 omod LF-TIMELINES is
   protecting TIME .
+  protecting NAT .
 
   --- new for twotimelines version
   op [physicalTime:_] : Time -> Object [ctor] .
   op [logicalTime:_] : Time -> Object [ctor] .
+
+  op [numberProcessors:_] : Nat -> Object [ctor] .
 endom
 
 --- only import for client modules
