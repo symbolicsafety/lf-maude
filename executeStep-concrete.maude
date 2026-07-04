@@ -29,6 +29,8 @@ endom
 omod EXECUTE-STEP is
   including EXECUTE-REACTION .
   including ABS-EXECUTE-STEP .
+  including INVOKED .
+  including LF-TIMELINES .
 
   vars REACTORID : ReactorId .
   vars PRE INVOKED : ReactionIdSet .
@@ -41,9 +43,10 @@ omod EXECUTE-STEP is
   vars QUEUE RESULT-QUEUE : EQueue .
   vars RB RB2 : ReactionBody .
   vars CONST CONST' : BoolValue .
-  vars N N2 : Nat .
+  vars N N2 NP : Nat .
   vars T T1 LT PT : Time .
   vars TI TI1 : TimeInf .
+  vars RXNS Q : Oid .
 
   --- This starts an execution of an enabled reaction. Notice: we perform all the statements in the reaction body already at the beginning
   --- of the execution and we update the event queue and the ports accordingly. However, this should not impact the logic of the system
@@ -53,19 +56,27 @@ omod EXECUTE-STEP is
             < (REACTORID . N) : APGNode | 
                 triggers : TSTATUS, status : present, pre : PRE > 
             GRAPH,
+            LT,
             NETWORK
             < REACTORID : Reactor | 
-                reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >,
-            QUEUE,
-            INVOKED, CONST, LT, PT, s N2  --- last argument is the number of idle processors
-            )
+                reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >
+          < Q : EventQueue | queue : QUEUE >
+          ([physicalTime: PT])
+          [numberProcessors: s NP]
+          < RXNS : Invoked | reactions : INVOKED >, 
+            CONST
+          )
     =>
       executeStep(
         < (REACTORID . N) : APGNode | status : executing(zero) >
         updateGraph(GRAPH, REACTORID, OS, NETWORK < REACTORID : Reactor | >, OUTPUTS),
-        propagateImmediateOutputs(OUTPUTS, NETWORK OBJECT),    --- updated reactor
-        scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE, LT),
-        INVOKED ; (REACTORID . N), CONST && CONST', LT, PT, N2
+        LT,
+        propagateImmediateOutputs(OUTPUTS, NETWORK OBJECT)    --- updated reactor
+        < Q : EventQueue | queue : scheduleDelayedInputs(OUTPUTS, NETWORK, RESULT-QUEUE, LT) >
+        [physicalTime: PT] 
+        [numberProcessors: NP]
+        < RXNS : Invoked | reactions : INVOKED ; (REACTORID . N) >,
+        CONST && CONST'
       )
     if presetOK(PRE, GRAPH)   
     /\ allTriggersDecided(TSTATUS)  
@@ -79,35 +90,33 @@ crl [finishExecuteReaction] :
   executeStep(
             < (REACTORID . N) : APGNode | status : executing(T) > 
             GRAPH,
+            LT,
             NETWORK
             < REACTORID : Reactor | 
-                reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >,
-            QUEUE,
-            INVOKED, CONST, LT, PT, N2  --- last argument is the number of idle processors
+                reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >
+            [numberProcessors: NP],
+            CONST
             )
   =>
   executeStep(
             < (REACTORID . N) : APGNode | status : executed > 
             GRAPH,
+            LT,
             NETWORK
-            < REACTORID : Reactor | >,
-            QUEUE,
-            INVOKED, CONST, LT, PT, s N2  --- last argument is the number of idle processors
+            < REACTORID : Reactor | >
+            [numberProcessors: s NP],
+            CONST
             )
   if T ge T1 /\ T le TI1 .
 
-  eq executeStep(
+  ceq executeStep(
             GRAPH,
+            LT,
             NETWORK,
-            QUEUE,
-            INVOKED, CONST, LT, PT, N2
+            CONST
         )
   =
        NETWORK
-       < Q : EventQueue | queue : QUEUE >
-       < RXNS : Invoked | reactions : INVOKED >
-       [physicalTime: PT]
-       [numberProcessors: N2]
        if allFinished(GRAPH) .
 
 ---(

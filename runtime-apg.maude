@@ -70,13 +70,13 @@ omod RUNTIME-APG is
   vars PRE SUCC REACTIONIDS NEW-SUCCESSORS : ReactionIdSet .
   vars O O1 O2 PORTID PORTID1 PORTID2 : PortId .
   vars OS OS1 OS2 : OidSet .
-  var RB : ReactionBody .
+  vars RB RB2 : ReactionBody .
   vars EVENTS : Events .
   vars REACTION1 REACTION2 REACTIONID : ReactionId .
   vars N N1 N2 : Nat .
   var TRIGGER-STATUS : TriggerStatus .
   vars T T1 : Time .
-  var TI : TimeInf .
+  vars TI TI2 : TimeInf .
 
   --- Now an event may trigger multiple reactions, which makes
   ---  this function much more tricky.
@@ -88,7 +88,7 @@ omod RUNTIME-APG is
                    NETWORK
                    < REACTOR : Reactor | 
                        reactions : (RL1
-                                    (reaction N when (TRIGGER ; OS) --> OS2 do {RB} exTime T1 TI )
+                                    (reaction N when (TRIGGER ; OS) --> OS2 do {RB} deadline TI2 {RB2} exTime T1 TI )
                                     RL2) >,
                    GRAPH
                    < (REACTOR . N) : APGNode | 
@@ -106,7 +106,7 @@ omod RUNTIME-APG is
                     NETWORK
                     < REACTOR : Reactor | 
                         reactions : (RL1
-                                     (reaction N when (TRIGGER ; OS) --> OS2 do {RB} exTime T1 TI )
+                                     (reaction N when (TRIGGER ; OS) --> OS2 do {RB} deadline TI2 {RB2} exTime T1 TI )
                                      RL2) >,
                     GRAPH)
     =
@@ -171,7 +171,7 @@ omod RUNTIME-APG is
                      < (REACTOR2 . N) : APGNode | >  GRAPH,
                      < REACTOR2 : Reactor | 
                          reactions : (RL1
-                                      (reaction N when OS --> (PORTID2 ; OS2) do {RB} exTime T1 TI )
+                                      (reaction N when OS --> (PORTID2 ; OS2) do {RB} deadline TI2 {RB2} exTime T1 TI )
                                       RL2) >
                      NETWORK
                      (REACTOR2 : PORTID2 --> REACTOR : PORTID)) = true .
@@ -200,14 +200,14 @@ omod RUNTIME-APG is
               GRAPH,
               NETWORK
               < REACTOR : Reactor | 
-                  reactions : RL1 (reaction N when TRIGGERS --> O ; OS do {RB} exTime T1 TI ) RL2 >
+                  reactions : RL1 (reaction N when TRIGGERS --> O ; OS do {RB} deadline TI2 {RB2}  exTime T1 TI ) RL2 >
               (REACTOR : O --> REACTOR2 : O2))
     = 
       addDeps(< (REACTOR . N) : APGNode | succ : SUCC ; NEW-SUCCESSORS >
               addSucc(GRAPH, NEW-SUCCESSORS, (REACTOR . N), 
                       NETWORK
                       < REACTOR : Reactor | 
-                          reactions : RL1 (reaction N when TRIGGERS --> O ; OS do {RB} exTime T1 TI ) RL2 >),
+                          reactions : RL1 (reaction N when TRIGGERS --> O ; OS do {RB} deadline TI2 {RB2}  exTime T1 TI ) RL2 >),
               NETWORK < REACTOR : Reactor | >
               (REACTOR : O --> REACTOR2 : O2))
     if NEW-SUCCESSORS := triggeredBy(REACTOR2, O2, NETWORK < REACTOR : Reactor | >) /\
@@ -223,7 +223,7 @@ omod RUNTIME-APG is
   
   eq triggeredBy(REACTOR2, O2, NETWORK
                                < REACTOR2 : Reactor |
-                                   reactions : (RL1 (reaction N when (O2 ; OS2) --> OS do {RB} exTime T1 TI ) RL2) >)
+                                   reactions : (RL1 (reaction N when (O2 ; OS2) --> OS do {RB} deadline TI2 {RB2}  exTime T1 TI ) RL2) >)
   = (REACTOR2 . N) ; triggeredBy(REACTOR2, O2, NETWORK < REACTOR2 : Reactor | reactions : (RL1 RL2) >) .
   
   eq triggeredBy(REACTOR2, O2, NETWORK) = none [owise] .
@@ -238,7 +238,7 @@ omod RUNTIME-APG is
    = addSucc(GRAPH < REACTION1 : APGNode | pre : PRE ; REACTION2 >, REACTIONIDS, REACTION2, NETWORK) .
   
   eq addSucc(GRAPH, (REACTOR . N) ; REACTIONIDS, REACTION2,
-             NETWORK < REACTOR : Reactor | reactions : (RL1 (reaction N when OS --> OS2 do {RB} exTime T1 TI ) RL2) >)
+             NETWORK < REACTOR : Reactor | reactions : (RL1 (reaction N when OS --> OS2 do {RB} deadline TI2 {RB2}  exTime T1 TI ) RL2) >)
    = addSucc(GRAPH < (REACTOR . N) : APGNode | triggers : setUnknown(OS),
                                                pre : REACTION2, succ : none, status : unknown >,
              REACTIONIDS, REACTION2, NETWORK < REACTOR : Reactor | >)  [owise] .

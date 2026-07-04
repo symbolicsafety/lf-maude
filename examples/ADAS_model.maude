@@ -12,6 +12,7 @@ omod ADAS is
   ops in in1 in2 out out1 out2 inAdas inPedal : -> RPortId [ctor] .
   op a : -> RActionId .
   op init : -> Configuration .
+  ops deadlineMissed : -> BVarId [ctor] .
   
   eq init = 
      < lidar : Reactor | 
@@ -37,7 +38,7 @@ omod ADAS is
                  < in2 : Port | value : [0] >,
        outports : < out1 : Port | value : [0] >
                   < out2 : Port | value : [0] >, 
-       state : requestStop |-> [0],
+       state : ( (deadlineMissed |-> [false] ) ; (requestStop |-> [0]) ),
        timers : none,
        actions : < a : LogicalAction | minDelay : 50, 
                                 minSpacing : 0, 
@@ -48,7 +49,7 @@ omod ADAS is
  	    { (requestStop := [1]) ;  schedule(a, [0], [0]) } )
           reaction when a --> out1 ; out2 do { 
              if requestStop === [1] then out1 <- [1] fi
-          }
+          } deadline 20 { deadlineMissed := [true] }
      >
  
      < dashboard : Reactor | 
@@ -79,8 +80,8 @@ omod ADAS is
        outports : none,
        timers : none,
        actions : none,
-       state : brakesApplied |-> [0],
-       reactions : reaction when inAdas ; inPedal do { brakesApplied := [1] }
+       state : ((brakesApplied |-> [0]) ; (deadlineMissed |-> [false] )),
+       reactions : reaction when inAdas ; inPedal do { brakesApplied := [1] } deadline 10 { deadlineMissed := [true] }
      >
  
      (lidar : out --> adasProcessor : in1)

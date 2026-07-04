@@ -288,20 +288,20 @@ omod ABS-EXECUTE-STEP is
   
   --- All new Feb 25: add reactions in this step:
 
-  sort Network+Queue+Reactions .
+  ---- sort Network+Queue+Reactions .
   --- return new state of system plus updated event queue plus reations invoked in this step
   --- the last item: accumulated consts (always true for the concrete case)
-  op networkQueueRxns : Configuration EQueue ReactionIdSet BoolValue -> Network+Queue+Reactions [ctor] .
+  --- op networkQueueRxns : Configuration EQueue ReactionIdSet BoolValue -> Network+Queue+Reactions [ctor] .
 
 
   --- the last item indicates accumulated consts (always true for the concrete case)
-  op executeStep : Events Configuration EQueue BoolValue Time Time Nat -> Network+Queue+Reactions .
-  ceq executeStep(EVENTS, NETWORK, QUEUE, CONST, LT, PT, NP)
-    = executeStep(generateAPG(EVENTS, NETWORK), NETWORK', QUEUE, none, CONST && CONST', LT, PT, NP) 
+  op executeStep : Events Time Configuration BoolValue -> Configuration .
+  ceq executeStep(EVENTS, LT, NETWORK, CONST)
+    = executeStep(generateAPG(EVENTS, NETWORK), LT, NETWORK', CONST && CONST') 
    if {NETWORK', CONST'} := addEventsToPorts(EVENTS, NETWORK, trueVal) .
 
   --- executeStep(APGgraph, network, event queue, curent logical time)
-  op executeStep : Configuration Configuration EQueue ReactionIdSet BoolValue Time Time Nat -> Network+Queue+Reactions .
+  op executeStep : Configuration Time Configuration BoolValue -> Configuration .
 
   ---NOTE: executeStep is not defined here!
 

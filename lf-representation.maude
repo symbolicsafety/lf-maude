@@ -170,6 +170,9 @@ omod REACTION is
   eq reaction when OS do { RB } deadline TI { RB2 } exTime T1 TI1 = reaction when OS --> none do { RB } deadline TI { RB2 } exTime T1 TI1 .
   eq reaction when OS --> OS1 do { RB } deadline TI { RB2 } = reaction when OS --> OS1 do { RB } deadline TI { RB2 } exTime minExtime maxExtime .
 
+  op reaction when_do`{_`} deadline_`{_`} : OidSet ReactionBody TimeInf ReactionBody -> Reaction . 
+  eq reaction when OS do { RB } deadline TI { RB2 } = reaction when OS --> none do { RB } deadline TI { RB2 } exTime minExtime maxExtime .
+
   eq reaction when OS --> OS1 do { RB } exTime T1 TI1 = reaction when OS --> OS1 do { RB } deadline INF { skip } exTime T1 TI1 .
 
   sort OidSet . 
