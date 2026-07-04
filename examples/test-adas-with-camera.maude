@@ -8,6 +8,10 @@ omod TEST-ADAS is
   including ADAS-WITH-CAMERA .
   including DYNAMICS-WITHOUT-TICK .
 
+  vars VAL VAL2 : Value .
+  var VAR : VarId .
+  var RID : ReactorId .
+
   eq minExtime = 2 .
   eq maxExtime = 3 .
 
@@ -17,15 +21,15 @@ omod TEST-ADAS is
   eq initSystem =
      { < env : Environment |
            physicalActions : < (pedal . a) : PhysAct |
-                                   leftOfPeriod : 5,
+                                   leftOfPeriod : 65,
                                    period : 5,
                                    possibleValues : [69] : [71],
-				   timeNonDet : false > >
+				   timeNonDet : true > >
        addReactionIndices(init)
        < queue : EventQueue | queue : addInitialTimers(init, empty) >
        < rxns : Invoked | reactions : none >
        [physicalTime: 0]
-       [numberProcessors: 4]
+       [numberProcessors: 2]
        } .      --- new Feb
 endom
 
@@ -37,19 +41,17 @@ omod SIMULATE-ADAS is
   including SIMULATION-DYNAMICS  .
 endom
 
-rew [4998] initSystem .
+rew [110] initSystem .
 
 --- red maxRemainingExecutionTime(< lidar . 1 : APGNode | triggers : t |-> present, pre : none, succ : (adasProcessor . 1), status : executing(0) > < camera . 1 : APGNode | triggers : t |-> present, pre : none, succ : (adasProcessor . 1), status : present > < adasProcessor . 1 : APGNode | triggers : ((in1 |-> present) ; in2 |-> unknown), pre : ((lidar . 1) ; (camera . 1)), succ : none, status : present >,  [physicalTime: 0] [numberProcessors: 0] < lidar : Reactor | inports : none, outports : < out : Port | value : [1] >, state : frame |-> [1], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 2 3, timers : < t : Timer | period : 34, offset : 0 >, actions : none > < camera : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 2 3, timers : < t : Timer | period : 17, offset : 0 >, actions : none > < adasProcessor : Reactor | inports : (< in1 : Port | value : [1] > < in2 : Port | value : [0] >), outports : (< out1 : Port | value : [0] > < out2 : Port | value : [0] >), state : requestStop |-> [0], reactions : ((reaction 1 when in1 ; in2 --> a do{(requestStop := [1]) ; schedule(a, [0], [0])}deadline INF{skip}exTime 2 3) reaction 2 when a --> out1 ; out2 do{if requestStop === [1] then out1 <- [1] fi}deadline INF{skip}exTime 2 3), timers : none, actions : < a : LogicalAction | minDelay : 50, minSpacing : 0, policy : defer, payload : [0] > > < dashboard : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}deadline INF{skip}exTime 2 3, timers : none, actions : none > < pedal : Reactor | inports : none, outports : < out : Port | value : [0] >, state : empty, reactions : reaction 1 when a --> out do{out <- [1]}deadline INF{skip}exTime 2 3, timers : none, actions : < a : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > > < brakes : Reactor | inports : (< inAdas : Port | value : [0] > < inPedal : Port | value : [0] >), outports : none, state : brakesApplied |-> [0], reactions : ((reaction 1 when inAdas --> none do{brakesApplied := inAdas}deadline INF{skip}exTime 2 3) reaction 2 when inPedal --> none do{brakesApplied := inPedal}deadline INF{ skip}exTime 2 3), timers : none, actions : none > < env : Environment | physicalActions : < pedal . a : PhysAct | period : 5, leftOfPeriod : 5, possibleValues : ([69] : [71]), timeNonDet : false > > < queue : EventQueue | queue : event(lidar, t, [0]) at tag(34, 0) > < rxns : Invoked | reactions : (lidar . 1) > (lidar : out --> adasProcessor : in1) (camera : out --> adasProcessor : in2) (adasProcessor : out2 --> dashboard : in) (pedal : out --> brakes : inPedal) adasProcessor : out1 -- 5 --> brakes : inAdas ) .
 
-eof .
 
 omod TIME-BOUNDED-ADAS is
   including TEST-ADAS .
   including TIME-BOUNDED-DYNAMICS  .
-  eq timeBound = 155 .
+  eq timeBound = 56 .
 endom  
 
-rew [4885] initSystem in time 0 .
 
 --- red generateAPG( event(lidar, t, [0]) event(camera, t, [0]), [physicalTime: 0] [numberProcessors: 1] < lidar : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 0 0, timers : < t : Timer | period : 34, offset : 0 >, actions : none > < camera : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 0 0, timers : < t : Timer | period : 17, offset : 0 >, actions : none > < adasProcessor : Reactor | inports : (< in1 : Port | value : [0] > < in2 : Port | value : [0] >), outports : (< out1 : Port | value : [0] > < out2 : Port | value : [0] >), state : requestStop |-> [0], reactions : ((reaction 1 when in1 ; in2 --> a do{(requestStop := [1]) ; schedule(a, [0], [0])}deadline INF{skip}exTime 0 0) reaction 2 when a --> out1 ; out2 do{if requestStop === [1] then out1 <- [1] fi}deadline INF{skip}exTime 0 0), timers : none, actions : < a : LogicalAction | minDelay : 50, minSpacing : 0, policy : defer, payload : [0] > > < dashboard : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}deadline INF{skip}exTime 0 0, timers : none, actions : none > < pedal : Reactor | inports : none, outports : < out : Port | value : [0] >, state : empty, reactions : reaction 1 when a --> out do{out <- [1]}deadline INF{skip}exTime 0 0, timers : none, actions : < a : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > > < brakes : Reactor | inports : (< inAdas : Port | value : [0] > < inPedal : Port | value : [0] >), outports : none, state : brakesApplied |-> [0], reactions : ((reaction 1 when inAdas --> none do{brakesApplied := inAdas}deadline INF{skip}exTime 0 0) reaction 2 when inPedal --> none do{brakesApplied := inPedal}deadline INF{ skip}exTime 0 0), timers : none, actions : none > < env : Environment | physicalActions : < pedal . a : PhysAct | period : 5, leftOfPeriod : 5, possibleValues : ([69] : [71]), timeNonDet : true > > < queue : EventQueue | queue : (event(lidar, t, [0]) event(camera, t, [0])) at tag(0, 1) > < rxns : Invoked | reactions : (none).ReactionIdSet > (lidar : out --> adasProcessor : in1) (camera : out --> adasProcessor : in2) (adasProcessor : out2 --> dashboard : in) (pedal : out --> brakes : inPedal) adasProcessor : out1 -- 5 --> brakes : inAdas ) .
 
@@ -58,6 +60,30 @@ search [1] initSystem in time 0 =>* {REST:Configuration
                 < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
 		                     AS:AttributeSet >} in time T:Time .
 
+search [1] initSystem in time 0 =>! {REST:Configuration
+                < brakes : Reactor | state : (brakesApplied |-> [0]) ; RS:ReactorState,
+                         AS:AttributeSet >} in time T:Time .
+
+search [1] initSystem in time 0 =>! {
+  executeStep(GRAPH:Configuration, LT:Time, 
+  REST:Configuration
+                < brakes : Reactor | state : (brakesApplied |-> [0]) ; RS:ReactorState,
+                         AS:AttributeSet >, B:BoolValue)} in time T:Time .
+
+
+search [1] initSystem in time 0 =>* {
+  executeStep(GRAPH:Configuration, LT:Time, 
+  REST:Configuration
+                < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
+                         AS:AttributeSet >, B:BoolValue)} in time T:Time .
+
+--- we want to define a generic function that 
+--- search [1] initSystem in time 0 =>! CS:ClockedSystem such that var in component in CS:ClockedSystem is bla
+op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
+eq VAR in RID in {REST:Configuration <RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState >} in time T:Time is VAL2
+= VAL == VAL2 .
+
+eof
 search [1] initSystem in time 0 =>* {REST:Configuration
                 < queue : EventQueue |
 		        queue : (EQ1:EQueue :: ((event(pedal, a, [N:Nat]) EVENTS:Events) at TAG:Tag) :: EQ2:EQueue) >}
