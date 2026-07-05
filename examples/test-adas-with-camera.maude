@@ -36,22 +36,27 @@ red generateAPG(event(lidar, t, [0]),  addReactionIndices(init)) .
 omod SIMULATE-ADAS is
   including TEST-ADAS .
   including SIMULATION-DYNAMICS  .
+  including ANALYSIS-FUNCTIONS .
 endom
 
 rew [110] initSystem .
 
+rew { executeStep((event(lidar, t, [0]) event(camera, t, [0])),0,[physicalTime: 0] [numberProcessors: 2] < lidar : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 2 3, timers : < t : Timer | period : 34, offset : 0 >, actions : none > < camera : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 2 3, timers : < t : Timer | period : 17, offset : 0 >, actions : none > < adasProcessor : Reactor | inports : (< in1 : Port | value : [0] > < in2 : Port | value : [0] >), outports : (< out1 : Port | value : [0] > < out2 : Port | value : [0] >), state : ((requestStop |-> [0]) ; deadlineMissed |-> [false]), reactions : ((reaction 1 when in1 ; in2 --> a do{(requestStop := [1]) ; schedule(a, [0], [0])}deadline INF{skip}exTime 2 3) reaction 2 when a --> out1 ; out2 do{if requestStop === [1] then out1 <- [1] fi}deadline 20{deadlineMissed := [true]}exTime 2 3), timers : none, actions : < a : LogicalAction | minDelay : 50, minSpacing : 0, policy : defer, payload : [0] > > < dashboard : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}deadline INF{skip}exTime 2 3, timers : none, actions : none > < pedal : Reactor | inports : none, outports : < out : Port | value : [0] >, state : empty, reactions : reaction 1 when a --> out do{out <- [1]}deadline INF{skip}exTime 2 3, timers : none, actions : < a : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > > < brakes : Reactor | inports : (< inAdas : Port | value : [0] > < inPedal : Port | value : [0] >), outports : none, state : ((brakesApplied |-> [0]) ; deadlineMissed |-> [false]), reactions : reaction 1 when inAdas ; inPedal --> none do{brakesApplied := [1]}deadline 10{deadlineMissed := [true]}exTime 2 3, timers : none, actions : none > < env : Environment | physicalActions : < pedal . a : PhysAct | period : 5, leftOfPeriod : 5, possibleValues : ([69] : [71]), timeNonDet : true > > < queue : EventQueue | queue : empty > < rxns : Invoked | reactions : (none).ReactionIdSet > (lidar : out --> adasProcessor : in1) (camera : out --> adasProcessor : in2) (adasProcessor : out2 --> dashboard : in) (pedal : out --> brakes : inPedal) adasProcessor : out1 -- 5 --> brakes : inAdas, trueVal) } .
+
 --- red maxRemainingExecutionTime(< lidar . 1 : APGNode | triggers : t |-> present, pre : none, succ : (adasProcessor . 1), status : executing(0) > < camera . 1 : APGNode | triggers : t |-> present, pre : none, succ : (adasProcessor . 1), status : present > < adasProcessor . 1 : APGNode | triggers : ((in1 |-> present) ; in2 |-> unknown), pre : ((lidar . 1) ; (camera . 1)), succ : none, status : present >,  [physicalTime: 0] [numberProcessors: 0] < lidar : Reactor | inports : none, outports : < out : Port | value : [1] >, state : frame |-> [1], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 2 3, timers : < t : Timer | period : 34, offset : 0 >, actions : none > < camera : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 2 3, timers : < t : Timer | period : 17, offset : 0 >, actions : none > < adasProcessor : Reactor | inports : (< in1 : Port | value : [1] > < in2 : Port | value : [0] >), outports : (< out1 : Port | value : [0] > < out2 : Port | value : [0] >), state : requestStop |-> [0], reactions : ((reaction 1 when in1 ; in2 --> a do{(requestStop := [1]) ; schedule(a, [0], [0])}deadline INF{skip}exTime 2 3) reaction 2 when a --> out1 ; out2 do{if requestStop === [1] then out1 <- [1] fi}deadline INF{skip}exTime 2 3), timers : none, actions : < a : LogicalAction | minDelay : 50, minSpacing : 0, policy : defer, payload : [0] > > < dashboard : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}deadline INF{skip}exTime 2 3, timers : none, actions : none > < pedal : Reactor | inports : none, outports : < out : Port | value : [0] >, state : empty, reactions : reaction 1 when a --> out do{out <- [1]}deadline INF{skip}exTime 2 3, timers : none, actions : < a : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > > < brakes : Reactor | inports : (< inAdas : Port | value : [0] > < inPedal : Port | value : [0] >), outports : none, state : brakesApplied |-> [0], reactions : ((reaction 1 when inAdas --> none do{brakesApplied := inAdas}deadline INF{skip}exTime 2 3) reaction 2 when inPedal --> none do{brakesApplied := inPedal}deadline INF{ skip}exTime 2 3), timers : none, actions : none > < env : Environment | physicalActions : < pedal . a : PhysAct | period : 5, leftOfPeriod : 5, possibleValues : ([69] : [71]), timeNonDet : false > > < queue : EventQueue | queue : event(lidar, t, [0]) at tag(34, 0) > < rxns : Invoked | reactions : (lidar . 1) > (lidar : out --> adasProcessor : in1) (camera : out --> adasProcessor : in2) (adasProcessor : out2 --> dashboard : in) (pedal : out --> brakes : inPedal) adasProcessor : out1 -- 5 --> brakes : inAdas ) .
 
+search [1,20] initSystem in time 0 =>* CS:ClockedSystem such that
+  deadlineMissed in brakes in CS:ClockedSystem is [true] .
 
 omod TIME-BOUNDED-ADAS is
   including TEST-ADAS .
   including TIME-BOUNDED-DYNAMICS  .
   including ANALYSIS-FUNCTIONS .
-  eq timeBound = 80 .
+  eq timeBound = 73 .
 
 endom  
 
----(
+
 --- red generateAPG( event(lidar, t, [0]) event(camera, t, [0]), [physicalTime: 0] [numberProcessors: 1] < lidar : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 0 0, timers : < t : Timer | period : 34, offset : 0 >, actions : none > < camera : Reactor | inports : none, outports : < out : Port | value : [0] >, state : frame |-> [0], reactions : reaction 1 when t --> out do{(frame := (frame + [1])) ; out <- frame}deadline INF{skip}exTime 0 0, timers : < t : Timer | period : 17, offset : 0 >, actions : none > < adasProcessor : Reactor | inports : (< in1 : Port | value : [0] > < in2 : Port | value : [0] >), outports : (< out1 : Port | value : [0] > < out2 : Port | value : [0] >), state : requestStop |-> [0], reactions : ((reaction 1 when in1 ; in2 --> a do{(requestStop := [1]) ; schedule(a, [0], [0])}deadline INF{skip}exTime 0 0) reaction 2 when a --> out1 ; out2 do{if requestStop === [1] then out1 <- [1] fi}deadline INF{skip}exTime 0 0), timers : none, actions : < a : LogicalAction | minDelay : 50, minSpacing : 0, policy : defer, payload : [0] > > < dashboard : Reactor | inports : < in : Port | value : [0] >, outports : none, state : received |-> [0], reactions : reaction 1 when in --> none do{received := in}deadline INF{skip}exTime 0 0, timers : none, actions : none > < pedal : Reactor | inports : none, outports : < out : Port | value : [0] >, state : empty, reactions : reaction 1 when a --> out do{out <- [1]}deadline INF{skip}exTime 0 0, timers : none, actions : < a : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] > > < brakes : Reactor | inports : (< inAdas : Port | value : [0] > < inPedal : Port | value : [0] >), outports : none, state : brakesApplied |-> [0], reactions : ((reaction 1 when inAdas --> none do{brakesApplied := inAdas}deadline INF{skip}exTime 0 0) reaction 2 when inPedal --> none do{brakesApplied := inPedal}deadline INF{ skip}exTime 0 0), timers : none, actions : none > < env : Environment | physicalActions : < pedal . a : PhysAct | period : 5, leftOfPeriod : 5, possibleValues : ([69] : [71]), timeNonDet : true > > < queue : EventQueue | queue : (event(lidar, t, [0]) event(camera, t, [0])) at tag(0, 1) > < rxns : Invoked | reactions : (none).ReactionIdSet > (lidar : out --> adasProcessor : in1) (camera : out --> adasProcessor : in2) (adasProcessor : out2 --> dashboard : in) (pedal : out --> brakes : inPedal) adasProcessor : out1 -- 5 --> brakes : inAdas ) .
 
 
@@ -63,6 +68,7 @@ search [1] initSystem in time 0 =>! {REST:Configuration
                 < brakes : Reactor | state : (brakesApplied |-> [0]) ; RS:ReactorState,
                          AS:AttributeSet >} in time T:Time .
 
+---(
 search [1] initSystem in time 0 =>! {
   executeStep(GRAPH:Configuration, LT:Time, 
   REST:Configuration
@@ -75,6 +81,7 @@ search [1] initSystem in time 0 =>* {
   REST:Configuration
                 < brakes : Reactor | state : (brakesApplied |-> [1]) ; RS:ReactorState,
                          AS:AttributeSet >, B:BoolValue)} in time T:Time .
+)---
 
 --- the previous four search commands can be simplified into the following two
 search [1] initSystem in time 0 =>* CS:ClockedSystem such that
@@ -158,6 +165,7 @@ states: 184  rewrites: 10757 in 31ms cpu (33ms real) (338771 rewrites/second)
 --- NOTE: In the LF benchmarks, the pedal is removed, since they do not deal with
 ---    physical actions
 
+---(
 search [1] initSystem in time 0 =>*
              { executeStep(GRAPH:Configuration, LT:Time,
               REST:Configuration
@@ -167,14 +175,13 @@ search [1] initSystem in time 0 =>*
               < rxns : Invoked | reactions : ((pedal . 1) ; RIDS:ReactionIdSet) >, B:BoolValue)} in time T:Time 
            such that N:Nat =/= 1 .      --- bad state; brakesApplied must be 1 when pedal pressed
 )---
+
 --- search for deadline misses
 search [1] initSystem in time 0 =>* CS:ClockedSystem such that
   deadlineMissed in brakes in CS:ClockedSystem is [true] .
 
 search [1] initSystem in time 0 =>* CS:ClockedSystem such that
   deadlineMissed in adasProcessor in CS:ClockedSystem is [true] .
-
-eof
   
 search [1] initSystem in time 0 =>! CS:ClockedSystem such that
   brakesApplied in brakes in CS:ClockedSystem is [0] .

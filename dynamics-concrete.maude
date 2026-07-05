@@ -94,19 +94,51 @@ omod DYNAMICS-WITHOUT-TICK is
        [numberProcessors: NP]
        } 
   =>
-  { 
-    executeStep(EVENTS, T,
-      < E : Environment | physicalActions : CONF1 >
+      {
+        C:Configuration
+      } in time T2
+      if PT ge T /\ smallestTimer(CONF1) gt zero 
+      /\ {executeStep(EVENTS, T,
+          < E : Environment | physicalActions : CONF1 >
+          REACTORS-AND-CONNECTIONS
+          < Q : EventQueue | queue : QUEUE >
+          < RXNS : Invoked | reactions : none >
+          [physicalTime: PT] 
+          [numberProcessors: NP],
+          trueVal
+          )}
+      =>
+        {
+            finished(C:Configuration)
+        } in time T2 .
+
+--- variant without time advance
+  crl [step] :
+      {< E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : QUEUE >
-       < RXNS : Invoked | reactions : none >
+       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
+       < RXNS : Invoked | >
        [physicalTime: PT] 
-       [numberProcessors: NP],
-        trueVal
-       )
-  }
-  if PT ge T /\ smallestTimer(CONF1) gt zero
-  .
+       [numberProcessors: NP]
+       }
+  =>
+      {
+        C:Configuration
+      }
+      if PT ge T /\ smallestTimer(CONF1) gt zero 
+      /\ {executeStep(EVENTS, T,
+          < E : Environment | physicalActions : CONF1 >
+          REACTORS-AND-CONNECTIONS
+          < Q : EventQueue | queue : QUEUE >
+          < RXNS : Invoked | reactions : none >
+          [physicalTime: PT]
+          [numberProcessors: NP],
+          trueVal
+          )}
+      =>
+        {
+            finished(C:Configuration)
+        } .
 
 
   *** Note: condition ensures that physical actions are generated
@@ -365,7 +397,7 @@ omod TIME-BOUNDED-DYNAMICS is
   including DYNAMICS-WITHOUT-TICK .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
-  vars T1 T T2 T3 PT LT : Time .
+  vars T1 T T2 T3 T4 PT LT : Time .
   vars TI TI1 TI2 : TimeInf .
   vars E Q RXNS : Oid .
   vars N2 N NP2 NP : Nat .
@@ -382,6 +414,35 @@ omod TIME-BOUNDED-DYNAMICS is
   vars PRE INVOKED : ReactionIdSet .
 
   op timeBound : -> Time .   *** initialized by user
+
+
+  crl [step] :
+      {< E : Environment | physicalActions : CONF1 >
+       REACTORS-AND-CONNECTIONS
+       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
+       < RXNS : Invoked | >
+       [physicalTime: PT] 
+       [numberProcessors: NP]
+       } in time T3
+  =>
+      {
+        C:Configuration
+      } in time T4
+      if PT ge T /\ smallestTimer(CONF1) gt zero 
+      /\ {executeStep(EVENTS, T,
+          < E : Environment | physicalActions : CONF1 >
+          REACTORS-AND-CONNECTIONS
+          < Q : EventQueue | queue : QUEUE >
+          < RXNS : Invoked | reactions : none >
+          [physicalTime: PT] 
+          [numberProcessors: NP],
+          trueVal
+          )} in time T3
+      =>
+        {
+            finished(C:Configuration)
+        } in time T4 .
+
 
   crl [tick] :
     {< E : Environment | physicalActions : CONF1 >
