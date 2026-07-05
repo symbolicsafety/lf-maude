@@ -719,6 +719,25 @@ omod TIMED-SIMULATION-DYNAMICS is
 
 endom
 
+omod ANALYSIS-FUNCTIONS is
+  including DYNAMICS-WITHOUT-TICK .
+
+  vars VAL VAL2 : Value .
+  var VAR : VarId .
+  var RID : ReactorId .
+
+  --- we want to define a generic function that
+  --- search [1] initSystem in time 0 =>! CS:ClockedSystem such that var in component in CS:ClockedSystem is bla
+  op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
+  eq VAR in RID in ({REST:Configuration < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState >} in time T:Time) is VAL2
+  = VAL == VAL2 .
+
+  op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
+  eq VAR in RID in ( { executeStep(GRAPH:Configuration, LT:Time, REST:Configuration
+                < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState > , B:BoolValue)} in time T:Time ) is VAL2 = VAL == VAL2 .
+
+endom
+
 --- NOTICE: In general, our states are tuples
 --- (newState, reactionsInvokedToReachNewState)
 --- so we should be aware of the order.  If you want

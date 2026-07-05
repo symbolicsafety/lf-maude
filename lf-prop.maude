@@ -50,6 +50,11 @@ omod LF-PROP-BASE is
   --- Extend to timed/time-bounded cases
   eq SYSTEM   in time TI |= P:Prop = SYSTEM |= P:Prop [owise] .
   eq SYSTEM timeBound TI |= P:Prop = SYSTEM |= P:Prop [owise] .
+
+  --- New for two timelines stuff
+  ceq { executeStep(GRAPH:Configuration, LT:Time, STATE:Configuration, B:BoolValue) }
+  |= P:Prop = true if { STATE:Configuration } |= P:Prop .
+
 endom
 
 

@@ -7,6 +7,8 @@ omod TEST-TRAIN is
 ---  including SIMULATION-DYNAMICS .
 
   ops env queue rxns : -> Oid [ctor] .
+  eq minExtime = 1 .
+  eq maxExtime = 1 .
 
   op initSystem : -> GlobalSystem .
   eq initSystem =
@@ -18,8 +20,10 @@ omod TEST-TRAIN is
 				   timeNonDet : true > >
        addReactionIndices(init)
        < queue : EventQueue | queue : addStartup(startup,init, empty) >
-       < rxns : Invoked | reactions : none >} .
-                              
+       < rxns : Invoked | reactions : none >
+      [physicalTime: 0]
+      [numberProcessors: 1] 
+      } .
      
 endom
 
@@ -34,6 +38,7 @@ red initSystem .
 
 rew [33] initSystem .
 
+---(
 omod UNCLOCKED-TRAIN is
   including TEST-TRAIN .
   including UNBOUNDED-ANALYSIS-DYNAMICS  .
@@ -47,12 +52,15 @@ search initSystem =>*
 	                          ATTS1:AttributeSet >
 	      < door : Reactor | state : (locked |-> [false]) ; RS2:ReactorState,
 	                          ATTS2:AttributeSet >} .
-
+)---
 
 
 omod TIME-BOUNDED-TRAIN is
   including TEST-TRAIN .
   including TIME-BOUNDED-DYNAMICS  .
+  including ANALYSIS-FUNCTIONS .
+  including LF-PROP .
+  including LF-PROP-EXT .
   eq timeBound = 40 .
 endom  
 
@@ -83,3 +91,5 @@ states: 87  rewrites: 4499 in 24ms cpu (27ms real) (180429 rewrites/second)
 Maude> 
 )***
 
+search [1] initSystem in time 0 =>* CS:ClockedSystem such that
+  (moving in train in CS:ClockedSystem is [true]) and (locked in door in CS:ClockedSystem is [false]) .
