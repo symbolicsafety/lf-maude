@@ -1,5 +1,6 @@
 omod EXECUTE-REACTION is
   including ABS-EXECUTE-REACTION .
+  protecting ABS-EVENT-QUEUE .
 
   var REACTOR : ReactorId .
   var TSTATUS : TriggerStatus .
@@ -11,17 +12,18 @@ omod EXECUTE-REACTION is
   var BEXP : BoolExpr .
   var CONST : BoolValue .
   vars LT PT : Time .
+  var ACTIONHISTORY : ActionHistory .
 
   --- the semantics of if-then-else-fi for the concrete case
   eq executeReactionBody(
         < REACTOR : Reactor | state :  VALUATION,
                               inports : INPORTS, actions : ACTIONS >,
-        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        (if BEXP then RB1 else RB2 fi) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
    =                                         
       executeReactionBody(< REACTOR : Reactor | >,
         if eval(BEXP, VALUATION, INPORTS ACTIONS, TSTATUS) == trueVal 
         then (RB1 ; RB) else (RB2 ; RB) fi,  
-        OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) .
+        OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
 endom
 
 
@@ -40,6 +42,7 @@ omod EXECUTE-STEP is
   var TSTATUS : TriggerStatus .
   vars REACTIONS1 REACTIONS2 : ReactionList .
   var OUTPUTS : Events .
+  var ACTIONHISTORY : ActionHistory .
   vars QUEUE RESULT-QUEUE : EQueue .
   vars RB RB2 : ReactionBody .
   vars CONST CONST' : BoolValue .
@@ -60,7 +63,7 @@ omod EXECUTE-STEP is
             NETWORK
             < REACTORID : Reactor | 
                 reactions : REACTIONS1 (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1 ) REACTIONS2 >
-          < Q : EventQueue | queue : QUEUE >
+          < Q : EventQueue | queue : QUEUE, pastActions : ACTIONHISTORY >
           ([physicalTime: PT])
           [numberProcessors: s NP]
           < RXNS : Invoked | reactions : INVOKED >, 
@@ -83,7 +86,7 @@ omod EXECUTE-STEP is
     /\ result(OBJECT, OUTPUTS, RESULT-QUEUE, CONST') := 
          executeReaction(< REACTORID : Reactor | reactions : REACTIONS1
                                                  (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI1)
-                                                 REACTIONS2 >, N, TSTATUS, QUEUE, LT, PT) .
+                                                 REACTIONS2 >, N, TSTATUS, QUEUE, ACTIONHISTORY, LT, PT) .
 
 --- Execution finished. We update the APG execution status accordingly and we free one processor.
 crl [finishExecuteReaction] :

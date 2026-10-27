@@ -17,4 +17,8 @@ omod EVENT-QUEUE is
      else (if TAG1 == TAG2 
            then (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
 	   else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
+
+
+  --- New Oct26: past actions
+  
 endom

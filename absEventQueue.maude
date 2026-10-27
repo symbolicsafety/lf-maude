@@ -49,12 +49,17 @@ endfm
 
 omod ABS-EVENT-QUEUE is
   protecting TAGGED-EVENTS .
+  protecting REACTION-ID .
+  protecting PORT-ID .
+  protecting TIMER-ID .
+  protecting ACTION-ID .
+  protecting ACTION .
 
   --- At the moment, we do NOT deal with hierarchical
   --- models, so that an input port is uniquely identified by
   --- reactorId . portId
 
-  class EventQueue | queue : EQueue .
+  class EventQueue | queue : EQueue, pastActions : ActionHistory .
 
   --- the constructor for EQueue is not defined here!
   sort EQueue .
@@ -62,17 +67,52 @@ omod ABS-EVENT-QUEUE is
   op empty : -> EQueue [ctor] .
 
   var T : Time .
+  var EVENT : Event .
   var EVENTS : Events .
   var QUEUE : EQueue .
+  var AI : ActionId .
+  var PID : PortId .
+  var TID : TimerId .
+  var RID : ReactorId .
+  var ACTIONHISTORY : ActionHistory .
+  var VAL : Value .
+  vars TAG TAG2 : Tag .
 
   --- defined someplace else
   op insert : TaggedEvents EQueue -> EQueue .
 
   --- NOTE: assume that the second argument is always a concrete value!
-  op schedule : Events Time EQueue -> EQueue .
-  ceq schedule(EVENTS, T, QUEUE)  = insert(EVENTS at tag(T, 0), QUEUE) 
+  op schedule : Event Time EQueue -> EQueue .
+  ceq schedule(EVENT, T, QUEUE)  = insert(EVENT at tag(T, 0), QUEUE) 
    if T gt zero .
   
-  ceq schedule(EVENTS, T, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) 
+  ceq schedule(EVENT, T, QUEUE) = insert(EVENT at tag(zero,1), QUEUE) 
    if T equals zero .
+
+  --- New Oct26: need to store the action history to deal with min_spacing issues
+  sort ActionHistory .
+  op _|->_ : ActionId Tag -> ActionHistory [ctor] .
+  op empty : -> ActionHistory [ctor] .
+  op _;_ : ActionHistory ActionHistory -> ActionHistory [ctor assoc comm id: empty] .
+
+  *** schedule (Action, tag, Event queue, action history, minSpacing, policy)
+  op schedule : Event Time EQueue ActionHistory Time ActionPolicy -> EQueue .
+
+  op add : TaggedEvents ActionHistory -> ActionHistory .
+  eq add((event(RID, AI, VAL) EVENTS) at TAG, (AI |-> TAG2) ; ACTIONHISTORY) 
+   = add(EVENTS at TAG, (AI |-> TAG) ; ACTIONHISTORY) .
+
+  --- initial case with no history for that action id
+  eq add((event(RID, AI, VAL) EVENTS) at TAG, ACTIONHISTORY)
+   = add(EVENTS at TAG, (AI |-> TAG) ; ACTIONHISTORY) [owise] .
+
+  eq add((event(RID, PID, VAL) EVENTS) at TAG, ACTIONHISTORY)
+   = add(EVENTS at TAG, ACTIONHISTORY) .
+
+  eq add((event(RID, TID, VAL) EVENTS) at TAG, ACTIONHISTORY)
+   = add(EVENTS at TAG, ACTIONHISTORY) .
+
+  eq add(noEvent at TAG, ACTIONHISTORY)
+   = ACTIONHISTORY .
+
 endom

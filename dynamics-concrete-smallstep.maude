@@ -25,6 +25,7 @@ omod DYNAMICS-WITHOUT-TICK-SMALLSTEP is
   vars EQ1 EQ2 : EQueue .
   var EVENT : Event .
   var TAG : Tag .
+  var ACTIONHISTORY : ActionHistory .
   
   *** We need some initialization, obviously.  DONE
 
@@ -38,7 +39,7 @@ omod DYNAMICS-WITHOUT-TICK-SMALLSTEP is
   crl [step] :
       {< E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
+       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE, pastActions : ACTIONHISTORY >
        < RXNS : Invoked | >
        [physicalTime: PT] 
        [numberProcessors: NP]
@@ -48,7 +49,7 @@ omod DYNAMICS-WITHOUT-TICK-SMALLSTEP is
     executeStep(EVENTS, T,
       < E : Environment | physicalActions : CONF1 >
        REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : QUEUE >
+       < Q : EventQueue | queue : QUEUE, pastActions : add(EVENTS at tag(T, N), ACTIONHISTORY) >
        < RXNS : Invoked | reactions : none >
        [physicalTime: PT] 
        [numberProcessors: NP],

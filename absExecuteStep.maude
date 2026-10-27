@@ -120,9 +120,12 @@ omod ABS-EXECUTE-REACTION is
   var N : Nat .
   vars T T1 LT PT : Time .
   vars TI TI2 : TimeInf .
+  var ACTIONHISTORY : ActionHistory .
+  var POLICY : ActionPolicy .
+  var MINSPACING : Time .
 
-  --- executeReaction(reactor to be executed, reaction to be exe, its triggerstatus, queue, current logical time, current physical time)
-  op executeReaction : Object Nat TriggerStatus EQueue Time Time -> ReactorOutputsFutureevents .
+  --- executeReaction(reactor to be executed, reaction to be exe, its triggerstatus, queue, action history, current logical time, current physical time)
+  op executeReaction : Object Nat TriggerStatus EQueue ActionHistory Time Time -> ReactorOutputsFutureevents .
 
   --- the last item: accumulated consts (always true for the concrete case)
   sort ReactorOutputsFutureevents .
@@ -134,17 +137,17 @@ omod ABS-EXECUTE-REACTION is
                              reactions : REACTIONS1
                                          (reaction N when TRIGGERIDS --> OS do {RB} deadline TI {RB2} exTime T1 TI2 )
                                          REACTIONS2 >,
-       N, TSTATUS, QUEUE, LT, PT)
+       N, TSTATUS, QUEUE, ACTIONHISTORY, LT, PT)
    =
    if PT le LT plus TI then
      executeReactionBody(
        < REACTOR : Reactor | >, RB, noEvent,
-       scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE, LT), 
+       scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE, LT), ACTIONHISTORY,
        TSTATUS, trueVal, LT, PT) 
      else 
      executeReactionBody(
        < REACTOR : Reactor | >, RB2, noEvent,
-       scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE, LT), 
+       scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE, LT), ACTIONHISTORY,
        TSTATUS, trueVal, LT, PT) 
     fi .
 
@@ -162,54 +165,54 @@ omod ABS-EXECUTE-REACTION is
 
 
   --- the last item: accumulated consts (always has the value "true" for the concrete case)
-  op executeReactionBody : Object ReactionBody Events EQueue TriggerStatus BoolValue Time Time -> ReactorOutputsFutureevents .
+  op executeReactionBody : Object ReactionBody Events EQueue ActionHistory TriggerStatus BoolValue Time Time -> ReactorOutputsFutureevents .
 
-  eq executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) 
+  eq executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT) 
    = result(< REACTOR : Reactor | >, OUTPUTS, QUEUE, CONST) .
 
   eq executeReactionBody(
         < REACTOR : Reactor | state : (VALUATION ; (VAR |-> VAL)),
                               inports : INPORTS, actions : ACTIONS >,
-        (VAR := EXP) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        (VAR := EXP) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | state : (VALUATION ; (VAR |-> 
             eval(EXP, ((VAR |-> VAL) ; VALUATION), INPORTS ACTIONS, TSTATUS))) >,
-        RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) .
+        RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
 
   eq executeReactionBody(< REACTOR : Reactor | >,
-        (if BEXP then RB1 fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        (if BEXP then RB1 fi) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
     =                                         
      executeReactionBody(< REACTOR : Reactor | >,
-        (if BEXP then RB1 else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) .
+        (if BEXP then RB1 else skip fi) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
 
   --- Note: this may not terminate for the symbolic case without bound
   eq executeReactionBody(< REACTOR : Reactor | >,
-        (while BEXP do RB1 done) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        (while BEXP do RB1 done) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
     =                                         
      executeReactionBody(< REACTOR : Reactor | >,
-        (if BEXP then RB1 ; (while BEXP do RB1 done) else skip fi) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) .
+        (if BEXP then RB1 ; (while BEXP do RB1 done) else skip fi) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
 
   --- The constraint for the event is true
   eq executeReactionBody(
         < REACTOR : Reactor | state : VALUATION,
                               outports : CONF < PORTID : Port | >,
                               inports : INPORTS, actions : ACTIONS >,
-        (PORTID <- EXP) ; RB, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        (PORTID <- EXP) ; RB, OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | outports : CONF < PORTID : Port | value : 
             eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS) > >,
         RB, event(REACTOR, PORTID, eval(EXP, VALUATION, INPORTS ACTIONS, TSTATUS)) OUTPUTS, 
-        QUEUE, TSTATUS, CONST, LT, PT) .
+        QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
 
   --- The constraint for the event is true
   eq executeReactionBody(
         < REACTOR : Reactor | state : VALUATION,
                               inports : INPORTS,
-                              actions : CONF < ACTIONID : LogicalAction | minDelay : T > >,
+                              actions : CONF < ACTIONID : LogicalAction | minDelay : T, policy : POLICY, minSpacing : MINSPACING > >,
         schedule(ACTIONID, REXP, EXP) ; RB, 
-        OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | actions : CONF < ACTIONID : LogicalAction | > >,
@@ -220,14 +223,14 @@ omod ABS-EXECUTE-REACTION is
                      INPORTS CONF < ACTIONID : LogicalAction | >, TSTATUS)), 
             toTime(eval([T] + (REXP + [LT]), VALUATION, 
                         INPORTS CONF < ACTIONID : LogicalAction | >, TSTATUS)), 
-            QUEUE), TSTATUS, CONST, LT, PT) .
+            QUEUE, ACTIONHISTORY, MINSPACING, POLICY), ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
 
   eq executeReactionBody(
         < REACTOR : Reactor | state : VALUATION,
                               inports : INPORTS,
-                              actions : CONF < ACTIONID : PhysicalAction | minDelay : T > >,
+                              actions : CONF < ACTIONID : PhysicalAction | minDelay : T, policy : POLICY, minSpacing : MINSPACING > >,
         schedule(ACTIONID, REXP, EXP) ; RB, 
-        OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT)
+        OUTPUTS, QUEUE, ACTIONHISTORY, TSTATUS, CONST, LT, PT)
     =                                         
       executeReactionBody(
         < REACTOR : Reactor | actions : CONF < ACTIONID : PhysicalAction | > >,
@@ -238,7 +241,7 @@ omod ABS-EXECUTE-REACTION is
                      INPORTS CONF < ACTIONID : PhysicalAction | >, TSTATUS)), 
             toTime(eval([T] + (REXP + [PT]), VALUATION, 
                         INPORTS CONF < ACTIONID : PhysicalAction | >, TSTATUS)), 
-            QUEUE), TSTATUS, CONST, LT, PT) .
+            QUEUE, ACTIONHISTORY, MINSPACING, POLICY), ACTIONHISTORY, TSTATUS, CONST, LT, PT) .
   ---NOTE: if-then-else-fi is not defined here!
 endom
 
