@@ -1,4 +1,4 @@
-*** Our model of physical actions using logical time:
+*** Our model of spontaneous physical actions:
 ---    Which seems quite general:
 ---    Each physical action has a period and a finite set of values
 ---      to choose from.
@@ -7,7 +7,7 @@
 ---    * If the action happens, then we choose a value nondet
 ---      from the set of possible values.
 
---- Late change:   For analysis purposes it may sometimes be convenient
+---             For analysis purposes it may sometimes be convenient
 ---                to analyze the system when a physical action
 ---                always triggers, even though this looks a lot like
 ---                timers, although timers cannot select values
@@ -35,9 +35,6 @@ omod PHYSICAL-ACTIONS is
 
   subsort PhysActId < Oid .
   
----  op _._ : ReactorId ActionId -> Oid [ctor] .
-  --- names of physical actions!
-
   sort ValueSet .
   subsort Value < ValueSet .
   op noValue : -> ValueSet [ctor] .
@@ -61,24 +58,18 @@ omod PHYSICAL-ACTIONS is
   var QUEUE : EQueue .
   var CONF : Configuration .
 
-
----  commented out for testing:
-  crl [noAction] :
-     < O : PhysAct | leftOfPeriod : T, period : P, timeNonDet : true > 
-  => < O : PhysAct | leftOfPeriod : P >
-  if T equals zero .
----     
+  rl [noAction] :
+     < O : PhysAct | leftOfPeriod : 0, period : P, timeNonDet : true > 
+  => < O : PhysAct | leftOfPeriod : P > .
 
   msg scheduleAction : Event -> Msg .
 
-  crl [actionHappens] :
-     < (RI . AI) : PhysAct | leftOfPeriod : T, period : P,
+  rl [actionHappens] :
+     < (RI . AI) : PhysAct | leftOfPeriod : 0, period : P,
                              possibleValues : (V : VS) >
    =>
      < (RI . AI) : PhysAct | leftOfPeriod : P >
-     scheduleAction(event(RI, AI, V))
-  if T equals zero .
-
+     scheduleAction(event(RI, AI, V)) .
 
   eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
      < O2 : EventQueue | queue : QUEUE >
@@ -88,4 +79,3 @@ omod PHYSICAL-ACTIONS is
      < O2 : EventQueue | queue : schedule(EVENT, PT, QUEUE) > 
      [physicalTime: PT] .
 endom
-

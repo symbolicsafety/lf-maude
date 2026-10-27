@@ -1,8 +1,4 @@
-*** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
-
 --- No hierarchical models
---- No physical time, like LF-verif paper
---- 
 
 ---Kyungmin: 
 ---  1) refactored to remove unnecessary dependencies
@@ -45,16 +41,6 @@ fmod LF-EXPR is
 
   ops _<_ _>_ _<=_ _>=_ : RatExpr RatExpr ->   BoolExpr [ctor] .
   op _===_ : Expr Expr -> BoolExpr [ctor] .
-
-***(
-  op [_] : PortId -> Expr [ctor] .   --- only input ports can be called for value
-  op [_] : RPortId -> RatExpr [ctor] .
-  op [_] : BPortId -> BoolExpr [ctor] .
-
-  op [_] : ActionId -> Expr [ctor] .
-  op [_] : RActionId -> RatExpr [ctor] .
-  op [_] : BActionId -> BoolExpr [ctor] .
-)***
 
   subsorts RPortId RVarId RActionId < RatExpr .
   subsorts BPortId BVarId BActionId < BoolExpr .
@@ -158,8 +144,6 @@ omod REACTION is
 
   op reaction_when_-->_do`{_`} exTime__ : Nat OidSet OidSet ReactionBody Time TimeInf -> Reaction [ctor] .
   op reaction_when_-->_do`{_`} deadline_`{_`} exTime__ : Nat OidSet OidSet ReactionBody TimeInf ReactionBody Time TimeInf -> Reaction [ctor] .
-  --- add indices to reactions to identify them
-  --- op reaction_when_-->_do`{_`} : Nat OidSet OidSet ReactionBody -> Reaction .
 
   --- NEW for two-timelines: take into account deadlines.
   --- missing deadline specification is modeled with deadline = infinity
@@ -235,8 +219,6 @@ omod REACTOR is
   eq addReactionIndices(< REACTORID : Reactor | reactions : RL > REST)
    = < REACTORID : Reactor | reactions : addIndices(RL, 1) > addReactionIndices(REST) . 
   eq addReactionIndices(REST) = REST [owise] .
-
-  *** Remember to add indices to reactions ASAP in the more complex setting!
 
 endom
 

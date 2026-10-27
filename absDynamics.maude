@@ -1,10 +1,7 @@
---- First attempt at the overall dynamics of our interpreter.
-
 omod INVOKED is
   protecting REACTION .
 
-  *** NEW Feb'25:
-  --- We add a new object keeping track of the reactions that were performed
+  --- We add an object keeping track of the reactions that were performed
   --- in the last step.
 
   class Invoked | reactions : ReactionIdSet .
@@ -54,6 +51,3 @@ omod ABS-DYNAMICS-WITHOUT-TICK is
                 REACTORS-AND-CONNECTIONS, schedule(event(REACTORID, ACTIONID, VAL), zero, QUEUE)) .
   eq addStartup(ACTIONID, REACTORS-AND-CONNECTIONS, QUEUE) = QUEUE [owise] .
 endom
-
-
-

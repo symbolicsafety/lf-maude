@@ -1,17 +1,11 @@
 
-*** Try to model event queues ...
+*** Modeling event queues ...
 --- Event: input port + "tag" + value
----     Note: we like to count "down" so the tag
----       is not absolute time, but remaining time.
 --- Note also: we need super-dense time, although we use
 ---       natural numbers as time domain.
 
-
---- Note: also actions need to be scheduled and put into event queue.
----   we guess
-
---- Note: an event may has an addition constraint (always true for the
----   concrete case). 
+--- Kyungmin Note: an event may have an addition constraint (always 
+--- has the value "true" for the concrete case). 
 
 fmod EVENT is
   protecting REACTOR-ID .
@@ -21,16 +15,6 @@ fmod EVENT is
   --- Single events.  It may also have a constraint. 
   sort Event .
   op event : ReactorId ActionTrigger Value -> Event [ctor] .
-endfm
-
-
----NOTE: currently not used
-fmod TIMED-EVENT is
-  protecting TIME .
-  protecting EVENT .
-
-  sort TimedEvent .   --- ???
-  op _inTime_ : Event Time -> TimedEvent [ctor] .   ---  needed?
 endfm
 
 
@@ -70,9 +54,9 @@ omod ABS-EVENT-QUEUE is
   --- models, so that an input port is uniquely identified by
   --- reactorId . portId
 
-  class EventQueue | queue : EQueue .  --- class according to majority vote
+  class EventQueue | queue : EQueue .
 
-  --- the cons constructor for EQueue is not defined here!
+  --- the constructor for EQueue is not defined here!
   sort EQueue .
   subsort TaggedEvents < EQueue .
   op empty : -> EQueue [ctor] .
@@ -81,11 +65,9 @@ omod ABS-EVENT-QUEUE is
   var EVENTS : Events .
   var QUEUE : EQueue .
 
-  ---NOTE: not declared here!
+  --- defined someplace else
   op insert : TaggedEvents EQueue -> EQueue .
 
-  --- note events could also be 'actions'
-  --- NOTE: these are our educated guesses ....
   --- NOTE: assume that the second argument is always a concrete value!
   op schedule : Events Time EQueue -> EQueue .
   ceq schedule(EVENTS, T, QUEUE)  = insert(EVENTS at tag(T, 0), QUEUE) 
@@ -94,8 +76,3 @@ omod ABS-EVENT-QUEUE is
   ceq schedule(EVENTS, T, QUEUE) = insert(EVENTS at tag(zero,1), QUEUE) 
    if T equals zero .
 endom
-
-
-
-
-

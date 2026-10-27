@@ -1,4 +1,3 @@
-
 --- This file now defines only a container of physical actions.
 
 omod ENVIRONMENTS is
@@ -6,10 +5,8 @@ omod ENVIRONMENTS is
   protecting ABS-EVENT-QUEUE .
   protecting PHYSICAL-ACTION-ID .
 
-  --- The ENVIRONMENT represents all external actions,
-  ---   namely, the physical actions:
+  --- The ENVIRONMENT represents external actions,
+  ---   namely, the physical actions that may happen spontaneously:
 
   class Environment | physicalActions : Configuration .
 endom
-
-

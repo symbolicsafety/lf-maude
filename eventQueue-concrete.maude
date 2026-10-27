@@ -1,4 +1,3 @@
-
 omod EVENT-QUEUE is
   including ABS-EVENT-QUEUE .
 
@@ -19,4 +18,3 @@ omod EVENT-QUEUE is
            then (((EVENTS1 EVENTS2) at TAG1) :: QUEUE)
 	   else ((EVENTS2 at TAG2) :: insert(EVENTS1 at TAG1, QUEUE)) fi) fi .
 endom
-

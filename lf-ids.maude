@@ -45,14 +45,7 @@ fmod REACTION-ID is
   protecting ACTION-TRIGGER .
 
   sorts ReactionId .
-  op _._ : ReactorId ActionTrigger -> ReactionId [ctor] .
-  *** Important: under the current assumption that each
-  ***   reaction is triggered by exactly ONE trigger, we can
-  ***   identify a reaction by its reactor and its trigger.
-  ---  Of course, in a future more general setting, we can use
-  ---    reactor.n   as the reaction id.
-
-  ***  NOW in complex version we try the following ReactionId instead:
+  op _._ : ReactorId PortId -> ReactionId [ctor] .
   op _._ : ReactorId Nat -> ReactionId [ctor] .
 endfm
 

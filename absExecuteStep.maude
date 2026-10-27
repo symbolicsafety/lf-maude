@@ -66,13 +66,10 @@ omod EVEL-EXP is
    = eval(REXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) >=
      eval(REXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) .
   
-  *** NEW GUY:
   eq eval(isPresent(TRIGGER), VALUATION, INPORTSANDACTIONS, ((TRIGGER |-> present) ; TSTATUS))
    = trueVal .
   
   eq eval(isPresent(TRIGGER), VALUATION, INPORTSANDACTIONS, TSTATUS) = falseVal [owise] .
-  
-  *** MORE TBILISI NEW GUYS:
   
   eq eval(EXP1 ==/= EXP2, VALUATION, INPORTSANDACTIONS, TSTATUS) 
    = ! (eval(EXP1, VALUATION, INPORTSANDACTIONS, TSTATUS) ===
@@ -161,20 +158,10 @@ omod ABS-EXECUTE-REACTION is
        then schedule(event(REACTOR, TIMERID, zeroVal), LT plus TI, QUEUE)
        else QUEUE fi, LT) .
 
-  --- NOTE: just keep the original def, instead of the following constrained version, 
-  ---   as TI cannot be a symbolic value in any case
----(
-  eq scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | period : TI > TIMERS,
-       ((TIMERID |-> present) ; TSTATUS), QUEUE, LT)
-   = scheduleTriggeringTimers(REACTOR, < TIMERID : Timer | > TIMERS,
-       TSTATUS,
-       schedule(event(REACTOR, TIMERID, zeroVal, boolToValue(TI gt zero and TI lt INF)), TI, QUEUE)) .
-)---)
-
   eq scheduleTriggeringTimers(REACTOR, TIMERS, TSTATUS, QUEUE, LT) = QUEUE [owise] .
 
 
-  --- the last item: accumulated consts (always true for the concrete case)
+  --- the last item: accumulated consts (always has the value "true" for the concrete case)
   op executeReactionBody : Object ReactionBody Events EQueue TriggerStatus BoolValue Time Time -> ReactorOutputsFutureevents .
 
   eq executeReactionBody(< REACTOR : Reactor | >, skip, OUTPUTS, QUEUE, TSTATUS, CONST, LT, PT) 
@@ -282,19 +269,7 @@ omod ABS-EXECUTE-STEP is
   vars N N2 N3 NP : Nat .
 
 
-  *** Don't forget that somewhere in the new setting, we must call
-  *** addReactionIndices!!
-  --- ---------
-  
-  --- All new Feb 25: add reactions in this step:
-
-  ---- sort Network+Queue+Reactions .
-  --- return new state of system plus updated event queue plus reations invoked in this step
-  --- the last item: accumulated consts (always true for the concrete case)
-  --- op networkQueueRxns : Configuration EQueue ReactionIdSet BoolValue -> Network+Queue+Reactions [ctor] .
-
-
-  --- the last item indicates accumulated consts (always true for the concrete case)
+  --- the last item indicates accumulated consts (always has value "true" for the concrete case)
   op executeStep : Events Time Configuration BoolValue -> Configuration .
   ceq executeStep(EVENTS, LT, NETWORK, CONST)
     = executeStep(generateAPG(EVENTS, NETWORK), LT, NETWORK', CONST && CONST') 
@@ -405,7 +380,6 @@ eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
   --- updateGraph(graph, executed reactor, output ports of reaction, network, actual outputs)
   op updateGraph : Configuration ReactorId OidSet Configuration Events -> Configuration .
   
-  --- new complex version
   --- positive case: some unknown input becomes present at a downstream guy:
   eq updateGraph(< (REACTORID2 . N) : APGNode | triggers : ((PORTID2 |-> unknown) ; TSTATUS) > GRAPH,
                  REACTORID1, OS, 
@@ -441,7 +415,6 @@ eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
                       NETWORK (REACTORID1 : PORTID1 --> REACTORID2 : PORTID2)
      ) .
   
-  --- NEW version!
   --- transitive negative case
   ceq updateGraph(< (REACTORID2 . N2) : APGNode | 
                      triggers : ((PORTID2 |-> unknown) ; TSTATUS),
@@ -497,5 +470,3 @@ eq unknownCanWrite(REACTORID, PORTID, GRAPH, NETWORK) = false [owise] .
      else noMoreReaction(GRAPH, < REACTIONID : APGNode | > GRAPH') fi .
   eq noMoreReaction(none, GRAPH') = true .
 endom
-
-

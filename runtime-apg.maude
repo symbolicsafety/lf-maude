@@ -1,21 +1,3 @@
-
-*** Assumption for the moment: for simplicity we assume
-*** that each reaction is only triggered by one
-***   "thing".  
-
-*** Journal version: Multiple triggers for a reaction.
-*** That would be completely trivial to implement.  
-*** However, what is the problem is that, in our
-*** understanding, multiple reactions in the same
-*** reactor could have exactly the same set of
-*** triggers.  Therefore, identifying a reaction
-*** by its reactors and set of triggers does not
-*** work. The situation is complicated since
-*** reactions most often do not have names in LF.
-*** Therefore, we now instead identify a reaction
-*** by a pair (r . i), where the reaction is the ith
-*** reaction declared in reactor r.
-
 *** In this code, we now assume that the function
 *** addReactionIndices is already call somewhere!
 ***   This should be called somewhere in the interpreter,
@@ -25,10 +7,6 @@ omod APG-NODE is
   protecting REACTION .
 
   --- graph data type:
-
-  --- The following is not used.
-  --- class RuntimeDependencies | apg : Configuration .
-
   class APGNode | triggers : TriggerStatus,
                   pre : ReactionIdSet,
                   succ : ReactionIdSet,
@@ -37,8 +15,6 @@ omod APG-NODE is
   sort ExecutionStatus .
   ops executed absent unknown present : -> ExecutionStatus [ctor] .
   op executing : Time -> ExecutionStatus [ctor] .   --- new for two timelines
-  
-  --- notice that our new ReactionId are  r . i.
   
   sort TriggerStatus .
   op _|->_ : ActionTrigger ExecutionStatus -> TriggerStatus [ctor] .
@@ -120,10 +96,10 @@ omod RUNTIME-APG is
    if not (REACTOR . N) inGraph GRAPH .                                              
   
   
-  eq initializeAPG(EVENTS, NETWORK, GRAPH) = GRAPH [owise] .  ***
+  eq initializeAPG(EVENTS, NETWORK, GRAPH) = GRAPH [owise] .
   
 
-  --- New, subtle case: an 'unknown' input could result from a delayed connection,
+  --- subtle case: an 'unknown' input could result from a delayed connection,
   --- in which case we set it to 'absent' in this late-comer function ...
   --- Or, all sources of a trigger are absent from the APG.
   
@@ -247,9 +223,7 @@ omod RUNTIME-APG is
   
   
   op addVerticalDeps : Configuration -> Configuration .
-  --- AT THE END: add vertical dependencies; assuming all nodes already in
-  ---   graph.  Now easier, since we now have numbers of the reactions in a reactor.
-  
+  --- AT THE END: add vertical dependencies; assuming all nodes already in graph.
   
   ceq addVerticalDeps(GRAPH
                       < (REACTOR . N1) : APGNode | succ : SUCC >
@@ -270,10 +244,6 @@ omod RUNTIME-APG is
   eq generateAPG(EVENTS, NETWORK)
    = setUnconnectedAbsent(addVerticalDeps(addDeps(initializeAPG(EVENTS, NETWORK, none), NETWORK)), NETWORK) .
   
-  
-  ---  eq generateAPG(EVENTS, NETWORK)
-  ---   = addDeps(initializeAPG(EVENTS, NETWORK), NETWORK)  .  *** just for debugging!
-  
   *** Remember that the function addReactionIndices must be called before generateAPG is called!!!
 
   --- two timelines update stuff
@@ -288,4 +258,3 @@ omod RUNTIME-APG is
   eq allFinished(GRAPH) = true [owise] .
 
 endom
-

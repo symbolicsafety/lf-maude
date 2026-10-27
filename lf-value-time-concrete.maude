@@ -1,4 +1,3 @@
-
 fmod LF-VALUE-TIME is
   including LF-ABS-VALUE-TIME .
   including LF-EXPR .
