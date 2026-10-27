@@ -1,0 +1,20 @@
+omod EXECUTE-STEP-LOGICALTIME is
+  including EXECUTE-STEP .
+
+  vars GRAPH NETWORK : Configuration .
+  var CONST : BoolValue .
+  var LT : Time .
+
+  ceq executeStep(
+            GRAPH,
+            LT,
+            NETWORK,
+            CONST
+        )
+  =
+       finished(NETWORK)
+       if allFinished(GRAPH) .
+
+op finished : Configuration -> Configuration [ctor frozen] .
+
+endom

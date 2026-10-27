@@ -1,7 +1,6 @@
 omod DYNAMICS-FUNCTIONS is
   including LF-REPR .
   including ABS-DYNAMICS-WITHOUT-TICK .
-  including EXECUTE-STEP .
   including EVENT-QUEUE .
   including PHYSICAL-ACTIONS .
 
@@ -85,122 +84,9 @@ omod DYNAMICS-FUNCTIONS is
 
 endom
 
-omod DYNAMICS-WITHOUT-TICK is
-  including DYNAMICS-FUNCTIONS .
-
-  --- At the moment, the global state is
-  --- < env : Environment | physicalActions : ... >
-  --- REACTORS and CONNECTIONS in some state
-  --- < q : EventQueue | queue : ... >
-
-  vars REACTORS-AND-CONNECTIONS PHYSICAL-ACTIONS NEW-NETWORK CONF1 : Configuration .
-  vars QUEUE NEW-QUEUE : EQueue .
-  vars E Q PA RXNS O : Oid .
-  var INVOKED : ReactionIdSet .
-  var EVENTS : Events .
-  var CONST : BoolValue .
-  var TI : TimeInf .
-  vars T T1 T2 PT : Time .
-  var N NP : Nat .
-  var REST : Configuration .
-  var REACTORID : ReactorId .
-  var VAR : VarId .
-  var VAL : Value .
-  var RS : ReactorState .
-  var RID : ReactionId .
-  var RIDS : ReactionIdSet .
-  vars EQ1 EQ2 : EQueue .
-  var EVENT : Event .
-  var TAG : Tag .
-  
-  *** We need some initialization, obviously.  DONE
-
-  *** We have some freedom here; IF an event can happen
-  *** at the same time when a physical action could happen, we always
-  *** make the physical action happen first.
-  ---  In reality physical actions and events probably
-  ---  will never happen at the same time.
-
-
-  crl [step] :
-      {< E : Environment | physicalActions : CONF1 >
-       REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
-       < RXNS : Invoked | >
-       [physicalTime: PT] 
-       [numberProcessors: NP]
-       } 
-  =>
-      {
-        C:Configuration
-      } in time T2
-      if PT ge T /\ smallestTimer(CONF1) gt zero 
-      /\ {executeStep(EVENTS, T,
-          < E : Environment | physicalActions : CONF1 >
-          REACTORS-AND-CONNECTIONS
-          < Q : EventQueue | queue : QUEUE >
-          < RXNS : Invoked | reactions : none >
-          [physicalTime: PT] 
-          [numberProcessors: NP],
-          trueVal
-          )}
-      =>
-        {
-            finished(C:Configuration)
-        } in time T2 .
-
---- variant without time advance
-  crl [step] :
-      {< E : Environment | physicalActions : CONF1 >
-       REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
-       < RXNS : Invoked | >
-       [physicalTime: PT] 
-       [numberProcessors: NP]
-       }
-  =>
-      {
-        C:Configuration
-      }
-      if PT ge T /\ smallestTimer(CONF1) gt zero 
-      /\ {executeStep(EVENTS, T,
-          < E : Environment | physicalActions : CONF1 >
-          REACTORS-AND-CONNECTIONS
-          < Q : EventQueue | queue : QUEUE >
-          < RXNS : Invoked | reactions : none >
-          [physicalTime: PT]
-          [numberProcessors: NP],
-          trueVal
-          )}
-      =>
-        {
-            finished(C:Configuration)
-        } .
-
-
-  *** Note: condition ensures that physical actions are generated
-  ***       before events are processed.
-endom
-
-
-
-*** We now add the tick rule, which is slightly different for three cases:
----  1. Basic Real-Time Maude model and semantics of LF, with "standard"
----     tick rule, perfect for, e.g., simulation purposes.
----  2. A tick rule for unbounded model checking analysis; this uses
----     the same tick rule, except that we do not carry the global
----     clock in the state. We just remove the "in time T" part of
----     the tick rule.
----  3. Time-bounded analysis: we must modify the tick rule so that
----     time does not advance beyond the bound.
-
-*** For each of these choices, select the appropriate of the below modules:
-
-
 *** Case 1: standard tick rule for simulation:
-
-omod SIMULATION-DYNAMICS is
-  including DYNAMICS-WITHOUT-TICK .
+omod SIMULATION-DYNAMICS-COMMON is
+  including DYNAMICS-FUNCTIONS .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
   vars T1 T T2 PT LT : Time .
@@ -286,11 +172,9 @@ omod SIMULATION-DYNAMICS is
 
 endom
 
-
 *** Case 2: for unbounded and unclocked analyses:
-
-omod UNBOUNDED-ANALYSIS-DYNAMICS is
-  including DYNAMICS-WITHOUT-TICK .
+omod UNBOUNDED-ANALYSIS-DYNAMICS-COMMON is
+  including DYNAMICS-FUNCTIONS .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
   vars T T1 PT : Time .
@@ -338,15 +222,9 @@ omod UNBOUNDED-ANALYSIS-DYNAMICS is
 
 endom
 
+omod TIME-BOUNDED-DYNAMICS-COMMON is
 
-
-*** Case 3: time-bounded analysis.
-*** The user must do TWO things:
-***    a. start with state {...} in time 0
-***    b. set the value of the constant 'timeBound' to the desired value.
-
-omod TIME-BOUNDED-DYNAMICS is
-  including DYNAMICS-WITHOUT-TICK .
+  including DYNAMICS-FUNCTIONS .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
   vars T1 T T2 T3 T4 PT LT : Time .
@@ -366,35 +244,6 @@ omod TIME-BOUNDED-DYNAMICS is
   vars PRE INVOKED : ReactionIdSet .
 
   op timeBound : -> Time .   *** initialized by user
-
-
-  crl [step] :
-      {< E : Environment | physicalActions : CONF1 >
-       REACTORS-AND-CONNECTIONS
-       < Q : EventQueue | queue : (EVENTS at tag(T, N)) :: QUEUE >
-       < RXNS : Invoked | >
-       [physicalTime: PT] 
-       [numberProcessors: NP]
-       } in time T3
-  =>
-      {
-        C:Configuration
-      } in time T4
-      if PT ge T /\ smallestTimer(CONF1) gt zero 
-      /\ {executeStep(EVENTS, T,
-          < E : Environment | physicalActions : CONF1 >
-          REACTORS-AND-CONNECTIONS
-          < Q : EventQueue | queue : QUEUE >
-          < RXNS : Invoked | reactions : none >
-          [physicalTime: PT] 
-          [numberProcessors: NP],
-          trueVal
-          )} in time T3
-      =>
-        {
-            finished(C:Configuration)
-        } in time T4 .
-
 
   crl [tick] :
     {< E : Environment | physicalActions : CONF1 >
@@ -467,14 +316,13 @@ omod TIME-BOUNDED-DYNAMICS is
 
 endom
 
-
 *** Case 4: unbounded and time-bounded analysis.
 *** The user must do TWO things:
 ***    a. for unbounded analysis start with state {...} timeBound INF
 ***    b. for time-bounded analysis set the value after 'timeBound' to the desired value.
 
 omod UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS is
-  including DYNAMICS-WITHOUT-TICK .
+  including DYNAMICS-FUNCTIONS .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
   vars T1 T T2 PT LT : Time .
@@ -568,7 +416,7 @@ endom
 ***    b. for time-bounded analysis set the value after 'timeBound' to the desired value.
 
 omod TIMED-SIMULATION-DYNAMICS is
-  including DYNAMICS-WITHOUT-TICK .
+  including DYNAMICS-FUNCTIONS .
 
   vars REACTORS-AND-CONNECTIONS CONF1 PHYSICAL-ACTIONS : Configuration .
   vars T T1 T2 T3 PT LT : Time .
@@ -655,25 +503,6 @@ omod TIMED-SIMULATION-DYNAMICS is
    if T := minimum(smallestTimer(CONF1), TI2)
    /\ T gt zero
    /\ CONF1 =/= none .      --- implied by typing of T
-
-endom
-
-omod ANALYSIS-FUNCTIONS is
-  including DYNAMICS-WITHOUT-TICK .
-
-  vars VAL VAL2 : Value .
-  var VAR : VarId .
-  var RID : ReactorId .
-
-  --- we want to define a generic function that
-  --- search [1] initSystem in time 0 =>! CS:ClockedSystem such that var in component in CS:ClockedSystem is bla
-  op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
-  eq VAR in RID in ({REST:Configuration < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState >} in time T:Time) is VAL2
-  = VAL == VAL2 .
-
-  op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
-  eq VAR in RID in ( { executeStep(GRAPH:Configuration, LT:Time, REST:Configuration
-                < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState > , B:BoolValue)} in time T:Time ) is VAL2 = VAL == VAL2 .
 
 endom
 

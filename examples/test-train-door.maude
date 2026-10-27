@@ -3,7 +3,7 @@ in TrainDoor_v1.maude
 
 omod TEST-TRAIN is
   including TRAINDOOR .
-  including DYNAMICS-WITHOUT-TICK .
+  including DYNAMICS-WITHOUT-TICK-LOGICALTIME .
 ---  including SIMULATION-DYNAMICS .
 
   ops env queue rxns : -> Oid [ctor] .
@@ -30,7 +30,7 @@ endom
 
 omod SIMULATE-TRAIN is
   including TEST-TRAIN .
-  including SIMULATION-DYNAMICS .
+  including SIMULATION-DYNAMICS-LOGICALTIME .
 endom  
 
 
@@ -57,7 +57,7 @@ search initSystem =>*
 
 omod TIME-BOUNDED-TRAIN is
   including TEST-TRAIN .
-  including TIME-BOUNDED-DYNAMICS  .
+  including TIME-BOUNDED-DYNAMICS-LOGICALTIME  .
   including ANALYSIS-FUNCTIONS .
   including LF-PROP .
   including LF-PROP-EXT .

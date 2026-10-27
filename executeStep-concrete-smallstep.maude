@@ -1,0 +1,18 @@
+omod EXECUTE-STEP-SMALLSTEP is
+  including EXECUTE-STEP .
+
+  vars GRAPH NETWORK : Configuration .
+  var CONST : BoolValue .
+  var LT : Time .
+
+  ceq executeStep(
+            GRAPH,
+            LT,
+            NETWORK,
+            CONST
+        )
+  =
+       NETWORK
+       if allFinished(GRAPH) .
+
+endom

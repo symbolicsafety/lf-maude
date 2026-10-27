@@ -12,9 +12,14 @@ load absDynamics
 
 load lf-value-time-concrete
 load eventQueue-concrete
-load executeStep-concrete
 load physicalActions-concrete
 load dynamics-concrete
+load executeStep-concrete
+load executeStep-concrete-logicaltime
+load executeStep-concrete-smallstep
+load dynamics-concrete-logicaltime
+load dynamics-concrete-smallstep
 
 load model-checker
 load lf-prop
+load analysis-functions

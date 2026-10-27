@@ -30,6 +30,7 @@ omod EXECUTE-STEP is
   including ABS-EXECUTE-STEP .
   including INVOKED .
   including LF-TIMELINES .
+  including DYNAMICS-FUNCTIONS .
 
   vars REACTORID : ReactorId .
   vars PRE INVOKED : ReactionIdSet .
@@ -107,17 +108,5 @@ crl [finishExecuteReaction] :
             CONST
             )
   if T ge T1 /\ T le TI1 .
-
-  ceq executeStep(
-            GRAPH,
-            LT,
-            NETWORK,
-            CONST
-        )
-  =
-       finished(NETWORK)
-       if allFinished(GRAPH) .
-
-op finished : Configuration -> Configuration [ctor frozen] .
 
 endom
