@@ -19,7 +19,7 @@ omod TEST-TRAIN is
 				   possibleValues : ([true] : [false]),
 				   timeNonDet : true > >
        addReactionIndices(init)
-       < queue : EventQueue | queue : addStartup(startup,init, empty) >
+       < queue : EventQueue | queue : addStartup(startup,init, empty), pastActions : empty >
        < rxns : Invoked | reactions : none >
       [physicalTime: 0]
       [numberProcessors: 1] 

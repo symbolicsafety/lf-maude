@@ -16,4 +16,3 @@ omod ANALYSIS-FUNCTIONS is
                 < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState > , B:BoolValue)} in time T:Time ) is VAL2 = VAL == VAL2 .
 
 endom
-

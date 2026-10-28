@@ -1,0 +1,155 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod MERGESTATEFUL is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op sensor : -> ReactorId [ctor] .
+    op task1 : -> ReactorId [ctor] .
+    op event : -> ReactorId [ctor] .
+    op task2 : -> ReactorId [ctor] .
+    op actuator : -> ReactorId [ctor] .
+    op task2.m-sv.controlZulaw : -> RVarId [ctor] .
+    op actuator.m-sv.deadlineMissed : -> BVarId [ctor] .
+    op sensor.m-out.out : -> RPortId [ctor] .
+    op task1.m-in.in : -> RPortId [ctor] .
+    op task1.m-out.out : -> RPortId [ctor] .
+    op event.m-out.out : -> RPortId [ctor] .
+    op task2.m-in.in1 : -> RPortId [ctor] .
+    op task2.m-in.in2 : -> RPortId [ctor] .
+    op task2.m-out.out : -> RPortId [ctor] .
+    op actuator.m-in.in : -> RPortId [ctor] .
+    op sensor.m-t.t : -> TimerId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op event.m-pa.a : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < sensor : Reactor |
+            inports : none,
+            outports : 
+                < sensor.m-out.out : Port | value : [0] >,
+            state : empty,
+            timers : 
+                < sensor.m-t.t : Timer | offset : 0, period : 5 >,
+            actions : none,
+            reactions : 
+                (reaction when (sensor.m-t.t) --> (sensor.m-out.out) do {
+                    (sensor.m-out.out <- [1])
+                })
+        >
+        < task1 : Reactor |
+            inports : 
+                < task1.m-in.in : Port | value : [0] >,
+            outports : 
+                < task1.m-out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task1.m-in.in) --> (task1.m-out.out) do {
+                    (task1.m-out.out <- [1])
+                })
+        >
+        < event : Reactor |
+            inports : none,
+            outports : 
+                < event.m-out.out : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < event.m-pa.a : PhysicalAction | minDelay : 0, minSpacing : 10, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (event.m-pa.a) --> (event.m-out.out) do {
+                    (event.m-out.out <- event.m-pa.a)
+                })
+        >
+        < task2 : Reactor |
+            inports : 
+                < task2.m-in.in1 : Port | value : [0] >
+                < task2.m-in.in2 : Port | value : [0] >,
+            outports : 
+                < task2.m-out.out : Port | value : [0] >,
+            state : 
+                ( task2.m-sv.controlZulaw |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (task2.m-in.in1) do {
+                    (task2.m-sv.controlZulaw := task2.m-in.in1)
+                })
+                (reaction when (task2.m-in.in2) --> (task2.m-out.out) do {
+                    if ((task2.m-sv.controlZulaw === [1])) then ((task2.m-out.out <- [1])) fi
+                })
+        >
+        < actuator : Reactor |
+            inports : 
+                < actuator.m-in.in : Port | value : [0] >,
+            outports : none,
+            state : (actuator.m-sv.deadlineMissed |-> [false]),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (actuator.m-in.in) do {
+                    skip
+                }deadline 1 { actuator.m-sv.deadlineMissed := [true] } )
+        >
+    (sensor : sensor.m-out.out --> task1 : task1.m-in.in)
+    (task1 : task1.m-out.out -- 10 --> task2 : task2.m-in.in2)
+    (event : event.m-out.out --> task2 : task2.m-in.in1)
+    (task2 : task2.m-out.out -- 10 --> actuator : actuator.m-in.in)
+    .
+endom
+
+omod TEST-MERGESTATEFUL is
+    including MERGESTATEFUL .
+    including DYNAMICS-WITHOUT-TICK-LOGICALTIME .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq minExtime = 15 .
+    eq maxExtime = 15 .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : 
+                < (event . event.m-pa.a ): PhysAct | 
+                                  leftOfPeriod : 5, 
+                                  period : 5, 
+                                  possibleValues : [1], 
+                                  timeNonDet : false >
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty), pastActions : empty >
+            < rxns : Invoked | reactions : none >
+            [physicalTime: 0]
+            [numberProcessors: 1]} .
+endom
+
+omod SIMULATION-MERGESTATEFUL is
+    including TEST-MERGESTATEFUL .
+    including SIMULATION-DYNAMICS-LOGICALTIME .
+    including ANALYSIS-FUNCTIONS .
+endom
+
+omod TIME-BOUNDED-MERGESTATEFUL is
+    including TEST-MERGESTATEFUL .
+    including TIME-BOUNDED-DYNAMICS-LOGICALTIME .
+    including ANALYSIS-FUNCTIONS .
+    eq timeBound = 300 .
+endom
+
+
+omod MODEL-CHECK-MERGESTATEFUL is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-MERGESTATEFUL .
+  including LF-PROP .
+  including LF-PROP-EXT .
+endom
+
+---rew [51] in SIMULATION-MERGESTATEFUL : initSystem .
+
+search [1] initSystem in time 0 =>* CS:ClockedSystem such that 
+  actuator.m-sv.deadlineMissed in actuator in CS:ClockedSystem is [true] .

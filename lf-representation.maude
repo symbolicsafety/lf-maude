@@ -95,7 +95,7 @@ omod ACTION is
   --- unclear whether payload needed for all.  Subclass instead?
 
   sort ActionPolicy .
-  ops defer drop replace : -> ActionPolicy [ctor] .
+  ops defer drop replace noMinSpacing : -> ActionPolicy [ctor] .
 endom
 
 

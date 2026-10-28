@@ -280,6 +280,7 @@ omod LF-OUTPUT-REPR is
   op time:_ : Time -> OutputItem [ctor format(b o d)] .
   op invoked:_ : ReactionIdSet -> OutputItem [ctor prec 124 format(b o d)] .
   op queue:_ : EQueue -> OutputItem [ctor prec 124 format(b o d)] .
+  op pastActions:_ : ActionHistory -> OutputItem [ctor prec 124 format(b o d)] .
   op inports:_ : Map{Oid,Value} -> OutputItem [ctor prec 124 format(b o d)] .
   op state:_ : ReactorState -> OutputItem [ctor prec 124 format(b o d)] .
   op _:`[_`] : ReactorId OutputItemSet -> OutputItem [ctor format(r o d n++i d --)] .
@@ -303,6 +304,7 @@ omod LF-OUTPUT-REPR is
   var T : Time .
   var TI : TimeInf .
   var OIS : OutputItemSet .
+  var ACTIONHISTORY : ActionHistory .
 
 --- simplify
   op simplify : ClockedSystem ~> OutputItemSet .
@@ -316,8 +318,8 @@ omod LF-OUTPUT-REPR is
   op simplify : Configuration ~> OutputItemSet .
   eq simplify(< O : Invoked | reactions : RIS > REST) 
    = (invoked: RIS) simplify(REST) .
-  eq simplify(< O : EventQueue | queue : EQ > REST) 
-   = (queue: EQ) simplify(REST) .
+  eq simplify(< O : EventQueue | queue : EQ, pastActions : ACTIONHISTORY > REST) 
+   = ((queue: EQ) (pastActions: ACTIONHISTORY)) simplify(REST) .
   eq simplify(< O : Reactor | inports : PORTS, state : VALUATION > REST)
    = (O : [inports: simplifyPorts(PORTS) state: VALUATION]) simplify(REST) .
   eq simplify(REST) = none [owise] .

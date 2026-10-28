@@ -23,3 +23,4 @@ load dynamics-concrete-smallstep
 load model-checker
 load lf-prop
 load analysis-functions
+load analysis-modules

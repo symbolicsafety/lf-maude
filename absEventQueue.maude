@@ -59,6 +59,12 @@ omod ABS-EVENT-QUEUE is
   --- models, so that an input port is uniquely identified by
   --- reactorId . portId
 
+  --- New Oct26: need to store the action history to deal with min_spacing issues
+  sort ActionHistory .
+  op __|->_ : ReactorId ActionId Tag -> ActionHistory [ctor] .
+  op empty : -> ActionHistory [ctor] .
+  op __ : ActionHistory ActionHistory -> ActionHistory [ctor assoc comm id: empty] .
+
   class EventQueue | queue : EQueue, pastActions : ActionHistory .
 
   --- the constructor for EQueue is not defined here!
@@ -69,13 +75,13 @@ omod ABS-EVENT-QUEUE is
   var T : Time .
   var EVENT : Event .
   var EVENTS : Events .
-  var QUEUE : EQueue .
+  vars QUEUE QUEUE1 QUEUE2 : EQueue .
   var AI : ActionId .
   var PID : PortId .
   var TID : TimerId .
   var RID : ReactorId .
   var ACTIONHISTORY : ActionHistory .
-  var VAL : Value .
+  vars VAL VAL2 : Value .
   vars TAG TAG2 : Tag .
 
   --- defined someplace else
@@ -89,30 +95,8 @@ omod ABS-EVENT-QUEUE is
   ceq schedule(EVENT, T, QUEUE) = insert(EVENT at tag(zero,1), QUEUE) 
    if T equals zero .
 
-  --- New Oct26: need to store the action history to deal with min_spacing issues
-  sort ActionHistory .
-  op _|->_ : ActionId Tag -> ActionHistory [ctor] .
-  op empty : -> ActionHistory [ctor] .
-  op _;_ : ActionHistory ActionHistory -> ActionHistory [ctor assoc comm id: empty] .
-
+  --- Implementation is defined in eventQueue-concrete.maude
   *** schedule (Action, tag, Event queue, action history, minSpacing, policy)
   op schedule : Event Time EQueue ActionHistory Time ActionPolicy -> EQueue .
-
-  op add : TaggedEvents ActionHistory -> ActionHistory .
-  eq add((event(RID, AI, VAL) EVENTS) at TAG, (AI |-> TAG2) ; ACTIONHISTORY) 
-   = add(EVENTS at TAG, (AI |-> TAG) ; ACTIONHISTORY) .
-
-  --- initial case with no history for that action id
-  eq add((event(RID, AI, VAL) EVENTS) at TAG, ACTIONHISTORY)
-   = add(EVENTS at TAG, (AI |-> TAG) ; ACTIONHISTORY) [owise] .
-
-  eq add((event(RID, PID, VAL) EVENTS) at TAG, ACTIONHISTORY)
-   = add(EVENTS at TAG, ACTIONHISTORY) .
-
-  eq add((event(RID, TID, VAL) EVENTS) at TAG, ACTIONHISTORY)
-   = add(EVENTS at TAG, ACTIONHISTORY) .
-
-  eq add(noEvent at TAG, ACTIONHISTORY)
-   = ACTIONHISTORY .
 
 endom

@@ -1,0 +1,239 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod AUTOWARE is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op c : -> ReactorId [ctor] .
+    op l : -> ReactorId [ctor] .
+    op iobjectdetection : -> ReactorId [ctor] .
+    op lobjectdetection : -> ReactorId [ctor] .
+    op fuse : -> ReactorId [ctor] .
+    op sem : -> ReactorId [ctor] .
+    op ac : -> ReactorId [ctor] .
+    op sb : -> ReactorId [ctor] .
+    op fuse.m-sv.deadlineMissed : -> BVarId [ctor] .
+    op fuse.m-sv.tmpImageobject : -> RVarId [ctor] .
+    op fuse.m-sv.tmpLIDARobject : -> RVarId [ctor] .
+    op ac.m-sv.deadlineMissed : -> BVarId [ctor] .
+    op c.m-out.image : -> RPortId [ctor] .
+    op l.m-out.pointcloud : -> RPortId [ctor] .
+    op iobjectdetection.m-in.image : -> RPortId [ctor] .
+    op iobjectdetection.m-out.object : -> RPortId [ctor] .
+    op lobjectdetection.m-in.pointcloud : -> RPortId [ctor] .
+    op lobjectdetection.m-out.object : -> RPortId [ctor] .
+    op fuse.m-in.imageobject : -> RPortId [ctor] .
+    op fuse.m-in.LIDARobject : -> RPortId [ctor] .
+    op fuse.m-out.object : -> RPortId [ctor] .
+    op sem.m-in.fusedObject : -> RPortId [ctor] .
+    op sem.m-out.actuation : -> RPortId [ctor] .
+    op ac.m-in.actuation : -> RPortId [ctor] .
+    op sb.m-in.LIDARPointCloud : -> RPortId [ctor] .
+    op sb.m-out.actuation : -> RPortId [ctor] .
+    op c.m-t.t : -> TimerId [ctor] .
+    op l.m-t.t : -> TimerId [ctor] .
+    op iobjectdetection.m-pa.CUDA : -> RActionId [ctor] .
+    op lobjectdetection.m-la.CUDA : -> RActionId [ctor] .
+    op fuse.m-la.bothZuportsZuareZupresent : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < c : Reactor |
+            inports : none,
+            outports : 
+                < c.m-out.image : Port | value : [0] >,
+            state : empty,
+            timers : 
+                < c.m-t.t : Timer | offset : 3, period : 33 >,
+            actions : none,
+            reactions : 
+                (reaction when (c.m-t.t) --> (c.m-out.image) do {
+                    (c.m-out.image <- [1])
+                })
+        >
+        < l : Reactor |
+            inports : none,
+            outports : 
+                < l.m-out.pointcloud : Port | value : [0] >,
+            state : empty,
+            timers : 
+                < l.m-t.t : Timer | offset : 10, period : 10 >,
+            actions : none,
+            reactions : 
+                (reaction when (l.m-t.t) --> (l.m-out.pointcloud) do {
+                    (l.m-out.pointcloud <- [2])
+                })
+        >
+        < iobjectdetection : Reactor |
+            inports : 
+                < iobjectdetection.m-in.image : Port | value : [0] >,
+            outports : 
+                < iobjectdetection.m-out.object : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < iobjectdetection.m-pa.CUDA : PhysicalAction | minDelay : 100, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (iobjectdetection.m-in.image) --> (iobjectdetection.m-pa.CUDA) do {
+                    schedule(iobjectdetection.m-pa.CUDA, [0], iobjectdetection.m-in.image)
+                })
+                (reaction when (iobjectdetection.m-pa.CUDA) --> (iobjectdetection.m-out.object) do {
+                    (iobjectdetection.m-out.object <- iobjectdetection.m-pa.CUDA)
+                })
+        >
+        < lobjectdetection : Reactor |
+            inports : 
+                < lobjectdetection.m-in.pointcloud : Port | value : [0] >,
+            outports : 
+                < lobjectdetection.m-out.object : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : 
+                < lobjectdetection.m-la.CUDA : LogicalAction | minDelay : 100, minSpacing : 20, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (lobjectdetection.m-in.pointcloud) --> (lobjectdetection.m-la.CUDA) do {
+                    schedule(lobjectdetection.m-la.CUDA, [0], lobjectdetection.m-in.pointcloud)
+                })
+                (reaction when (lobjectdetection.m-la.CUDA) --> (lobjectdetection.m-out.object) do {
+                    (lobjectdetection.m-out.object <- lobjectdetection.m-la.CUDA)
+                })
+        >
+        < fuse : Reactor |
+            inports : 
+                < fuse.m-in.imageobject : Port | value : [0] >
+                < fuse.m-in.LIDARobject : Port | value : [0] >,
+            outports : 
+                < fuse.m-out.object : Port | value : [0] >,
+            state : 
+                ( fuse.m-sv.deadlineMissed |-> [false] );
+                ( fuse.m-sv.tmpImageobject |-> [0] );
+                ( fuse.m-sv.tmpLIDARobject |-> [0] ),
+            timers : none,
+            actions : 
+                < fuse.m-la.bothZuportsZuareZupresent : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (fuse.m-in.imageobject ; fuse.m-in.LIDARobject) --> (fuse.m-la.bothZuportsZuareZupresent) do {
+                    if ((isPresent(fuse.m-in.imageobject))) then ((fuse.m-sv.tmpImageobject := fuse.m-in.imageobject) ;
+                    if ((isPresent(fuse.m-in.LIDARobject))) then (schedule(fuse.m-la.bothZuportsZuareZupresent, [0], [0])) else (schedule(fuse.m-la.bothZuportsZuareZupresent, [2], [0])) fi) else (if ((isPresent(fuse.m-in.LIDARobject))) then ((fuse.m-sv.tmpLIDARobject := fuse.m-in.LIDARobject) ;
+                    schedule(fuse.m-la.bothZuportsZuareZupresent, [2], [0])) fi) fi
+                }deadline 20 {
+                    (fuse.m-sv.deadlineMissed := [true] )
+                })
+                (reaction when (fuse.m-la.bothZuportsZuareZupresent) --> (fuse.m-out.object) do {
+                    (fuse.m-out.object <- [3])
+                })
+        >
+        < sem : Reactor |
+            inports : 
+                < sem.m-in.fusedObject : Port | value : [0] >,
+            outports : 
+                < sem.m-out.actuation : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (sem.m-in.fusedObject) --> (sem.m-out.actuation) do {
+                    (sem.m-out.actuation <- [5])
+                })
+        >
+        < ac : Reactor |
+            inports : 
+                < ac.m-in.actuation : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( ac.m-sv.deadlineMissed |-> [false] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (ac.m-in.actuation) do {
+                    skip
+                }deadline 33 {
+                    (ac.m-sv.deadlineMissed := [true])
+                })
+        >
+        < sb : Reactor |
+            inports : 
+                < sb.m-in.LIDARPointCloud : Port | value : [0] >,
+            outports : 
+                < sb.m-out.actuation : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (sb.m-in.LIDARPointCloud) --> (sb.m-out.actuation) do {
+                    (sb.m-out.actuation <- [5])
+                })
+        >
+    (c : c.m-out.image --> iobjectdetection : iobjectdetection.m-in.image)
+    (l : l.m-out.pointcloud --> lobjectdetection : lobjectdetection.m-in.pointcloud)
+    (l : l.m-out.pointcloud --> sb : sb.m-in.LIDARPointCloud)
+    (iobjectdetection : iobjectdetection.m-out.object --> fuse : fuse.m-in.imageobject)
+    (lobjectdetection : lobjectdetection.m-out.object --> fuse : fuse.m-in.LIDARobject)
+    (fuse : fuse.m-out.object --> sem : sem.m-in.fusedObject)
+    (sem : sem.m-out.actuation --> ac : ac.m-in.actuation)
+    .
+endom
+
+omod TEST-AUTOWARE is
+    including AUTOWARE .
+    including DYNAMICS-WITHOUT-TICK-LOGICALTIME .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq minExtime = 10 .
+    eq maxExtime = 10 .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : 
+                < (iobjectdetection . iobjectdetection.m-pa.CUDA ): PhysAct | leftOfPeriod : 100, period : 100, possibleValues : [1]: [2], timeNonDet : true >
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addInitialTimers(init, empty), pastActions : empty >
+            < rxns : Invoked | reactions : none >
+            [physicalTime: 0]
+            [numberProcessors: 1]} .
+endom
+
+omod SIMULATION-AUTOWARE is
+    including TEST-AUTOWARE .
+    including SIMULATION-DYNAMICS-LOGICALTIME .
+    including ANALYSIS-FUNCTIONS .
+endom
+
+omod TIME-BOUNDED-AUTOWARE is
+  including TEST-AUTOWARE .
+  including TIME-BOUNDED-DYNAMICS-LOGICALTIME .
+  including ANALYSIS-FUNCTIONS .
+  eq timeBound = 200 .
+endom
+
+
+rew [51] in SIMULATION-AUTOWARE : initSystem .
+
+search [1] initSystem in time 0 =>* CS:ClockedSystem such that
+ fuse.m-sv.deadlineMissed in fuse in CS:ClockedSystem is [true] .
+
+--- search [1] initSystem in time 0 =>* CS:ClockedSystem such that
+  --- ac.m-sv.deadlineMissed in ac in CS:ClockedSystem is [true] .
+
+
+omod MODEL-CHECK-AUTOWARE is
+  including MODEL-CHECKER .
+  including TIME-BOUNDED-AUTOWARE .
+  including LF-PROP .
+  including LF-PROP-EXT .
+endom
+
+red modelCheck(initSystem in time 0, 
+    [](((ac . 1) invoked) -> <> (ac.m-sv.deadlineMissed in ac == [true]) )) .
+
+
+red modelCheck(initSystem in time 0, 
+    [](((ac . 1) invoked) -> [] (ac.m-sv.deadlineMissed in ac == [false]) )) .
+
+
+search [1] initSystem in time 0 =>* CS:ClockedSystem such that
+ fuse.m-sv.deadlineMissed in fuse in CS:ClockedSystem is [true] .

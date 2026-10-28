@@ -4,9 +4,19 @@ omod EVENT-QUEUE is
   --- event queue is a list in the concrete setting
   op _::_ : EQueue EQueue -> EQueue [ctor assoc id: empty] .
 
-  vars EVENTS1 EVENTS2 : Events .
-  vars TAG1 TAG2 : Tag .
-  var QUEUE : EQueue .
+  vars MINSPACING T T1 : Time .
+  var EVENT : Event .
+  vars EVENTS EVENTS1 EVENTS2 : Events .
+  vars TAG TAG1 TAG2 : Tag .
+  var QUEUE QUEUE1 QUEUE2 : EQueue .
+  var AI : ActionId .
+  var PID : PortId .
+  var TID : TimerId .
+  var ACTIONHISTORY : ActionHistory .
+  vars VAL VAL2 : Value .
+  var RID : ReactorId .
+  var N : Nat .
+  var POLICY : ActionPolicy .
 
   --- insert an already correctly tagged set of events
   --- in the concrete setting
@@ -21,4 +31,58 @@ omod EVENT-QUEUE is
 
   --- New Oct26: past actions
   
+
+
+
+  op inEventQueue : ReactorId ActionId EQueue -> Bool .
+  eq inEventQueue(RID, AI, QUEUE1 :: ((event(RID, AI, VAL) EVENTS) at TAG) :: QUEUE2) = true .
+  eq inEventQueue(RID, AI, QUEUE) = false [owise] .
+
+  --- notice that we only take the negative cases where something is modified, whereas the [owise] equation 
+  --- takes care of the cases where minSpacing does not affect the scheduling.
+  ceq schedule(event(RID, AI, VAL), T, QUEUE, (RID AI |-> tag(T1, N)) ACTIONHISTORY, MINSPACING, drop) 
+   = QUEUE 
+  if T lt T1 plus MINSPACING . 
+
+  ceq schedule(event(RID, AI, VAL), T, QUEUE1 :: ((event(RID, AI, VAL2) EVENTS) at tag(T1, N)) :: QUEUE2, ACTIONHISTORY, MINSPACING, drop) 
+   = QUEUE1 :: ((event(RID, AI, VAL2) EVENTS) at tag(T1, N)) :: QUEUE2 
+  if T lt T1 plus MINSPACING .
+
+  ceq schedule(event(RID, AI, VAL), T, QUEUE, (RID AI |-> tag(T1, N)) ACTIONHISTORY, MINSPACING, replace) 
+   = schedule(event(RID, AI, VAL), T, QUEUE, (RID AI |-> tag(T1, N)) ACTIONHISTORY, MINSPACING, defer) 
+  if not inEventQueue(RID, AI, QUEUE) . 
+
+  ceq schedule(event(RID, AI, VAL), T, QUEUE1 :: ((event(RID, AI, VAL2) EVENTS) at tag(T1, N)) :: QUEUE2, ACTIONHISTORY, MINSPACING, replace) 
+   = QUEUE1 :: ((event(RID, AI, VAL) EVENTS) at tag(T1, N)) :: QUEUE2 
+  if T lt T1 plus MINSPACING /\ not inEventQueue(RID, AI, QUEUE2) .
+
+
+  ceq schedule(event(RID, AI, VAL), T, QUEUE, (RID AI |-> tag(T1, N)) ACTIONHISTORY, MINSPACING, defer) 
+   = schedule(event(RID, AI, VAL), T1 plus MINSPACING, QUEUE)
+  if T lt T1 plus MINSPACING /\ not inEventQueue(RID, AI, QUEUE) . 
+
+  ceq schedule(event(RID, AI, VAL), T, QUEUE1 :: ((event(RID, AI, VAL2) EVENTS) at tag(T1, N)) :: QUEUE2, ACTIONHISTORY, MINSPACING, defer) 
+   = schedule(event(RID, AI, VAL), T1 plus MINSPACING, QUEUE1 :: ((event(RID, AI, VAL2) EVENTS) at tag(T1, N)) :: QUEUE2)
+  if T lt T1 plus MINSPACING /\ not inEventQueue(RID, AI, QUEUE2) .
+
+  eq schedule(EVENT, T, QUEUE, ACTIONHISTORY, MINSPACING, POLICY) 
+   = schedule(EVENT, T, QUEUE) [owise] .
+
+  op add : TaggedEvents ActionHistory -> ActionHistory .
+  eq add((event(RID, AI, VAL) EVENTS) at TAG, (RID AI |-> TAG2) ACTIONHISTORY) 
+   = add(EVENTS at TAG, (RID AI |-> TAG) ACTIONHISTORY) .
+
+  --- initial case with no history for that action id
+  eq add((event(RID, AI, VAL) EVENTS) at TAG, ACTIONHISTORY)
+   = add(EVENTS at TAG, (RID AI |-> TAG) ACTIONHISTORY) [owise] .
+
+  eq add((event(RID, PID, VAL) EVENTS) at TAG, ACTIONHISTORY)
+   = add(EVENTS at TAG, ACTIONHISTORY) .
+
+  eq add((event(RID, TID, VAL) EVENTS) at TAG, ACTIONHISTORY)
+   = add(EVENTS at TAG, ACTIONHISTORY) .
+
+  eq add(noEvent at TAG, ACTIONHISTORY)
+   = ACTIONHISTORY .
+
 endom

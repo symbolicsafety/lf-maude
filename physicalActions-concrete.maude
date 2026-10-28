@@ -52,11 +52,15 @@ omod PHYSICAL-ACTIONS is
   var RI : ReactorId .
   vars T PT : Time .
   var P : TimeInf .
-  var V : Value .
+  vars V1 V : Value .
   var VS : ValueSet .
   var EVENT : Event .
   var QUEUE : EQueue .
   var CONF : Configuration .
+  vars MINSPACING MINDELAY : Time .
+  var POLICY : ActionPolicy .
+  var ACTIONHISTORY : ActionHistory .
+  var REST : Configuration .
 
   rl [noAction] :
      < O : PhysAct | leftOfPeriod : 0, period : P, timeNonDet : true > 
@@ -71,11 +75,18 @@ omod PHYSICAL-ACTIONS is
      < (RI . AI) : PhysAct | leftOfPeriod : P >
      scheduleAction(event(RI, AI, V)) .
 
-  eq < O : Environment | physicalActions : CONF scheduleAction(EVENT) >
-     < O2 : EventQueue | queue : QUEUE >
+  eq < O : Environment | physicalActions : CONF scheduleAction(event(RI, AI, V)) >
+     < RI : Reactor | actions : < AI : PhysicalAction | 
+                                    minDelay : MINDELAY,
+                                    minSpacing : MINSPACING, 
+                                      policy : POLICY,
+                                      payload : V1 > 
+                                REST >
+     < O2 : EventQueue | queue : QUEUE, pastActions : ACTIONHISTORY >
      [physicalTime: PT]
    =
      < O : Environment | physicalActions : CONF >
-     < O2 : EventQueue | queue : schedule(EVENT, PT, QUEUE) > 
+     < RI : Reactor | >
+     < O2 : EventQueue | queue : schedule(event(RI, AI, V), PT plus MINDELAY, QUEUE, ACTIONHISTORY, MINSPACING, POLICY) > 
      [physicalTime: PT] .
 endom
