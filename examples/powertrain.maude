@@ -1,0 +1,171 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod POWERTRAIN is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op powertrain : -> ReactorId [ctor] .
+    op bp : -> ReactorId [ctor] .
+    op a : -> ReactorId [ctor] .
+    op bc : -> ReactorId [ctor] .
+    op mc : -> ReactorId [ctor] .
+    op b : -> ReactorId [ctor] .
+    op m : -> ReactorId [ctor] .
+    op bp.m-sv.last : -> RVarId [ctor] .
+    op a.m-sv.pedal : -> RVarId [ctor] .
+    op a.m-sv.last : -> RVarId [ctor] .
+    op mc.m-sv.braking : -> BVarId [ctor] .
+    op mc.m-sv.sZuoutput : -> RVarId [ctor] .
+    op b.m-sv.sZuoutput : -> RVarId [ctor] .
+    op m.m-sv.sZuoutput : -> RVarId [ctor] .
+    op bp.m-out.angle : -> RPortId [ctor] .
+    op bp.m-out.applied : -> BPortId [ctor] .
+    op a.m-out.angle : -> RPortId [ctor] .
+    op bc.m-in.angle : -> RPortId [ctor] .
+    op bc.m-out.force : -> RPortId [ctor] .
+    op mc.m-in.brkOn : -> BPortId [ctor] .
+    op mc.m-in.angle : -> RPortId [ctor] .
+    op mc.m-out.torque : -> RPortId [ctor] .
+    op b.m-in.force : -> RPortId [ctor] .
+    op m.m-in.torque : -> RPortId [ctor] .
+    op bp.m-pa.a : -> RActionId [ctor] .
+    op a.m-pa.a : -> RActionId [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < bp : Reactor |
+            inports : none,
+            outports : 
+                < bp.m-out.angle : Port | value : [0] >
+                < bp.m-out.applied : Port | value : [true] >,
+            state : 
+                ( bp.m-sv.last |-> [1] ),
+            timers : none,
+            actions : 
+                < bp.m-pa.a : PhysicalAction | minDelay : 0, minSpacing : 1, policy : replace, payload : [0] >,
+            reactions : 
+                (reaction when (bp.m-pa.a) --> (bp.m-out.angle ; bp.m-out.applied) do {
+                    if ((bp.m-sv.last ==/= bp.m-pa.a)) then (if ((bp.m-sv.last === [0])) then ((bp.m-out.applied <- [true])) else (if ((bp.m-pa.a === [0])) then ((bp.m-out.applied <- [false])) fi) fi ;
+                    (bp.m-sv.last := bp.m-pa.a) ;
+                    (bp.m-out.angle <- bp.m-pa.a)) fi
+                })
+        >
+        < a : Reactor |
+            inports : none,
+            outports : 
+                < a.m-out.angle : Port | value : [0] >,
+            state : 
+                ( a.m-sv.pedal |-> [-1] );
+                ( a.m-sv.last |-> [0] ),
+            timers : none,
+            actions : 
+                < a.m-pa.a : PhysicalAction | minDelay : 0, minSpacing : 2, policy : replace, payload : [0] >,
+            reactions : 
+                (reaction when (a.m-pa.a) --> (a.m-out.angle) do {
+                    if ((a.m-sv.last ==/= a.m-pa.a)) then ((a.m-out.angle <- a.m-pa.a) ;
+                    (a.m-sv.last := a.m-pa.a)) fi
+                })
+        >
+        < bc : Reactor |
+            inports : 
+                < bc.m-in.angle : Port | value : [0] >,
+            outports : 
+                < bc.m-out.force : Port | value : [0] >,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (bc.m-in.angle) --> (bc.m-out.force) do {
+                    (bc.m-out.force <- ([110] * bc.m-in.angle))
+                })
+        >
+        < mc : Reactor |
+            inports : 
+                < mc.m-in.brkOn : Port | value : [true] >
+                < mc.m-in.angle : Port | value : [0] >,
+            outports : 
+                < mc.m-out.torque : Port | value : [0] >,
+            state : 
+                ( mc.m-sv.braking |-> [true] );
+                ( mc.m-sv.sZuoutput |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (mc.m-in.brkOn) --> (mc.m-out.torque) do {
+                    (mc.m-sv.braking := mc.m-in.brkOn) ;
+                    (mc.m-out.torque <- [0])
+                })
+                (reaction when (mc.m-in.angle) --> (mc.m-out.torque) do {
+                    if (( ! mc.m-sv.braking) ) then ((mc.m-out.torque <- ([100] * mc.m-in.angle))) else (if ((mc.m-in.angle > [0])) then (skip) fi) fi
+                })
+        >
+        < b : Reactor |
+            inports : 
+                < b.m-in.force : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( b.m-sv.sZuoutput |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (b.m-in.force) do {
+                    skip
+                } deadline 2 {
+                    skip
+                })
+        >
+        < m : Reactor |
+            inports : 
+                < m.m-in.torque : Port | value : [0] >,
+            outports : none,
+            state : 
+                ( m.m-sv.sZuoutput |-> [0] ),
+            timers : none,
+            actions : none,
+            reactions : 
+                (reaction when (m.m-in.torque) do {
+                    skip
+                } deadline 3 {
+                    skip
+                })
+        >
+    (bp : bp.m-out.angle --> bc : bc.m-in.angle)
+    (bp : bp.m-out.applied --> mc : mc.m-in.brkOn)
+    (a : a.m-out.angle --> mc : mc.m-in.angle)
+    (bc : bc.m-out.force --> b : b.m-in.force)
+    (mc : mc.m-out.torque --> m : m.m-in.torque)
+    .
+endom
+
+omod TEST-POWERTRAIN is
+    including POWERTRAIN .
+    including DYNAMICS-FUNCTIONS .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq minExtime = 0 .
+    eq maxExtime = 2 .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : 
+                < (bp . bp.m-pa.a ): PhysAct | leftOfPeriod : 3, period : 3, possibleValues : [0] .. [5], timeNonDet : true >
+                < (a . a.m-pa.a ): PhysAct | leftOfPeriod : 1, period : 1, possibleValues : [0] .. [5], timeNonDet : true >
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            empty, pastActions : empty >
+            < rxns : Invoked | reactions : none >
+            [physicalTime: 0]
+            [numberProcessors: 1]} .
+endom
+
+omod SIMULATION-POWERTRAIN-1 is
+    including TEST-POWERTRAIN .
+    including ANALYZE-SIMULATION-LOGICALTIME .
+endom
+
+rew [51] in SIMULATION-POWERTRAIN-1 : initSystem in time 0 .
+
+quit

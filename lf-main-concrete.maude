@@ -20,7 +20,7 @@ load executeStep-concrete-smallstep
 load dynamics-concrete-logicaltime
 load dynamics-concrete-smallstep
 
+load analysis-functions
 load model-checker
 load lf-prop
-load analysis-functions
 load analysis-modules

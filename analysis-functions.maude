@@ -4,15 +4,54 @@ omod ANALYSIS-FUNCTIONS is
   vars VAL VAL2 : Value .
   var VAR : VarId .
   var RID : ReactorId .
+  var N : Nat .
+  vars RL1 RL2 : ReactionList .
+  var T DT T1 : Time .
+  var TI : TimeInf .
+  vars OS1 OS2 : OidSet .
+  vars RB DB : ReactionBody .
+  var DVAR : BVarId .
+  var B : Bool .
+  vars REST CONF : Configuration .
+
 
   --- we want to define a generic function that
   --- search [1] initSystem in time 0 =>! CS:ClockedSystem such that var in component in CS:ClockedSystem is bla
   op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
-  eq VAR in RID in ({REST:Configuration < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState >} in time T:Time) is VAL2
+  eq VAR in RID in ({REST < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState >} in time T:Time) is VAL2
   = VAL == VAL2 .
 
   op _in_in_is_ : VarId ReactorId ClockedSystem Value -> Bool [frozen] .
-  eq VAR in RID in ( { executeStep(GRAPH:Configuration, LT:Time, REST:Configuration
+  eq VAR in RID in ( { executeStep(GRAPH:Configuration, LT:Time, REST
                 < RID : Reactor | state : (VAR |-> VAL) ; RS:ReactorState > , B:BoolValue)} in time T:Time ) is VAL2 = VAL == VAL2 .
+
+--- new stuff from Tbilisi:
+--- for generic deadline analysis, we can preprocess the maude representation of the LF module by adding a state variable for each 
+--- reaction with deadline. Furthermore, we assume that that variable is initialized to false and then set to true in the deadline
+--- handler as the first operation. This can be done by the java front-end or by an operator addDeadlineVars in Maude and use this 
+--- to transform the initial state where such vars are declared and manipulated. Note: it not is enough to have a single var per  
+--- reactor, but one variable per reaction.
+  op deadlineMissed in reaction_in_in_ : Nat ReactorId ClockedSystem -> Bool [frozen] .
+  eq deadlineMissed in reaction N in RID in ({REST
+    < RID : Reactor | 
+          state : (DVAR |-> [B]) ; RS:ReactorState,
+          reactions : (RL1 (reaction N when OS1 --> OS2 do {RB} deadline DT {(DVAR := [true]) ; DB} exTime T1 TI ) RL2) 
+    > })
+=
+  B .
+
+  eq deadlineMissed in reaction N in RID in {CONF} in time T = deadlineMissed in reaction N in RID in {CONF} .
+
+  --- search for a missed deadline anywhere
+  op anyDeadlineMissed in_ : ClockedSystem -> Bool [frozen] .
+  eq anyDeadlineMissed in ({REST
+    < RID : Reactor | 
+          state : (DVAR |-> [true]) ; RS:ReactorState,
+          reactions : (RL1 (reaction N when OS1 --> OS2 do {RB} deadline DT {(DVAR := [true]) ; DB} exTime T1 TI ) RL2)
+    > })
+ = true .
+  eq anyDeadlineMissed in {REST} = false [owise] .
+
+  eq anyDeadlineMissed in ({CONF} in time T) = anyDeadlineMissed in {CONF} .
 
 endom

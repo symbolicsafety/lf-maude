@@ -1,6 +1,7 @@
 omod LF-PROP-BASE is
   pr SATISFACTION .
   pr UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .
+  --- pr TIME-BOUNDED-DYNAMICS-COMMON .
 
   subsort ClockedSystem < State .
 
@@ -32,8 +33,6 @@ omod LF-PROP-BASE is
       < O : EventQueue | queue : (EQ1 :: ((event(REACTORID,AT,VAL) EVENTS) at TAG) :: EQ2) >}
      |=  event(REACTORID, AT) inQueue = true .
 
-
-  --- NEW Feb25: a reaction is/was invoken in this/last step:
   op _invoked : ReactionId -> Prop [ctor] .
 
   eq {REST
@@ -61,9 +60,10 @@ endom
 
 omod LF-PROP is
   including LF-PROP-BASE .
+  including ANALYSIS-FUNCTIONS .
 
   var REST INPORTS : Configuration .
-  var REACTORID : ReactorId .
+  vars REACTORID RID : ReactorId .
   var VAR : VarId .
   var VAL VAL' : Value .
   var RVAR : RVarId .
@@ -71,6 +71,7 @@ omod LF-PROP is
   var RS : ReactorState .
   var PI : PortId .
   var RPI : RPortId .
+  var N : Nat .
 
   --- generic atomic proposition:
 
@@ -123,6 +124,14 @@ omod LF-PROP is
 
   eq {REST < REACTORID : Reactor | inports : < RPI : Port | value : RVAL > INPORTS >}
      |= RPI in REACTORID > RVAL' = (RVAL > RVAL') == [true] . 
+
+  --- new for two timelines stuff
+  op deadlineMissed in reaction_in_ : Nat ReactorId -> Prop [ctor] .
+  eq {REST} |= deadlineMissed in reaction N in RID = deadlineMissed in reaction N in RID in {REST} .
+
+  op anyDeadlineMissed : -> Prop [ctor] .
+  eq {REST} |= anyDeadlineMissed = anyDeadlineMissed in {REST} .
+
 endom
 
 

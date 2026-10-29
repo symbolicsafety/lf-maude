@@ -1,0 +1,35 @@
+omod ANALYZE-SIMULATION-LOGICALTIME is
+  including SIMULATION-DYNAMICS-LOGICALTIME .
+  including ANALYSIS-FUNCTIONS .
+
+  including MODEL-CHECKER .
+  including LF-PROP .
+  including LF-PROP-EXT .
+endom
+
+omod ANALYZE-SIMULATION-SMALLSTEP is
+  including SIMULATION-DYNAMICS-SMALLSTEP .
+  including ANALYSIS-FUNCTIONS .
+
+  including MODEL-CHECKER .
+  including LF-PROP .
+  including LF-PROP-EXT .
+endom
+
+omod ANALYZE-TIMEBOUNDED-LOGICALTIME is
+  including TIME-BOUNDED-DYNAMICS-LOGICALTIME .
+  including ANALYSIS-FUNCTIONS .
+
+  including MODEL-CHECKER .
+  including LF-PROP .
+  including LF-PROP-EXT .
+endom
+
+omod ANALYZE-TIMEBOUNDED-SMALLSTEP is
+  including TIME-BOUNDED-DYNAMICS-SMALLSTEP .
+  including ANALYSIS-FUNCTIONS .
+
+  including MODEL-CHECKER .
+  including LF-PROP .
+  including LF-PROP-EXT .
+endom
