@@ -278,7 +278,7 @@ omod ABS-EXECUTE-STEP is
     = executeStep(generateAPG(EVENTS, NETWORK), LT, NETWORK', CONST && CONST') 
    if {NETWORK', CONST'} := addEventsToPorts(EVENTS, NETWORK, trueVal) .
 
-  --- executeStep(APGgraph, network, event queue, curent logical time)
+  --- executeStep(APGgraph, current logical time, network, constraint (always true for concrete case)
   op executeStep : Configuration Time Configuration BoolValue -> Configuration .
 
   ---NOTE: executeStep is not defined here!

@@ -90,6 +90,3 @@ omod ADAS is
      (adasProcessor : out2 --> dashboard : in)
      pedal : out --> brakes : inPedal .
 endom
-
-
-red generateAPG(event(camera, t, [165]), addReactionIndices(init)) .

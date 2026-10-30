@@ -6,13 +6,13 @@ omod ANALYSIS-FUNCTIONS is
   var RID : ReactorId .
   var N : Nat .
   vars RL1 RL2 : ReactionList .
-  var T DT T1 : Time .
+  var LT T DT T1 : Time .
   var TI : TimeInf .
   vars OS1 OS2 : OidSet .
   vars RB DB : ReactionBody .
   var DVAR : BVarId .
   var B : Bool .
-  vars REST CONF : Configuration .
+  vars GRAPH REST CONF : Configuration .
 
 
   --- we want to define a generic function that
@@ -53,5 +53,13 @@ omod ANALYSIS-FUNCTIONS is
   eq anyDeadlineMissed in {REST} = false [owise] .
 
   eq anyDeadlineMissed in ({CONF} in time T) = anyDeadlineMissed in {CONF} .
+
+
+  --- we can extend these functions to take into account intermediate steps from the small step semantics
+  eq deadlineMissed in reaction N in RID in {executeStep(GRAPH, LT, CONF, B:BoolValue)} in time T 
+    = deadlineMissed in reaction N in RID in {CONF} in time T .
+
+
+  eq anyDeadlineMissed in ({executeStep(GRAPH, LT, CONF, B:BoolValue)} in time T) = anyDeadlineMissed in {CONF} .
 
 endom
