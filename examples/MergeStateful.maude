@@ -104,7 +104,7 @@ endom
 
 omod TEST-MERGESTATEFUL is
     including MERGESTATEFUL .
-    including DYNAMICS-WITHOUT-TICK-LOGICALTIME .
+    including EXECUTE-STEP .
 
     ops env queue rxns : -> Oid [ctor] .
 
@@ -130,23 +130,19 @@ endom
 
 omod SIMULATION-MERGESTATEFUL is
     including TEST-MERGESTATEFUL .
-    including SIMULATION-DYNAMICS-LOGICALTIME .
-    including ANALYSIS-FUNCTIONS .
+    including ANALYZE-SIMULATION-LOGICALTIME .
 endom
 
-omod TIME-BOUNDED-MERGESTATEFUL is
+omod TIME-BOUNDED-MERGESTATEFUL-LOGICALTIME is
     including TEST-MERGESTATEFUL .
-    including TIME-BOUNDED-DYNAMICS-LOGICALTIME .
-    including ANALYSIS-FUNCTIONS .
+    including ANALYZE-TIMEBOUNDED-LOGICALTIME .
     eq timeBound = 300 .
 endom
 
-
-omod MODEL-CHECK-MERGESTATEFUL is
-  including MODEL-CHECKER .
-  including TIME-BOUNDED-MERGESTATEFUL .
-  including LF-PROP .
-  including LF-PROP-EXT .
+omod TIME-BOUNDED-MERGESTATEFUL-SMALLSTEP is
+    including TEST-MERGESTATEFUL .
+    including ANALYZE-TIMEBOUNDED-SMALLSTEP .
+    eq timeBound = 300 .
 endom
 
 ---rew [51] in SIMULATION-MERGESTATEFUL : initSystem .

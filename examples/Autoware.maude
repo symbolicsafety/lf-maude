@@ -199,19 +199,25 @@ endom
 
 omod SIMULATION-AUTOWARE is
     including TEST-AUTOWARE .
-    including SIMULATION-DYNAMICS-LOGICALTIME .
-    including ANALYSIS-FUNCTIONS .
+    including ANALYZE-SIMULATION-LOGICALTIME .
 endom
 
-omod TIME-BOUNDED-AUTOWARE is
+rew [51] in SIMULATION-AUTOWARE : initSystem .
+
+omod TIME-BOUNDED-AUTOWARE-LOGICALTIME is
   including TEST-AUTOWARE .
-  including TIME-BOUNDED-DYNAMICS-LOGICALTIME .
-  including ANALYSIS-FUNCTIONS .
+  including ANALYZE-TIMEBOUNDED-LOGICALTIME .
   eq timeBound = 200 .
 endom
 
+omod TIME-BOUNDED-AUTOWARE-SMALLSTEP is
+  including TEST-AUTOWARE .
+  including ANALYZE-TIMEBOUNDED-SMALLSTEP .
+  eq timeBound = 200 .
+endom
 
-rew [51] in SIMULATION-AUTOWARE : initSystem .
+select TIME-BOUNDED-AUTOWARE-LOGICALTIME .
+
 
 search [1] initSystem in time 0 =>* CS:ClockedSystem such that
  fuse.m-sv.deadlineMissed in fuse in CS:ClockedSystem is [true] .
@@ -220,12 +226,14 @@ search [1] initSystem in time 0 =>* CS:ClockedSystem such that
   --- ac.m-sv.deadlineMissed in ac in CS:ClockedSystem is [true] .
 
 
+---(
 omod MODEL-CHECK-AUTOWARE is
   including MODEL-CHECKER .
   including TIME-BOUNDED-AUTOWARE .
   including LF-PROP .
   including LF-PROP-EXT .
 endom
+)
 
 red modelCheck(initSystem in time 0, 
     [](((ac . 1) invoked) -> <> (ac.m-sv.deadlineMissed in ac == [true]) )) .

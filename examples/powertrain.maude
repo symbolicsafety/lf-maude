@@ -140,7 +140,7 @@ endom
 
 omod TEST-POWERTRAIN is
     including POWERTRAIN .
-    including DYNAMICS-FUNCTIONS .
+    including EXECUTE-STEP .
 
     ops env queue rxns : -> Oid [ctor] .
 
@@ -167,5 +167,20 @@ omod SIMULATION-POWERTRAIN-1 is
 endom
 
 rew [51] in SIMULATION-POWERTRAIN-1 : initSystem in time 0 .
+
+
+omod TIME-BOUNDED-POWERTRAIN-LOGICALTIME is
+  including TEST-POWERTRAIN .
+  including ANALYZE-TIMEBOUNDED-LOGICALTIME .
+  eq timeBound = 73 .
+endom  
+
+omod TIME-BOUNDED-POWERTRAIN-SMALLSTEP is
+  including TEST-POWERTRAIN .
+  including ANALYZE-TIMEBOUNDED-SMALLSTEP .
+  eq timeBound = 73 .
+endom
+
+select TIME-BOUNDED-POWERTRAIN-LOGICALTIME .
 
 quit
