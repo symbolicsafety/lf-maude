@@ -114,9 +114,18 @@ omod AUTOWARE is
                 < fuse.m-la.bothZuportsZuareZupresent : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
             reactions : 
                 (reaction when (fuse.m-in.imageobject ; fuse.m-in.LIDARobject) --> (fuse.m-la.bothZuportsZuareZupresent) do {
-                    if ((isPresent(fuse.m-in.imageobject))) then ((fuse.m-sv.tmpImageobject := fuse.m-in.imageobject) ;
-                    if ((isPresent(fuse.m-in.LIDARobject))) then (schedule(fuse.m-la.bothZuportsZuareZupresent, [0], [0])) else (schedule(fuse.m-la.bothZuportsZuareZupresent, [2], [0])) fi) else (if ((isPresent(fuse.m-in.LIDARobject))) then ((fuse.m-sv.tmpLIDARobject := fuse.m-in.LIDARobject) ;
-                    schedule(fuse.m-la.bothZuportsZuareZupresent, [2], [0])) fi) fi
+                    if ((isPresent(fuse.m-in.imageobject))) then (
+                        (fuse.m-sv.tmpImageobject := fuse.m-in.imageobject) ;
+                        if ((isPresent(fuse.m-in.LIDARobject))) then (schedule(fuse.m-la.bothZuportsZuareZupresent, [0], [0])) 
+                        else (schedule(fuse.m-la.bothZuportsZuareZupresent, [2], [0])) 
+                        fi
+                    ) 
+                    else (
+                        if ((isPresent(fuse.m-in.LIDARobject))) then (
+                            (fuse.m-sv.tmpLIDARobject := fuse.m-in.LIDARobject) ;
+                            schedule(fuse.m-la.bothZuportsZuareZupresent, [2], [0])
+                        ) fi
+                    ) fi
                 }deadline 20 {
                     (fuse.m-sv.deadlineMissed := [true] )
                 })
@@ -177,13 +186,13 @@ endom
 
 omod TEST-AUTOWARE is
     including AUTOWARE .
-    including DYNAMICS-WITHOUT-TICK-LOGICALTIME .
+    including EXECUTE-STEP .
 
     ops env queue rxns : -> Oid [ctor] .
 
     op initSystem : -> GlobalSystem .
-    eq minExtime = 10 .
-    eq maxExtime = 10 .
+    eq minExtime = 2 . --- It should be 10, changed to 2 for debugging
+    eq maxExtime = 2 . --- It should be 10, changed to 2 for debugging
     eq initSystem =
         { < env : Environment |
             physicalActions : 
@@ -207,13 +216,13 @@ rew [51] in SIMULATION-AUTOWARE : initSystem .
 omod TIME-BOUNDED-AUTOWARE-LOGICALTIME is
   including TEST-AUTOWARE .
   including ANALYZE-TIMEBOUNDED-LOGICALTIME .
-  eq timeBound = 200 .
+  eq timeBound = 500 .
 endom
 
 omod TIME-BOUNDED-AUTOWARE-SMALLSTEP is
   including TEST-AUTOWARE .
   including ANALYZE-TIMEBOUNDED-SMALLSTEP .
-  eq timeBound = 200 .
+  eq timeBound = 500 .
 endom
 
 select TIME-BOUNDED-AUTOWARE-LOGICALTIME .
@@ -236,12 +245,34 @@ endom
 )
 
 red modelCheck(initSystem in time 0, 
-    [](((ac . 1) invoked) -> <> (ac.m-sv.deadlineMissed in ac == [true]) )) .
-
+    []( ((ac . 1) invoked) -> <> (ac.m-sv.deadlineMissed in ac == [true]) )
+) .
+---( 
+    Result: 
+    it gives a counterexample when execution time is 2, 
+    The counterexample is the path in which (ac . 1) has been invoked but no deadline was missed until timebound 500
+    In other words, this gives us the desired scheduling of the reactions
+)---
 
 red modelCheck(initSystem in time 0, 
-    [](((ac . 1) invoked) -> [] (ac.m-sv.deadlineMissed in ac == [false]) )) .
+    []( ((ac . 1) invoked) -> [] (ac.m-sv.deadlineMissed in ac == [false]) )
+) .
 
+--- We check that (ac . 1) is never invoked (otherwise above two commands should not be both true) 
+search [1] initSystem in time 0 =>*
+             { REST:Configuration
+              < rxns : Invoked | reactions : ((ac . 1) ; RIDS:ReactionIdSet) >} in time T:Time .
+---( 
+    Result:
+    This finds a solution when execution time is 2 in time 120
+)---    
 
 search [1] initSystem in time 0 =>* CS:ClockedSystem such that
  fuse.m-sv.deadlineMissed in fuse in CS:ClockedSystem is [true] .
+ 
+ --- Mikheil: we are using in reactors minSpacing 0 and policy defer, I think policy should be noPolicy/noMinSpacing???
+ 
+select TIME-BOUNDED-AUTOWARE-SMALLSTEP .
+
+--- We do small-step for debugging
+rew [5] initSystem in time 0 .
