@@ -84,3 +84,6 @@ rew [1] initSystem .
 
 search [1] initSystem in time 0 =>* CS:ClockedSystem  such that 
   anyDeadlineMissed in CS:ClockedSystem .
+
+red modelCheck(initSystem in time 0, 
+  <> anyDeadlineMissed ) .
