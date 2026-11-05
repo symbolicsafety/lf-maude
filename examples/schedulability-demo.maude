@@ -1,0 +1,86 @@
+*** First attempt; Luxembourg meeting, Mircea, Mario, Kyungmin, Peter
+
+
+omod SCHEDULABILITY-DEMO is 
+  including LF-REPR .
+  protecting LF-VALUE-TIME .
+  protecting RUNTIME-APG .
+
+  ops source r1 r2 : -> ReactorId [ctor] .
+  ops in out : -> RPortId [ctor] .
+  op init : -> Configuration .
+  op deadlineMissed : -> BVarId [ctor] .
+  op startup : -> RActionId [ctor] .
+  
+  eq init = 
+ 
+     < source : Reactor | 
+       inports : none,
+       outports : < out : Port | value : [0] >,
+       state : empty,
+       timers : none,
+       actions : < startup : LogicalAction | minDelay : 0, 
+                                minSpacing : 0, 
+                                policy : noMinSpacing, 
+                                payload : [0] >,
+       reactions : 
+       reaction when startup --> out do {  (out <- [1] ) } >
+ 
+     < r1 : Reactor | 
+       inports : < in : Port | value : [0] >,
+       outports : none, 
+       state :  deadlineMissed |-> [false] ,
+       timers : none,
+       actions : none,
+       reactions : 
+          reaction when in do
+ 	    { skip } deadline 4 { deadlineMissed := [true] }
+     >
+ 
+     < r2 : Reactor | 
+         inports : < in : Port | value : [0] >,
+         outports : none,
+         state : empty,
+         timers : none,
+         actions : none,
+         reactions : reaction when in do { skip }       
+     >
+     
+ 
+     (source : out --> r1 : in)
+     (source : out --> r2 : in) .
+endom
+
+
+omod TEST-SCHEDULABILITY-DEMO is
+  including SCHEDULABILITY-DEMO .
+  including EXECUTE-STEP .
+
+
+  eq minExtime = 3 .
+  eq maxExtime = 3 .
+
+  ops env queue rxns : -> Oid [ctor] .
+
+  op initSystem : -> GlobalSystem .
+  eq initSystem =
+     { < env : Environment |
+          physicalActions : none >
+       addReactionIndices(init)
+       < queue : EventQueue | queue : addStartup(startup, init, empty), pastActions : empty >
+       < rxns : Invoked | reactions : none >
+       [physicalTime: 0]
+       [numberProcessors: 1]
+     } .
+endom
+
+omod SIMULATE-SCHEDULABILITY-DEMO is
+  including TEST-SCHEDULABILITY-DEMO .
+  including ANALYZE-SIMULATION-SMALLSTEP .
+endom
+
+rew [1] initSystem .
+
+
+search [1] initSystem in time 0 =>* CS:ClockedSystem  such that 
+  anyDeadlineMissed in CS:ClockedSystem .
