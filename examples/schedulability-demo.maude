@@ -87,3 +87,6 @@ search [1] initSystem in time 0 =>* CS:ClockedSystem  such that
 
 red modelCheck(initSystem in time 0, 
   <> anyDeadlineMissed ) .
+
+--- A counterexample to the above property is a path where no deadline is missed.
+--- In other words, this gives the desired schedule.
